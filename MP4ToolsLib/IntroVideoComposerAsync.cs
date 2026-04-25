@@ -62,7 +62,13 @@ public static class IntroVideoComposerAsync
 
 			string vEnc = vCodec switch { "hevc" => "libx265", "mpeg4" => "mpeg4", _ => "libx264" };
 			string aEnc = aCodec switch { "mp3" => "libmp3lame", "ac3" => "ac3", "opus" => "libopus", _ => "aac" };
-			string vBsf = vCodec == "hevc" ? "hevc_mp4toannexb" : "h264_mp4toannexb";
+			string GetBsfForCodec(string codec) => codec switch 
+		{ 
+			"hevc" => "hevc_mp4toannexb", 
+			"h264" or "avc" => "h264_mp4toannexb", 
+			_ => string.Empty 
+		};
+		string vBsf = GetBsfForCodec(vCodec);
 
 			var escapedTitle = EscapeDrawtext(titleText);
 			var escapedSubtitle = EscapeDrawtext(subtitleText);

@@ -31,10 +31,7 @@ namespace MP4ToolsLib
 					}
 
 					var arr = mp4Files.Select(x => new CombineFile() { Name = x.Name, Path = x.FullName }).ToArray();
-					if (arr != null)
-					{
-						fileList.AddRange(arr);
-					}
+					fileList.AddRange(arr);
 				}
 				catch
 				{

@@ -92,12 +92,12 @@ namespace MP4ToolsLib
 				return false;
 			}
 			var fileName = Path.GetFileName(process.StartInfo.FileName);
-			return fileName.Equals("ffmpegName", StringComparison.OrdinalIgnoreCase)
-				|| fileName.Equals("ffmpeg", StringComparison.OrdinalIgnoreCase);
+			return fileName.Equals("ffmpeg", StringComparison.OrdinalIgnoreCase);
 		}
 
 		public string FFPROBE_EXE
-		{get
+		{
+			get
 			{
 				if (string.IsNullOrWhiteSpace(_ffprobe_exe))
 				{
@@ -105,8 +105,8 @@ namespace MP4ToolsLib
 				{
 					AppDomain.CurrentDomain.BaseDirectory
 				};
-				var fileAppend = OperatingSystem.IsLinux() ? "" : ".exe";
-				var ffprobeName = $"ffprobe{fileAppend}";
+					var fileAppend = OperatingSystem.IsLinux() ? "" : ".exe";
+					var ffprobeName = $"ffprobe{fileAppend}";
 					foreach (var path in testPaths)
 					{
 
@@ -140,8 +140,8 @@ namespace MP4ToolsLib
 				{
 					AppDomain.CurrentDomain.BaseDirectory
 				};
-				var fileAppend = OperatingSystem.IsLinux() ? "" : ".exe";
-				var ffmpegName = $"ffmpeg{fileAppend}";
+					var fileAppend = OperatingSystem.IsLinux() ? "" : ".exe";
+					var ffmpegName = $"ffmpeg{fileAppend}";
 					foreach (var path in testPaths)
 					{
 
@@ -363,35 +363,11 @@ namespace MP4ToolsLib
 				process.BeginErrorReadLine();
 				process.BeginOutputReadLine();
 
-				var timeout = TimeSpan.FromMinutes(30);
-				using var timeoutCts = new CancellationTokenSource(timeout);
-				try
-				{
-					process.WaitForExitAsync(timeoutCts.Token).GetAwaiter().GetResult();
-					process.WaitForExit();
-				}
-				catch (OperationCanceledException)
-				{
-					timedOut = true;
-					Log($"** Timed Out After {timeout.TotalMinutes:0} Minutes **");
-					try
-					{
-						if (!process.HasExited)
-						{
-							process.Kill(true);
-							process.WaitForExit();
-						}
-					}
-					catch { }
-				}
-
-				if (!timedOut)
-				{
-					if (process.ExitCode == 0)
-						Log("** Complete **");
-					else
-						Log($"** Exit Code {process.ExitCode} **");
-				}
+				process.WaitForExit(TimeSpan.FromHours(2));
+				if (process.ExitCode == 0)
+					Log("** Complete **");
+				else
+					Log($"** Exit Code {process.ExitCode} **");
 			}
 			catch (Exception ex)
 			{

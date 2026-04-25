@@ -84,13 +84,13 @@ namespace MP4ToolsLib
 					}
 					else if (split.Length == 2)
 					{
-						returnRange.Minutes = int.Parse(split[1]);
-						returnRange.Seconds = int.Parse(split[2].Split(".")[0]);
+						returnRange.Minutes = int.Parse(split[0]);
+						returnRange.Seconds = int.Parse(split[1].Split(".")[0]);
 						return returnRange;
 					}
 					else if (split.Length == 1)
 					{
-						returnRange.Seconds = int.Parse(split[2].Split(".")[0]);
+						returnRange.Seconds = int.Parse(split[0].Split(".")[0]);
 						return returnRange;
 					}
 				}

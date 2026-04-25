@@ -31,13 +31,21 @@ namespace MP4ToolsLib
 
 			if (!string.IsNullOrWhiteSpace(visitorName) || !string.IsNullOrWhiteSpace(homeName))
 			{
-				parts.Add($"{visitorName} vs. {homeName}");
+				parts.Add($"{visitorName ?? "Visitor"} vs. {homeName ?? "Home"}");
 				if (visitorScore.HasValue && homeScore.HasValue)
 				{
+					var vScore = visitorScore.Value;
+					var hScore = homeScore.Value;
+					var vName = visitorName ?? "Visitor";
+					var hName = homeName ?? "Home";
+					
+					if (vScore == hScore)
+						parts.Add($"{vScore}-{hScore} Tie");
+					else
 					{
-						var winnerName = visitorScore > homeScore ? visitorName : homeName;
-						var winnerScore = Math.Max(visitorScore.Value, homeScore.Value);
-						var loserScore = Math.Min(visitorScore.Value, homeScore.Value);
+						var winnerName = vScore > hScore ? vName : hName;
+						var winnerScore = Math.Max(vScore, hScore);
+						var loserScore = Math.Min(vScore, hScore);
 						parts.Add($"{winnerScore}-{loserScore} {winnerName}");
 					}
 				}
