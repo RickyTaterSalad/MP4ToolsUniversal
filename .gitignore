@@ -1,0 +1,94 @@
+# Ignore Visual Studio files
+*.sdf
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vssscc
+*.vspscc
+*.vsp
+*.vsscc
+
+# Ignore .NET project files
+**/bin/
+**/obj/
+*.resharper
+
+# Ignore specific files and directories
+.vs/
+*.db
+*.bak
+*.tmp
+
+# Ignore NuGet packages
+packages/
+
+# Ignore logs
+*.log
+
+# Ignore build artifacts
+*.dll
+*.exe
+*.pdb
+*.manifest
+*.appx
+*.appxupload
+*.msix
+*.msixupload
+
+# Ignore VS Code
+.vscode/
+
+# Ignore Rider
+.idea/
+*.iml
+
+# Ignore macOS files
+.DS_Store
+._*
+
+# Ignore Linux files
+.Trash-*
+
+# Ignore build output directories (redundant with bin/ and obj/ but good practice)
+**/**/bin/
+**/**/obj/
+
+# Ignore temporary files
+*.temp
+temp/
+
+# Ignore test results
+TestResults/
+*.trx
+
+# Ignore other common development files
+*.lock
+*.tmp
+*.swp
+*.DS_Store
+Thumbs.db
+.DS_Store
+._*
+
+# Ignore user-specific settings
+*.user
+*.settings
+
+# Ignore large files that might be accidentally committed
+# *.zip
+# *.tar.gz
+# *.rar
+
+# Ignore files related to specific tools/frameworks if any
+# e.g., .env for environment variables
+# .env
+# node_modules/
+
+# Ignore F# specific files
+*.suo
+*.user
+*.tmp
+
+# Ignore Avalonia UI specific files
+*.axaml.cs.generated

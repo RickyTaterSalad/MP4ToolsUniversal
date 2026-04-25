@@ -1,0 +1,14 @@
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.lock
+.DS_Store
+*.db
+*.suo
+*.userprefs
+*.csproj.user
+*.ide
+*.bak
+*.tmp

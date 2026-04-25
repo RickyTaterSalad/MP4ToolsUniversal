@@ -1,0 +1,170 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:mp4tools_universal.ViewModels"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	  xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    mc:Ignorable="d"
+    x:Class="mp4tools_universal.Views.CombineView"
+    x:DataType="vm:CombineViewModel">
+	<Grid DragDrop.AllowDrop="True"
+		 Background="Transparent"
+		 DragDrop.DragOver="OnDragOver"
+		 DragDrop.Drop="OnDrop">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="auto"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="auto"/>
+		</Grid.ColumnDefinitions>
+		<Grid Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,10">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="auto"/>
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="auto"/>
+				<RowDefinition Height="auto"/>
+			</Grid.RowDefinitions>
+			<StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
+				<TextBox PlaceholderText="Source Video Folder" Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"/>
+			</StackPanel>
+			<Button Grid.Column="1" Grid.Row="1" Click="BrowseButton_OnClick" Padding="4">
+				<Button.Content>
+					<StackPanel Orientation="Horizontal">
+						<materialIcons:MaterialIcon Kind="Folder"/>
+						<TextBlock Text="Browse" Margin="5,0,5,0" />
+					</StackPanel>
+				</Button.Content>
+			</Button>
+		</Grid>
+		<StackPanel Grid.Row="2">
+			<StackPanel Margin="0,0,0,20" VerticalAlignment="Top">
+				<StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+					<StackPanel Orientation="Horizontal" Margin="0,0,30,0">
+						<CheckBox IsChecked="{Binding TrimFirstVideo}" Content="Start Video Skip" MinWidth="110" />
+						<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimFirstVideo}" VerticalAlignment="Center" Margin="10,0,0,0">
+							<ComboBox ItemsSource="{Binding StartVideoMinuteRange}" SelectedValue="{Binding StartRange.Minutes}" Width="50"/>
+							<Label Content=" m " VerticalAlignment="Bottom"/>
+							<ComboBox ItemsSource="{Binding StartVideoSecondRange}" SelectedValue="{Binding StartRange.Seconds}" Width="50"/>
+							<Label Content=" s " VerticalAlignment="Bottom"/>
+						</StackPanel>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal">
+						<CheckBox IsChecked="{Binding TrimLastVideo}" Content="End Video Duration" MinWidth="110" />
+						<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimLastVideo}" VerticalAlignment="Center" Margin="10,0,0,0">
+							<ComboBox ItemsSource="{Binding EndVideoMinuteRange}" SelectedValue="{Binding EndRange.Minutes}" Width="50"/>
+							<Label Content=" m " VerticalAlignment="Bottom"/>
+							<ComboBox ItemsSource="{Binding EndVideoSecondRange}" SelectedValue="{Binding EndRange.Seconds}" Width="50"/>
+							<Label Content=" s " VerticalAlignment="Bottom"/>
+						</StackPanel>
+					</StackPanel>
+				</StackPanel>
+				<!-- Game Info Section -->
+				<StackPanel Margin="0,5,0,15">
+					<StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+						<TextBlock Text="Event Date" VerticalAlignment="Center" MinWidth="75" />
+						<CalendarDatePicker SelectedDate="{Binding EventDate}" MinWidth="150" PlaceholderText="Date">
+						</CalendarDatePicker>
+						<TextBlock Text="Event Info" VerticalAlignment="Center" Margin="15,0,0,0" />
+						<TextBox PlaceholderText="Event Info" Text="{Binding EventInfo, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="10,0,0,0"/>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+						<TextBlock Text="Visitor" VerticalAlignment="Center" MinWidth="75" />
+						<TextBox PlaceholderText="Visitor" Text="{Binding VisitorName, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,10,0"/>
+						<TextBox PlaceholderText="Runs" Text="{Binding VisitorScore, UpdateSourceTrigger=PropertyChanged}" Width="40" Margin="0,0,15,0"/>
+						<TextBlock Text="Home" VerticalAlignment="Center" MinWidth="50" />
+						<TextBox  PlaceholderText="Home" Text="{Binding HomeName, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,10,0"/>
+						<TextBox PlaceholderText="Runs" Text="{Binding HomeScore, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
+					</StackPanel>
+				</StackPanel>
+				<Border BorderThickness=".35" BorderBrush="LightGray" Padding="10" CornerRadius="2">
+					<StackPanel>
+						<TextBlock Text="Intro Screen" VerticalAlignment="Center" />
+						<StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+							<TextBox PlaceholderText="Title" Text="{Binding IntroTitle, UpdateSourceTrigger=PropertyChanged}" MinWidth="400"/>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+							<TextBox PlaceholderText="Subtitle" Text="{Binding IntroSubtitle, UpdateSourceTrigger=PropertyChanged}" MinWidth="400"/>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+							<TextBox PlaceholderText="Details" Text="{Binding IntroDetails, UpdateSourceTrigger=PropertyChanged}" MinWidth="400"/>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+							<TextBlock Text="Intro Duration" VerticalAlignment="Center" MinWidth="100" />
+							<ComboBox ItemsSource="{Binding IntroDurationRange}" SelectedValue="{Binding IntroDurationSeconds}" Width="80"/>
+						</StackPanel>
+					</StackPanel>
+				</Border>
+			</StackPanel>
+		</StackPanel>
+		<StackPanel Grid.Row="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,5">
+			<Button Command="{Binding RemoveSelectedFileCommand}" Padding="5" ToolTip.Tip="Remove Selected File">
+				<materialIcons:MaterialIcon Kind="Remove"/>
+			</Button>
+			<Label Content="Input Files" VerticalAlignment="Center"/>
+		</StackPanel>
+		<ListBox Grid.Row="4" Grid.ColumnSpan="3" MinHeight="150" ItemsSource="{Binding InputFiles}" SelectedItem="{Binding SelectedInputFile}">
+			<ListBox.ItemTemplate>
+				<DataTemplate>
+					<StackPanel Orientation="Horizontal" 
+								Background="Transparent"
+								PointerPressed="OnListBoxItemPointerPressed"
+								DragDrop.AllowDrop="True"
+								DragDrop.DragOver="OnListBoxItemDragOver"
+								DragDrop.Drop="OnListBoxItemDrop">
+						<TextBlock Text="{Binding Name}"/>
+					</StackPanel>
+				</DataTemplate>
+			</ListBox.ItemTemplate>
+		</ListBox>
+
+		<Label Content="Output Path" Grid.Row="5" Margin="0,5,0,0"/>
+		<StackPanel Grid.Column="0" Grid.Row="6" Grid.ColumnSpan="3" >
+			<TextBox PlaceholderText="Combined Output File" Text="{Binding OutputPath}" />
+		</StackPanel>
+		<Grid Grid.Row="7" Grid.ColumnSpan="3" MinHeight="30">
+			<Label Content="{Binding LoggingLine}"
+             FontFamily="Consolas"
+             FontSize="13"/>
+		</Grid>
+		<StackPanel Orientation="Horizontal" Grid.Row="8" Grid.Column="0" HorizontalAlignment="Left">
+			<Button Command="{Binding StopCommand}" Padding="4" IsEnabled="{Binding CanStop}" Margin="0,0,5,0">
+				<Button.Content>
+					<StackPanel Orientation="Horizontal">
+						<materialIcons:MaterialIcon Kind="Stop"/>
+						<TextBlock Text="Stop" Margin="5,0,5,0" />
+					</StackPanel>
+				</Button.Content>
+			</Button>
+			<Button Command="{Binding ClearCommand}" Padding="4" IsEnabled="{Binding CanClear}">
+				<Button.Content>
+					<StackPanel Orientation="Horizontal">
+						<materialIcons:MaterialIcon Kind="Remove"/>
+						<TextBlock Text="Clear" Margin="5,0,5,0" />
+					</StackPanel>
+				</Button.Content>
+			</Button>
+		</StackPanel>
+		<StackPanel Orientation="Horizontal" Grid.Row="9" Grid.Column="3" HorizontalAlignment="Right" >
+			<Button Margin="10,0,0,0" Command="{Binding CombineCommand}" Padding="4" IsEnabled="{Binding CanCombine}">
+				<Button.Content>
+					<StackPanel Orientation="Horizontal">
+						<materialIcons:MaterialIcon Kind="VectorCombine"/>
+						<TextBlock Text="Combine" Margin="5,0,5,0" />
+					</StackPanel>
+				</Button.Content>
+			</Button>
+		</StackPanel>
+	</Grid>
+</UserControl>

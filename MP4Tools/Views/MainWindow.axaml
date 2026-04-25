@@ -1,0 +1,24 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:mp4tools_universal.ViewModels"
+        xmlns:views="using:mp4tools_universal.Views"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+			  Height="750"
+				Width="1200"
+        x:Class="mp4tools_universal.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/projectIcon.ico"
+        Title="mp4tools_universal">
+
+    <TabControl Margin="10">
+        <TabItem Header="Combine">
+            <views:CombineView DataContext="{Binding CombineViewModel}" Margin="10"/>
+        </TabItem>
+        <TabItem Header="Trim">
+            <views:TrimView DataContext="{Binding TrimViewModel}" Margin="10"/>
+        </TabItem>
+    </TabControl>
+
+</Window>
