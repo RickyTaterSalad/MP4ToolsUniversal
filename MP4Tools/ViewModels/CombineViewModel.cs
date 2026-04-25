@@ -130,7 +130,17 @@ public partial class CombineViewModel : MP4ViewModelBase
 		get => _visitorScore;
 		set
 		{
-			if (value.HasValue && SetProperty(ref _visitorScore, Math.Max(0, value.Value)))
+			if (!value.HasValue)
+			{
+				if (SetProperty(ref _visitorScore, null))
+				{
+					UpdateOutputPathFromGameInfo();
+					UpdateIntroDetailsFromGameInfo();
+				}
+				return;
+			}
+			var newVal = Math.Max(0, value.Value);
+			if (SetProperty(ref _visitorScore, newVal))
 			{
 				UpdateOutputPathFromGameInfo();
 				UpdateIntroDetailsFromGameInfo();
@@ -144,7 +154,17 @@ public partial class CombineViewModel : MP4ViewModelBase
 		get => _homeScore;
 		set
 		{
-			if (value.HasValue && SetProperty(ref _homeScore, Math.Max(0, value.Value)))
+			if (!value.HasValue)
+			{
+				if (SetProperty(ref _homeScore, null))
+				{
+					UpdateOutputPathFromGameInfo();
+					UpdateIntroDetailsFromGameInfo();
+				}
+				return;
+			}
+			var newVal = Math.Max(0, value.Value);
+			if (SetProperty(ref _homeScore, newVal))
 			{
 				UpdateOutputPathFromGameInfo();
 				UpdateIntroDetailsFromGameInfo();

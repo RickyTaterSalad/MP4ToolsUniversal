@@ -163,8 +163,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 	public RelayCommand BrowseToFileCommand { get; private set; }
 
 
-	public RelayCommand TrimCommand { get; private set; }
-	public RelayCommand TrimAndCombineCommand { get; private set; }
+	public AsyncRelayCommand TrimCommand { get; private set; }
+	public AsyncRelayCommand TrimAndCombineCommand { get; private set; }
 
 	public RelayCommand AddTimeRangeCommand { get; private set; }
 	public RelayCommand RemoveTimeRangeCommand { get; private set; }
@@ -193,8 +193,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 			EndRange.Seconds = 0;
 		});
 
-		TrimAndCombineCommand = new RelayCommand(() => TrimAndCombineAsync());
-		TrimCommand = new RelayCommand(() => TrimAsync());
+		TrimAndCombineCommand = new AsyncRelayCommand(async () => await TrimAndCombineAsync());
+		TrimCommand = new AsyncRelayCommand(async () => await TrimAsync());
 		AddTimeRangeCommand = new RelayCommand(() =>
 		{
 			var range = new StartStopRange(StartRange.Clone(), EndRange.Clone(), RangeLabel ?? string.Empty)
@@ -537,7 +537,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				IntroTitle = string.Empty;
 				IntroSubtitle = string.Empty;
 				IntroDetails = string.Empty;
-				IntroDurationSeconds = 3;
+
 				if (exportObj != null)
 				{
 					if (!string.IsNullOrWhiteSpace(exportObj.InputFile) && File.Exists(exportObj.InputFile))
@@ -650,7 +650,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 						}
 						if (int.TryParse(hmsSplit[2], out var sec))
 						{
-							EndRange.Seconds = sec + 1;
+							EndRange.Seconds = Math.Min(sec + 1, 59);
 						}
 
 					}

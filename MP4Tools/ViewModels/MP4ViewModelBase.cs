@@ -13,6 +13,9 @@ namespace MP4Tools
 
 	public partial class MP4ViewModelBase : ViewModelBase
 	{
+		// ====================
+		// PROPERTIES (Top)
+		// ====================
 
 		private static int _ffmpegFrameLineCounter = 0;
 
@@ -22,18 +25,6 @@ namespace MP4Tools
 		[ObservableProperty]
 		private string? _loggingLine;
 
-
-		internal MP4ViewModelBase()
-		{
-			StopCommand = new RelayCommand(() =>
-			{
-				FFMpegUtils.Instance.KillCurrentRunningProcess();
-
-			});
-			ClearCommand = new RelayCommand(() => Clear());
-		}
-
-
 		private string? _inputPath = string.Empty;
 		public string? InputPath
 		{
@@ -42,29 +33,7 @@ namespace MP4Tools
 			{
 				SetProperty(ref _inputPath, value);
 				OnInputPathSet();
-
 			}
-		}
-		protected virtual Task Clear()
-		{
-			LoggingLine = null;
-			InputPath = string.Empty;
-			return Task.CompletedTask;
-		}
-		protected virtual void OnInputPathSet()
-		{
-
-		}
-
-		protected void HandleBrowseToDirectory()
-		{
-			/*
-			FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-			if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
-			{
-				SetDirectory(folderBrowserDialog1.SelectedPath);
-			}
-			*/
 		}
 
 		private bool _canStop = false;
@@ -85,6 +54,41 @@ namespace MP4Tools
 			{
 				SetProperty(ref _canClear, value);
 			}
+		}
+
+		// ====================
+		// METHODS (Bottom)
+		// ====================
+
+		internal MP4ViewModelBase()
+		{
+			StopCommand = new RelayCommand(() =>
+			{
+				FFMpegUtils.Instance.KillCurrentRunningProcess();
+			});
+			ClearCommand = new RelayCommand(() => Clear());
+		}
+
+		protected virtual Task Clear()
+		{
+			LoggingLine = null;
+			InputPath = string.Empty;
+			return Task.CompletedTask;
+		}
+
+		protected virtual void OnInputPathSet()
+		{
+		}
+
+		protected void HandleBrowseToDirectory()
+		{
+			/*
+			FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
+			if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+			{
+				SetDirectory(folderBrowserDialog1.SelectedPath);
+			}
+			*/
 		}
 
 		protected void HandleBrowseToFile()
@@ -112,24 +116,21 @@ namespace MP4Tools
 			*/
 		}
 
-
 		public virtual void SetDirectory(string directory)
 		{
 			InputPath = directory;
 		}
+
 		[RelayCommand]
 		public virtual void SetFile(string? file)
 		{
 			InputPath = file ?? string.Empty;
 		}
 
-
 		internal static int GetConfiguredLogMaxLines()
 		{
 			return 500;//return Settings.Default.LogMaxLines > 0 ? Settings.Default.LogMaxLines : 500;
 		}
-
-
 
 		internal static bool ShouldReportFfmpegLogLine(string line)
 		{
@@ -175,7 +176,8 @@ namespace MP4Tools
 			CanStop = true;
 			try
 			{
-				FFMpegUtils.Instance.RunAndLogFFMpeg(args, HandleProcessOutput, (args) => { LoggingLine = args; }, !string.IsNullOrWhiteSpace(workingDirectory) ? workingDirectory : System.IO.Path.GetDirectoryName(InputPath));
+				var workDir = !string.IsNullOrWhiteSpace(workingDirectory) ? workingDirectory : System.IO.Path.GetDirectoryName(InputPath ?? string.Empty) ?? string.Empty;
+				FFMpegUtils.Instance.RunAndLogFFMpeg(args, HandleProcessOutput, (args) => { LoggingLine = args; }, workDir);
 			}
 			catch (Exception ex)
 			{
