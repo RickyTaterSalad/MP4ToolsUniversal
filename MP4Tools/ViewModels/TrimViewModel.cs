@@ -418,29 +418,33 @@ public partial class TrimViewModel : MP4ViewModelBase
 							{
 								// Remove quotes from drawTextString and append VAAPI upload filters
 								var innerFilter = drawTextString.Trim('\"');
-								vfArg = $"-vf \"{innerFilter},format=nv12,hwupload,scale_vaapi=format=nv12\"";
+								// drawtext outputs in same format as input; convert to nv12, upload to VAAPI
+								// hwupload needs extra_hw_frames and derive_device=vaapi to work properly
+								vfArg = $"-vf \"{innerFilter},format=nv12,hwupload=derive_device=vaapi:extra_hw_frames=64\"";
 							}
 							else
 							{
 								vfArg = $"-vf {drawTextString}";
 							}
 						}
-						// VAAPI uses different options than nvenc
-						var trToUse = range.StartRange.Clone();
-						if (trToUse.IsEqualTo(TimeRange.Zero))
-						{
-							trToUse.Seconds = 1;
-						}
 						if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
 						{
-							// VAAPI valid profiles: main (1), main10 (2), rext (4)
-							// Use main profile (VAAPI profile 1 = main)
-							// Use -rc_mode for rate control: 3 = VBR
-							args = $"-ss {trToUse.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v main -rc_mode 3 -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
+							// VAAPI uses -rc_mode for rate control: 2 = CBR, 3 = VBR, 4 = ICQ
+							// Use profile from preset (main, main10, rext)
+							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -rc_mode 3 -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
 						}
 						else
 						{
-							args = $"-ss {trToUse.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -preset:v {EncoderPresets.EncoderPreset.PresetV} -tune:v {EncoderPresets.EncoderPreset.TuneV} -rc:v {EncoderPresets.EncoderPreset.RCV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
+							// Build encoder options, skipping empty values
+							var encOpts = $"-c:v {EncoderPresets.EncoderPreset.CV}";
+							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.PresetV))
+								encOpts += $" -preset:v {EncoderPresets.EncoderPreset.PresetV}";
+							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.TuneV))
+								encOpts += $" -tune:v {EncoderPresets.EncoderPreset.TuneV}";
+							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.RCV))
+								encOpts += $" -rc:v {EncoderPresets.EncoderPreset.RCV}";
+							encOpts += $" -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {EncoderPresets.EncoderPreset.CA}";
+							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} {encOpts} \"{trimOutputPath}\"";
 						}
 					}
 

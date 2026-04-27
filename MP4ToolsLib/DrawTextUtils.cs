@@ -43,7 +43,7 @@ namespace MP4ToolsLib
 			};
 			var font = OperatingSystem.IsLinux() ? 
 			"/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf" : "C:/Windows/Fonts/calibri.ttf";
-			return $"\"drawtext={font}:text='{escapedValue}':fontcolor=white:fontsize=64:box=1:boxcolor=black@0.75:boxborderw=5:{positionPart}\"";
+			return $"\"drawtext=fontfile='{font}':text='{escapedValue}':fontcolor=white:fontsize=64:box=1:boxcolor=black@0.75:boxborderw=5:{positionPart}\"";
 		}
 	}
 }

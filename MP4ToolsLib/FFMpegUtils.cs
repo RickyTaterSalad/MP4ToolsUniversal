@@ -176,22 +176,42 @@ namespace MP4ToolsLib
 				if (!args.Contains("-hwaccel", StringComparison.OrdinalIgnoreCase))
 				{
 					var hwaccel = DetectBestHwAccel();
-					// For vaapi, we need to add -vaapi_device before -hwaccel
+					// Check if using VAAPI with video filters - if so, we should NOT use -hwaccel
+					// because the filters (like drawtext) work on CPU frames and we use hwupload
+					var hasVideoFilter = args.Contains("-vf ", StringComparison.OrdinalIgnoreCase) 
+						|| args.Contains(" -filter:v", StringComparison.OrdinalIgnoreCase)
+						|| args.Contains(" -filter_complex", StringComparison.OrdinalIgnoreCase);
+					
+					// For vaapi, we need to add -vaapi_device for VAAPI filters and encoders
 					if (hwaccel.StartsWith("vaapi"))
 					{
 						var parts = hwaccel.Split('\n');
-						if (parts.Length > 1)
+						var vaapiDevice = parts.Length > 1 ? parts[1] : string.Empty; // "-vaapi_device /dev/dri/renderDxxx"
+						
+						if (!hasVideoFilter)
 						{
-							// parts[0] = "vaapi", parts[1] = "-vaapi_device /dev/dri/renderDxxx"
-							args = $"{parts[1]} -hwaccel {parts[0]} {args}".Trim();
+							// No video filters - use hwaccel for decoding
+							if (!string.IsNullOrWhiteSpace(vaapiDevice))
+							{
+								args = $"{vaapiDevice} -hwaccel {parts[0]} {args}".Trim();
+							}
+							else
+							{
+								args = $"-hwaccel {hwaccel} {args}".Trim();
+							}
 						}
 						else
 						{
-							args = $"-hwaccel {hwaccel} {args}".Trim();
+							// Has video filters - don't use hwaccel, but still need -vaapi_device for hwupload and encoder
+							if (!string.IsNullOrWhiteSpace(vaapiDevice) && !args.Contains("-vaapi_device"))
+							{
+								args = $"{vaapiDevice} {args}".Trim();
+							}
 						}
 					}
 					else
 					{
+						// Non-VAAPI hwaccel
 						args = $"-hwaccel {hwaccel} {args}".Trim();
 					}
 				}
