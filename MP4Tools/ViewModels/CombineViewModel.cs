@@ -1,5 +1,4 @@
-﻿using Avalonia.Controls.Shapes;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MP4Tools;
 using MP4ToolsLib;
@@ -17,7 +16,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 {
 
 	private const string DefaultIntroTitle = "{VISITOR} vs. {HOME}";
-	private const string DefaultIntroDetails = "🏆 {SCORE} {WINNER}";
+	private const string DefaultIntroDetails = "Final Score {SCORE} {WINNER}";
 
 		[ObservableProperty]
 		private int _introDurationSeconds = 10;
@@ -31,12 +30,36 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 		[ObservableProperty]
 		private string? _outputPath;
+		private string? _homeName;
 
-		[ObservableProperty]
+				public string? HomeName
+		{
+			get => _homeName;
+			set
+			{
+				if (SetProperty(ref _homeName, value))
+				{
+					UpdateIntroTitleFromGameInfo();
+				}
+			}
+		}
+
+
 		private string? _visitorName;
 
-		[ObservableProperty]
-		private string? _homeName;
+		
+
+		public string? VisitorName
+		{
+			get => _visitorName;
+			set
+			{
+				if (SetProperty(ref _visitorName, value))
+				{
+					UpdateIntroTitleFromGameInfo();
+				}
+			}
+		}
 
 		[ObservableProperty]
 		private string? _folderPath;
@@ -663,4 +686,13 @@ public partial class CombineViewModel : MP4ViewModelBase
 			CanCombine = true;
 		}
 	}
+			private void UpdateIntroTitleFromGameInfo()
+		{
+			if (!string.IsNullOrWhiteSpace(VisitorName) && !string.IsNullOrWhiteSpace(HomeName))
+			{
+				var newTitle = DefaultIntroTitle.Replace("{VISITOR}", VisitorName).Replace("{HOME}", HomeName);
+				IntroTitle = newTitle;
+			}
+		}
+
 }

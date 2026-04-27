@@ -175,7 +175,25 @@ namespace MP4ToolsLib
 			{
 				if (!args.Contains("-hwaccel", StringComparison.OrdinalIgnoreCase))
 				{
-					args = $"-hwaccel cuda {args}".Trim();
+					var hwaccel = DetectBestHwAccel();
+					// For vaapi, we need to add -vaapi_device before -hwaccel
+					if (hwaccel.StartsWith("vaapi"))
+					{
+						var parts = hwaccel.Split('\n');
+						if (parts.Length > 1)
+						{
+							// parts[0] = "vaapi", parts[1] = "-vaapi_device /dev/dri/renderDxxx"
+							args = $"{parts[1]} -hwaccel {parts[0]} {args}".Trim();
+						}
+						else
+						{
+							args = $"-hwaccel {hwaccel} {args}".Trim();
+						}
+					}
+					else
+					{
+						args = $"-hwaccel {hwaccel} {args}".Trim();
+					}
 				}
 			}
 			return args;
@@ -302,7 +320,6 @@ namespace MP4ToolsLib
 		public void RunAndLogFFMpeg(string args, Action<Process, string, string> ProcessOutputAction, Action<string> Log, string workingDirectory = "")
 		{
 			Log ??= (s => Debug.WriteLine(s));
-			var timedOut = false;
 			args = ApplyForcedFfmpegArgs(args);
 
 			var psi = new ProcessStartInfo
@@ -471,6 +488,134 @@ namespace MP4ToolsLib
 			catch
 			{
 				return (null, null);
+			}
+		}
+	
+		
+		public string GetPreferredRenderDevice()
+		{
+			try
+			{
+				// Look for AMD 9070 XT (Navi 48) - PCI device ID 0x7550
+				// Check render nodes in /sys/class/drm/
+				var drmPath = "/sys/class/drm";
+				if (Directory.Exists(drmPath))
+				{
+					// Look for renderD* devices
+					var renderDevices = Directory.GetFiles(drmPath, "renderD*");
+					foreach (var renderDev in renderDevices)
+					{
+						// Get the device symlink to find PCI address
+						var devPath = Path.Combine(renderDev, "device");
+						if (Directory.Exists(devPath))
+						{
+							// Check vendor and device ID
+							var vendorPath = Path.Combine(devPath, "vendor");
+							var devicePath = Path.Combine(devPath, "device");
+							if (File.Exists(vendorPath) && File.Exists(devicePath))
+							{
+								var vendor = File.ReadAllText(vendorPath).Trim();
+								var device = File.ReadAllText(devicePath).Trim();
+								// AMD vendor = 0x1002, Navi 48 (9070 XT) = 0x7550
+								if (vendor == "0x1002" && device == "0x7550")
+								{
+									// Return the /dev/dri/renderD* path
+									var devName = Path.GetFileName(renderDev);
+									return $"/dev/dri/{devName}";
+								}
+							}
+						}
+					}
+				}
+			}
+			catch
+			{
+				// Ignore errors
+			}
+			// Fallback to default renderD128 (first GPU)
+			return "/dev/dri/renderD128";
+		}
+
+		public string DetectBestHwAccel()
+		{
+			// Check for AMD GPU first (9070 XT uses AMF on Windows)
+			if (OperatingSystem.IsWindows())
+			{
+				// Windows: AMD uses d3d11va for decoding, AMF for encoding
+				if (HasAmdGpu())
+				{
+					return "d3d11va";
+				}
+			}
+			else if (OperatingSystem.IsLinux())
+			{
+				// Linux: AMD uses vaapi
+				if (HasAmdGpuLinux())
+				{
+					// Return vaapi with the preferred render device (9070 XT)
+					var renderDev = GetPreferredRenderDevice();
+					return $"vaapi\n-vaapi_device {renderDev}";
+				}
+			}
+			// Default to cuda for NVIDIA
+			return "cuda";
+		}
+
+		private bool HasAmdGpu()
+		{
+			try
+			{
+				// Check for AMD GPU via Windows Management Instrumentation
+				var process = new Process
+				{
+					StartInfo = new ProcessStartInfo
+					{
+						FileName = "wmic",
+						Arguments = "path win32_VideoController get name",
+						UseShellExecute = false,
+						RedirectStandardOutput = true,
+						CreateNoWindow = true
+					}
+				};
+				process.Start();
+				string output = process.StandardOutput.ReadToEnd();
+				process.WaitForExit();
+				return output.Contains("AMD", StringComparison.OrdinalIgnoreCase)
+					|| output.Contains("Radeon", StringComparison.OrdinalIgnoreCase)
+					|| output.Contains("RX 9070", StringComparison.OrdinalIgnoreCase);
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		private bool HasAmdGpuLinux()
+		{
+			try
+			{
+				// Check for AMD GPU via lspci on Linux
+				var process = new Process
+				{
+					StartInfo = new ProcessStartInfo
+					{
+						FileName = "lspci",
+						Arguments = "-k",
+						UseShellExecute = false,
+						RedirectStandardOutput = true,
+						CreateNoWindow = true
+					}
+				};
+				process.Start();
+				string output = process.StandardOutput.ReadToEnd();
+				process.WaitForExit();
+				return output.Contains("AMD", StringComparison.OrdinalIgnoreCase)
+					|| output.Contains("Radeon", StringComparison.OrdinalIgnoreCase)
+					|| output.Contains("9070", StringComparison.OrdinalIgnoreCase);
+			}
+			catch
+			{
+				return false;
 			}
 		}
 	}

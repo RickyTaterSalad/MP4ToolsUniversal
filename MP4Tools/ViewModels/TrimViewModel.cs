@@ -413,9 +413,30 @@ public partial class TrimViewModel : MP4ViewModelBase
 						if (!string.IsNullOrWhiteSpace(range.Label))
 						{
 							var drawTextString = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition);
-							vfArg = $"-vf {drawTextString}";
+							// For VAAPI: drawtext works on software frames, need to upload to VAAPI after
+							if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
+							{
+								// Remove quotes from drawTextString and append VAAPI upload filters
+								var innerFilter = drawTextString.Trim('\"');
+								vfArg = $"-vf \"{innerFilter},format=nv12,hwupload,scale_vaapi=format=nv12\"";
+							}
+							else
+							{
+								vfArg = $"-vf {drawTextString}";
+							}
 						}
-						args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -preset:v {EncoderPresets.EncoderPreset.PresetV} -tune:v {EncoderPresets.EncoderPreset.TuneV} -rc:v {EncoderPresets.EncoderPreset.RCV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
+						// VAAPI uses different options than nvenc
+						if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
+						{
+							// VAAPI valid profiles: main (1), main10 (2), rext (4)
+							// Use main profile (VAAPI profile 1 = main)
+							// Use -rc_mode for rate control: 3 = VBR
+							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v main -rc_mode 3 -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
+						}
+						else
+						{
+							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -preset:v {EncoderPresets.EncoderPreset.PresetV} -tune:v {EncoderPresets.EncoderPreset.TuneV} -rc:v {EncoderPresets.EncoderPreset.RCV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
+						}
 					}
 
 					RunAndLogFFMpeg(args);

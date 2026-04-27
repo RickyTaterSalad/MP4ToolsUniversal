@@ -90,5 +90,30 @@ Thumbs.db
 *.user
 *.tmp
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Ignore Avalonia UI specific files
 *.axaml.cs.generated
+
+**/.codex

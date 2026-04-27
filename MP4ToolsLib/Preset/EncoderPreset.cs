@@ -1,4 +1,4 @@
-﻿namespace MP4ToolsLib.Preset
+namespace MP4ToolsLib.Preset
 {
 	public class EncoderPresets
 	{
@@ -9,67 +9,77 @@
 			{
 				if (_encoderPreset == null)
 				{
-					/*
-					if (!string.IsNullOrWhiteSpace(Settings.Default.DefaultEncoder) && Settings.Default.DefaultEncoder.Equals("gopro", System.StringComparison.InvariantCultureIgnoreCase))
-					{
-						_encoderPreset = GoProPreset4K30FPSTripod;
-					}
-					else
-					{
-					*/
 					_encoderPreset = DJIPreset4K30Vlog;
-					//	}
 				}
 				return _encoderPreset;
 			}
 			set
 			{
 				_encoderPreset = value;
-				if (_encoderPreset != null)
-				{
-					/*
-					if (string.IsNullOrWhiteSpace(Settings.Default.DefaultEncoder) ||
-						!Settings.Default.DefaultEncoder.Equals(_encoderPreset.ID, System.StringComparison.InvariantCultureIgnoreCase))
-					{
-						Settings.Default.DefaultEncoder = _encoderPreset.ID;
-						Settings.Default.Save();
-					}
-					*/
-				}
 			}
 		}
 
-		public static EncoderPreset DJIPreset4K30Vlog { get; } = new DJIPreset4K30FPSTripod();
-
-		public static EncoderPreset GoProPreset4K30FPSTripod { get; } = new GoProPreset4K30FPSTripod();
+		public static EncoderPreset DJIPreset4K30Vlog { get; } = new AMDH264Preset4K30();
 	}
+
 	public class DJIPreset4K30FPSTripod : EncoderPreset
 	{
-		public override string PresetV { get; } = "p7";
+		// VAAPI doesn't use preset values like NVENC - leave empty
+		public override string PresetV { get; } = string.Empty;
 
-		public override string TuneV { get; } = "hq";
+		// VAAPI doesn't use tune values - leave empty  
+		public override string TuneV { get; } = string.Empty;
 
 		public override string BV => "45M";
 
 		public override string MaxRate => "70M";
-		public override string CV { get; } = "hevc_nvenc";
+		
+		// Use hevc_vaapi for AMD VAAPI encoding
+		public override string CV { get; } = "hevc_vaapi";
 
 		public override string ID => "dji";
-	}
-	public class GoProPreset4K30FPSTripod : EncoderPreset
-	{
-		public override string PresetV { get; } = "p7";
 
-		public override string TuneV { get; } = "hq";
+		// For VAAPI HEVC, valid profiles: main, main10, rext
+		public override string ProfileV { get; } = "main";
+	}
+
+	
+	public class AMDHevcPreset4K30 : EncoderPreset
+	{
+		public override string PresetV { get; } = string.Empty;
+
+		public override string TuneV { get; } = string.Empty;
 
 		public override string BV => "45M";
 
 		public override string MaxRate => "70M";
 
-		public override string CV { get; } = "h264_nvenc";
+		public override string CV { get; } = "hevc_vaapi";
 
-		public override string ID => "gopro";
+		public override string ID => "amd-hevc-vaapi";
+
+		// For VAAPI HEVC, valid profiles: main, main10, rext
+		public override string ProfileV { get; } = "main";
 	}
+
+	public class AMDH264Preset4K30 : EncoderPreset
+	{
+		public override string PresetV { get; } = string.Empty;
+
+		public override string TuneV { get; } = string.Empty;
+
+		public override string BV => "45M";
+
+		public override string MaxRate => "70M";
+
+		public override string CV { get; } = "h264_vaapi";
+
+		public override string ID => "amd-h264-vaapi";
+
+		// For VAAPI H.264, valid profiles: main, high
+		public override string ProfileV { get; } = "high";
+	}
+
 	public abstract class EncoderPreset
 	{
 		public abstract string ID { get; }
@@ -85,6 +95,8 @@
 
 		public abstract string TuneV { get; }
 
-		public string ProfileV { get; } = "0";
+		// For H.264: baseline, main, high, high444p (NVENC); main, high (VAAPI)
+		// For HEVC: main, main10, rext (VAAPI)
+		public abstract string ProfileV { get; }
 	}
 }
