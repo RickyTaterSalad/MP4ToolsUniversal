@@ -426,16 +426,21 @@ public partial class TrimViewModel : MP4ViewModelBase
 							}
 						}
 						// VAAPI uses different options than nvenc
+						var trToUse = range.StartRange.Clone();
+						if (trToUse.IsEqualTo(TimeRange.Zero))
+						{
+							trToUse.Seconds = 1;
+						}
 						if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
 						{
 							// VAAPI valid profiles: main (1), main10 (2), rext (4)
 							// Use main profile (VAAPI profile 1 = main)
 							// Use -rc_mode for rate control: 3 = VBR
-							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v main -rc_mode 3 -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
+							args = $"-ss {trToUse.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v main -rc_mode 3 -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
 						}
 						else
 						{
-							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -preset:v {EncoderPresets.EncoderPreset.PresetV} -tune:v {EncoderPresets.EncoderPreset.TuneV} -rc:v {EncoderPresets.EncoderPreset.RCV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
+							args = $"-ss {trToUse.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -preset:v {EncoderPresets.EncoderPreset.PresetV} -tune:v {EncoderPresets.EncoderPreset.TuneV} -rc:v {EncoderPresets.EncoderPreset.RCV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
 						}
 					}
 

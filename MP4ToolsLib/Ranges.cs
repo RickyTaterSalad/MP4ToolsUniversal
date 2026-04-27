@@ -40,6 +40,7 @@ namespace MP4ToolsLib
 			}
 			return ss;
 		}
+		
 		public bool IsValidRange()
 		{
 			if (StartRange.Hours > EndRange.Hours)

@@ -19,7 +19,7 @@ namespace MP4ToolsLib.Preset
 			}
 		}
 
-		public static EncoderPreset DJIPreset4K30Vlog { get; } = new AMDH264Preset4K30();
+		public static EncoderPreset DJIPreset4K30Vlog { get; } = new AMDHevcPreset4K30();
 	}
 
 	public class DJIPreset4K30FPSTripod : EncoderPreset
@@ -50,7 +50,7 @@ namespace MP4ToolsLib.Preset
 
 		public override string TuneV { get; } = string.Empty;
 
-		public override string BV => "45M";
+		public override string BV => "50M";
 
 		public override string MaxRate => "70M";
 

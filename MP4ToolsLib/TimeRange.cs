@@ -8,6 +8,7 @@ namespace MP4ToolsLib
 	public class TimeRange : INotifyPropertyChanged
 	{
 
+		public static readonly TimeRange Zero = new TimeRange() { Hours = 0, Minutes = 0, Seconds = 0 };
 		public static IReadOnlyList<int> Range { get; } = Enumerable.Range(0, 60).ToList();
 
 		private int _hours = 0;
@@ -65,6 +66,15 @@ namespace MP4ToolsLib
 				Seconds = this.Seconds
 			};
 		}
+		public bool IsEqualTo(TimeRange other)
+				{
+					if (other == null)
+					{
+						return false;
+					}
+					return this.Hours == other.Hours && this.Minutes == other.Minutes && this.Seconds == other.Seconds;
+				}
+
 		public static TimeRange FromString(string timeRange)
 		{
 			if (!string.IsNullOrWhiteSpace(timeRange))
