@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Diagnostics;
 
 namespace MP4ToolsLib
 {
@@ -48,7 +49,7 @@ namespace MP4ToolsLib
                 {
                     // Log or handle the exception appropriately
                     // For now, we'll just return empty list
-                    System.Diagnostics.Debug.WriteLine($"Error processing folder {folder}: {ex.Message}");
+                    Debug.WriteLine($"Error processing folder {folder}: {ex.Message}");
                 }
             }
             

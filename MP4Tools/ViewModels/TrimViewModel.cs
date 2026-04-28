@@ -386,7 +386,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 	private async Task<string> TrimRangeAsync(StartStopRange range, string outFolder, bool forceReencode = false)
 	{
 		string trimOutputPath = string.Empty;
-		if (InputPath == null)
+		if (string.IsNullOrWhiteSpace(InputPath))
 		{
 			return trimOutputPath;
 		}
