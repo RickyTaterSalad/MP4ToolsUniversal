@@ -55,6 +55,7 @@
 					<Label Content="Audio" VerticalAlignment="Center"/>
 					<ComboBox ItemsSource="{Binding AvailableAudioCodecs}" MinWidth="90" 
 					SelectedItem="{Binding SelectedAudioCodec}"/>
+					</StackPanel>
 					<StackPanel Orientation="Horizontal" Margin="10,0,30,0">
 						<CheckBox IsChecked="{Binding TrimFirstVideo}" Content="Start Video Skip" MinWidth="110" />
 						<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimFirstVideo}" VerticalAlignment="Center" Margin="10,0,0,0">
