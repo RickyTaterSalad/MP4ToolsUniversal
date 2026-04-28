@@ -175,6 +175,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 	public TrimViewModel()
 	{
+		SelectedAudioCodec = "libopus";
 		_selectedStartStopRange = null;
 		TrimRanges = new ObservableCollection<StartStopRange>();
 

@@ -20,11 +20,11 @@ namespace MP4ToolsLib
 		};
 
 		public static IReadOnlyList<DrawTextPosition> DrawTextPositions { get; } = Enum.GetValues<DrawTextPosition>();
-
 		public static string EscapeDrawTextValue(string value)
 		{
 			return (value ?? string.Empty)
 				.Replace("\\", "\\\\")
+				.Replace("\"", "\\\"")  // <-- Add this line
 				.Replace(":", "\\:")
 				.Replace("'", "\\'")
 				.Replace("%", "\\%");

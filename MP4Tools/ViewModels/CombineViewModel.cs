@@ -298,17 +298,17 @@ public partial class CombineViewModel : MP4ViewModelBase
 		var dir = InputPath;
 		if (File.Exists(InputPath))
 		{
-			dir = System.IO.Path.GetDirectoryName(InputPath) ?? InputPath;
+			dir = Path.GetDirectoryName(InputPath) ?? InputPath;
 		}
 
 		var gameName = BuildGameInfoOutputFileName();
 		if (!string.IsNullOrWhiteSpace(gameName))
 		{
-			OutputPath = FFMpegUtils.Instance.CleanupPath(System.IO.Path.Combine(dir, $"{gameName}.mp4"));
+			OutputPath = FFMpegUtils.Instance.CleanupPath(Path.Combine(dir, $"{gameName}.mp4"));
 		}
 		else
 		{
-			OutputPath = FFMpegUtils.Instance.CleanupPath(System.IO.Path.Combine(dir, "combined.mp4"));
+			OutputPath = FFMpegUtils.Instance.CleanupPath(Path.Combine(dir, "combined.mp4"));
 		}
 	}
 	private void UpdateSubtitleFromEventInfoAndDate()
@@ -383,7 +383,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		var fileList = CombineFile.FromFolder(InputPath);
 		if (Directory.Exists(InputPath))
 		{
-			OutputPath = FFMpegUtils.Instance.CleanupPath(System.IO.Path.Combine(InputPath, "combined.mp4"));
+			OutputPath = FFMpegUtils.Instance.CleanupPath(Path.Combine(InputPath, "combined.mp4"));
 		}
 		CanCombine = fileList.Count > 0;
 		InputFiles.Clear();
@@ -447,7 +447,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				}
 				return;
 			}
-			var outputFolder = System.IO.Path.GetDirectoryName(OutputPath) ?? string.Empty;
+			var outputFolder = Path.GetDirectoryName(OutputPath) ?? string.Empty;
 			if (!Directory.Exists(outputFolder))
 			{
 				try
@@ -477,7 +477,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 				}
 				*/
-				return System.IO.Path.GetTempPath();
+				return Path.GetTempPath();
 
 			};
 
@@ -536,7 +536,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				if (!string.IsNullOrWhiteSpace(scanStart))
 				{
 					LoggingLine = "Applying first-file start trim before intro...";
-					var trimmedFirstFile = System.IO.Path.Combine(GetTempPath(), $"first_trim_{Guid.NewGuid():N}.mp4");
+					var trimmedFirstFile = Path.Combine(GetTempPath(), $"first_trim_{Guid.NewGuid():N}.mp4");
 					RunAndLogFFMpeg($"{scanStart} -i \"{firstFile.Path}\" -c copy \"{trimmedFirstFile}\"");
 					if (File.Exists(trimmedFirstFile))
 					{
@@ -546,7 +546,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					}
 				}
 
-				var introFirstFile = System.IO.Path.Combine(GetTempPath(), $"first_intro_{Guid.NewGuid():N}.mp4");
+				var introFirstFile = Path.Combine(GetTempPath(), $"first_intro_{Guid.NewGuid():N}.mp4");
 				await IntroVideoComposerAsync.PrependIntroAsync(
 					introInputFile,
 					effectiveTitle,
@@ -557,7 +557,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					log: (line) => { LoggingLine = line; });
 				if (File.Exists(introFirstFile))
 				{
-					writeFiles[0] = new CombineFile { Name = System.IO.Path.GetFileName(introFirstFile), Path = introFirstFile };
+					writeFiles[0] = new CombineFile { Name = Path.GetFileName(introFirstFile), Path = introFirstFile };
 					tempFilesToDelete.Add(introFirstFile);
 					scanStart = string.Empty;
 				}
@@ -582,7 +582,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			if (!shouldAddIntro)
 			{
 				LoggingLine = "Combining with concat demuxer (no intro)...";
-				var fileList = System.IO.Path.GetTempFileName();
+				var fileList = Path.GetTempFileName();
 				try
 				{
 					File.WriteAllLines(fileList, writeFiles.Select(x => $"file '{x.Path}'"));
@@ -616,8 +616,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 					for (int i = 0; i < writeFiles.Count; i++)
 					{
 						var input = writeFiles[i].Path;
-						LoggingLine = $"Remuxing part {i + 1}/{writeFiles.Count}: {System.IO.Path.GetFileName(input)}";
-						var partTsFile = System.IO.Path.Combine(GetTempPath(), $"combine_part_{Guid.NewGuid():N}.ts");
+						LoggingLine = $"Remuxing part {i + 1}/{writeFiles.Count}: {Path.GetFileName(input)}";
+						var partTsFile = Path.Combine(GetTempPath(), $"combine_part_{Guid.NewGuid():N}.ts");
 						var scanStartPart = i == 0 && !string.IsNullOrWhiteSpace(scanStart) ? $"{scanStart} " : string.Empty;
 						RunAndLogFFMpeg($"-y {scanStartPart}-i \"{input}\" -c copy -bsf:v {videoBsf} -f mpegts \"{partTsFile}\"");
 						if (!File.Exists(partTsFile))
@@ -631,7 +631,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 							continue;
 						}
 
-						var nextMergedTs = System.IO.Path.Combine(GetTempPath(), $"combine_merge_{Guid.NewGuid():N}.ts");
+						var nextMergedTs = Path.Combine(GetTempPath(), $"combine_merge_{Guid.NewGuid():N}.ts");
 						RunAndLogFFMpeg($"-y -i \"concat:{mergedTsFile}|{partTsFile}\" -c copy -f mpegts \"{nextMergedTs}\"");
 						if (File.Exists(nextMergedTs))
 						{
@@ -657,7 +657,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					try
 					{
 						var tempFolder = GetTempPath();
-						if (System.IO.Path.GetDirectoryName(GetTempPath())?.Equals(System.IO.Path.GetDirectoryName(OutputPath)) ?? false)
+						if (Path.GetDirectoryName(GetTempPath())?.Equals(Path.GetDirectoryName(OutputPath)) ?? false)
 						{
 							Directory.Delete(tempFolder, true);
 						}
@@ -674,7 +674,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				}
 			}
 
-			OutputPath = FFMpegUtils.Instance.CleanupPath(System.IO.Path.Combine(InputPath, "combined.mp4"));
+			OutputPath = FFMpegUtils.Instance.CleanupPath(Path.Combine(InputPath, "combined.mp4"));
 			LoggingLine = "Combine complete.";
 		}
 		catch
