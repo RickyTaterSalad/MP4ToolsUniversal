@@ -431,7 +431,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 						{
 							// VAAPI uses -rc_mode for rate control: 2 = CBR, 3 = VBR, 4 = ICQ
 							// Use profile from preset (main, main10, rext)
-							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -rc_mode 3 -c:a {EncoderPresets.EncoderPreset.CA} \"{trimOutputPath}\"";
+							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -rc_mode 3 -c:a {SelectedAudioCodec} \"{trimOutputPath}\"";
 						}
 						else
 						{
@@ -443,7 +443,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 								encOpts += $" -tune:v {EncoderPresets.EncoderPreset.TuneV}";
 							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.RCV))
 								encOpts += $" -rc:v {EncoderPresets.EncoderPreset.RCV}";
-							encOpts += $" -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {EncoderPresets.EncoderPreset.CA}";
+							encOpts += $" -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {SelectedAudioCodec}";
 							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} {encOpts} \"{trimOutputPath}\"";
 						}
 					}

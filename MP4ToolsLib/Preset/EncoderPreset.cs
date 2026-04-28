@@ -84,9 +84,6 @@ namespace MP4ToolsLib.Preset
 	{
 		public abstract string ID { get; }
 		public abstract string CV { get; }
-
-		public virtual string CA { get; } = "copy";
-
 		public virtual string RCV { get; } = "vbr";
 
 		public abstract string BV { get; }

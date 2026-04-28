@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using mp4tools_universal.ViewModels;
 using MP4ToolsLib;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,6 +56,18 @@ namespace MP4Tools
 				SetProperty(ref _canClear, value);
 			}
 		}
+
+		private string _selectedAudioCodec = "copy";
+		public string SelectedAudioCodec
+		{
+			get => _selectedAudioCodec;
+			set
+			{
+				SetProperty(ref _selectedAudioCodec, value);
+			}
+		}
+
+		public IReadOnlyList<string> AvailableAudioCodecs {get;} = new[] { "copy", /*"aac",*/ "libopus" };
 
 		// ====================
 		// METHODS (Bottom)

@@ -586,7 +586,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				try
 				{
 					File.WriteAllLines(fileList, writeFiles.Select(x => $"file '{x.Path}'"));
-					var encodingParms = "-c copy";
+					var encodingParms = $"-c:v copy -c:a {SelectedAudioCodec}";
 					/*
 					if (ReEncodeVideo)
 					{
@@ -649,7 +649,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					if (!string.IsNullOrWhiteSpace(mergedTsFile) && File.Exists(mergedTsFile))
 					{
 						LoggingLine = "Finalizing merged TS into MP4...";
-						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c copy -bsf:a aac_adtstoasc {trimEndPart} \"{combineOutputFile}\"");
+						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c:v copy -c:a {SelectedAudioCodec} -bsf:a aac_adtstoasc {trimEndPart} \"{combineOutputFile}\"");
 					}
 				}
 				finally

@@ -51,7 +51,11 @@
 		<StackPanel Grid.Row="2">
 			<StackPanel Margin="0,0,0,20" VerticalAlignment="Top">
 				<StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-					<StackPanel Orientation="Horizontal" Margin="0,0,30,0">
+				<StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+					<Label Content="Audio" VerticalAlignment="Center"/>
+					<ComboBox ItemsSource="{Binding AvailableAudioCodecs}" MinWidth="90" 
+					SelectedItem="{Binding SelectedAudioCodec}"/>
+					<StackPanel Orientation="Horizontal" Margin="10,0,30,0">
 						<CheckBox IsChecked="{Binding TrimFirstVideo}" Content="Start Video Skip" MinWidth="110" />
 						<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimFirstVideo}" VerticalAlignment="Center" Margin="10,0,0,0">
 							<ComboBox ItemsSource="{Binding StartVideoMinuteRange}" SelectedValue="{Binding StartRange.Minutes}" Width="50"/>
