@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using System;
 
-namespace mp4tools_universal;
+namespace MP4Tools;
 
 sealed class Program
 {

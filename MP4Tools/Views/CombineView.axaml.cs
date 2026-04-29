@@ -2,14 +2,12 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
-using MP4Tools;
-using mp4tools_universal.ViewModels;
+using MP4Tools.ViewModels;
 using MP4ToolsLib;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
-namespace mp4tools_universal.Views;
+namespace MP4Tools.Views;
 
 public partial class CombineView : UserControl
 {
@@ -21,7 +19,7 @@ public partial class CombineView : UserControl
     }
 
 
-	private void OnDragOver(object? sender, DragEventArgs e)
+	private void OnDragOver(object sender, DragEventArgs e)
 	{
 		if (e.DataTransfer.Contains(DataFormat.File))
 		{
@@ -33,7 +31,7 @@ public partial class CombineView : UserControl
 		}
 	}
 
-	private async void OnListBoxItemPointerPressed(object? sender, PointerPressedEventArgs e)
+	private async void OnListBoxItemPointerPressed(object sender, PointerPressedEventArgs e)
 	{
 		if (sender is Control control && control.DataContext is CombineFile data)
 		{
@@ -45,7 +43,7 @@ public partial class CombineView : UserControl
 		}
 	}
 
-	private void OnListBoxItemDragOver(object? sender, DragEventArgs e)
+	private void OnListBoxItemDragOver(object sender, DragEventArgs e)
 	{
 		if (e.DataTransfer.Contains(CombineFileFormat))
 		{
@@ -53,7 +51,7 @@ public partial class CombineView : UserControl
 		}
 	}
 
-	private async void OnListBoxItemDrop(object? sender, DragEventArgs e)
+	private async void OnListBoxItemDrop(object sender, DragEventArgs e)
 	{
 		if (sender is Control control && control.DataContext is CombineFile targetData)
 		{
@@ -69,7 +67,7 @@ public partial class CombineView : UserControl
 		}
 	}
 
-	private void OnDrop(object? sender, DragEventArgs e)
+	private void OnDrop(object sender, DragEventArgs e)
 	{
 		if (e.DataTransfer.Contains(DataFormat.File))
 		{
@@ -89,7 +87,7 @@ public partial class CombineView : UserControl
 		}
 	}
 
-	private async void BrowseButton_OnClick(object? sender, RoutedEventArgs e)
+	private async void BrowseButton_OnClick(object sender, RoutedEventArgs e)
     {
         var topLevel = TopLevel.GetTopLevel(this);
         var folder = await topLevel!.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions

@@ -1,7 +1,6 @@
-﻿using Avalonia.Controls.Shapes;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using mp4tools_universal.ViewModels;
+using MP4Tools.ViewModels;
 using MP4ToolsLib;
 using System;
 using System.Collections.Generic;
@@ -23,11 +22,9 @@ namespace MP4Tools
 		public RelayCommand ClearCommand { get; private set; }
 		public RelayCommand StopCommand { get; private set; }
 
-		[ObservableProperty]
-		private string? _loggingLine;
 
-		private string? _inputPath = string.Empty;
-		public string? InputPath
+		private string _inputPath = string.Empty;
+		public string InputPath
 		{
 			get => _inputPath;
 			set
@@ -84,7 +81,6 @@ namespace MP4Tools
 
 		protected virtual Task Clear()
 		{
-			LoggingLine = null;
 			InputPath = string.Empty;
 			return Task.CompletedTask;
 		}
@@ -135,7 +131,7 @@ namespace MP4Tools
 		}
 
 		[RelayCommand]
-		public virtual void SetFile(string? file)
+		public virtual void SetFile(string file)
 		{
 			InputPath = file ?? string.Empty;
 		}
@@ -170,7 +166,7 @@ namespace MP4Tools
 				|| line.Contains("warning", StringComparison.OrdinalIgnoreCase);
 		}
 
-		private void HandleProcessOutput(Process process, string streamName, string? data)
+		private void HandleProcessOutput(Process process, string streamName, string data)
 		{
 			if (string.IsNullOrWhiteSpace(data))
 			{
@@ -180,7 +176,7 @@ namespace MP4Tools
 			Debug.WriteLine($"[ffmpeg][{streamName}] {data}");
 			if (ShouldReportFfmpegLogLine(data))
 			{
-				LoggingLine = data;
+				Logger.Log(data);
 			}
 		}
 
@@ -190,12 +186,12 @@ namespace MP4Tools
 			try
 			{
 				var workDir = !string.IsNullOrWhiteSpace(workingDirectory) ? workingDirectory : System.IO.Path.GetDirectoryName(InputPath ?? string.Empty) ?? string.Empty;
-				FFMpegUtils.Instance.RunAndLogFFMpeg(args, HandleProcessOutput, (args) => { LoggingLine = args; }, workDir);
+				FFMpegUtils.Instance.RunAndLogFFMpeg(args, HandleProcessOutput, Logger.Log, workDir);
 			}
 			catch (Exception ex)
 			{
 				Debug.WriteLine($"[RunAndLogFFMpeg][Error] {ex}");
-				LoggingLine = $"** Error: {ex.Message} **";
+				Logger.Log($"** Error: {ex.Message} **");
 			}
 			finally
 			{

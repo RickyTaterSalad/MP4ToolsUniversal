@@ -3,14 +3,14 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using MP4Tools;
-using mp4tools_universal.ViewModels;
+using MP4Tools.ViewModels;
 using MP4ToolsLib;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace mp4tools_universal.Views;
+namespace MP4Tools.Views;
 
 public partial class TrimView : UserControl
 {
@@ -20,7 +20,7 @@ public partial class TrimView : UserControl
 	{
 		InitializeComponent();
 	}
-	private async void ImportButton_OnClick(object? sender, RoutedEventArgs e)
+	private async void ImportButton_OnClick(object sender, RoutedEventArgs e)
 	{
 		var topLevel = TopLevel.GetTopLevel(this);
 		var file = await topLevel!.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
@@ -43,7 +43,7 @@ public partial class TrimView : UserControl
 		}
 
 	}
-	private async void ExportButton_OnClick(object? sender, RoutedEventArgs e)
+	private async void ExportButton_OnClick(object sender, RoutedEventArgs e)
 
 	{
 
@@ -67,7 +67,7 @@ public partial class TrimView : UserControl
 		}
 	}
 
-	private void OnDragOver(object? sender, DragEventArgs e)
+	private void OnDragOver(object sender, DragEventArgs e)
 	{
 		if (e.DataTransfer.Contains(DataFormat.File))
 		{
@@ -79,7 +79,7 @@ public partial class TrimView : UserControl
 		}
 	}
 
-	private async void OnListBoxItemPointerPressed(object? sender, PointerPressedEventArgs e)
+	private async void OnListBoxItemPointerPressed(object sender, PointerPressedEventArgs e)
 	{
 		if (sender is Control control && control.DataContext is StartStopRange data)
 		{
@@ -91,7 +91,7 @@ public partial class TrimView : UserControl
 		}
 	}
 
-	private void OnListBoxItemDragOver(object? sender, DragEventArgs e)
+	private void OnListBoxItemDragOver(object sender, DragEventArgs e)
 	{
 		if (e.DataTransfer.Contains(StartStopRangeFormat))
 		{
@@ -99,7 +99,7 @@ public partial class TrimView : UserControl
 		}
 	}
 
-	private async void OnListBoxItemDrop(object? sender, DragEventArgs e)
+	private async void OnListBoxItemDrop(object sender, DragEventArgs e)
 	{
 		if (sender is Control control && control.DataContext is StartStopRange targetData)
 		{
@@ -115,7 +115,7 @@ public partial class TrimView : UserControl
 		}
 	}
 
-	private void OnDrop(object? sender, DragEventArgs e)
+	private void OnDrop(object sender, DragEventArgs e)
 	{
 		if (e.DataTransfer.Contains(DataFormat.File))
 		{
@@ -135,7 +135,7 @@ public partial class TrimView : UserControl
 		}
 	}
 
-	private async void BrowseButton_OnClick(object? sender, RoutedEventArgs e)
+	private async void BrowseButton_OnClick(object sender, RoutedEventArgs e)
 	{
 		var topLevel = TopLevel.GetTopLevel(this);
 		var file = await topLevel!.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions

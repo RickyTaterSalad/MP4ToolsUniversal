@@ -4,10 +4,10 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
-using mp4tools_universal.ViewModels;
-using mp4tools_universal.Views;
+using MP4Tools.ViewModels;
+using MP4Tools.Views;
 
-namespace mp4tools_universal;
+namespace MP4Tools;
 
 public partial class App : Application
 {

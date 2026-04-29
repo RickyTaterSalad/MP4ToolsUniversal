@@ -10,7 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace mp4tools_universal.ViewModels;
+namespace MP4Tools.ViewModels;
 
 public partial class CombineViewModel : MP4ViewModelBase
 {
@@ -22,17 +22,17 @@ public partial class CombineViewModel : MP4ViewModelBase
 		private int _introDurationSeconds = 10;
 
 		[ObservableProperty]
-		private string? _introTitle;
+		private string _introTitle;
 		[ObservableProperty]
-		private string? _introDetails;
+		private string _introDetails;
 		[ObservableProperty]
-		private string? _introSubtitle;
+		private string _introSubtitle;
 
 		[ObservableProperty]
-		private string? _outputPath;
-		private string? _homeName;
+		private string _outputPath;
+		private string _homeName;
 
-				public string? HomeName
+				public string HomeName
 		{
 			get => _homeName;
 			set
@@ -45,11 +45,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 
 
-		private string? _visitorName;
+		private string _visitorName;
 
 		
 
-		public string? VisitorName
+		public string VisitorName
 		{
 			get => _visitorName;
 			set
@@ -62,7 +62,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 
 		[ObservableProperty]
-		private string? _folderPath;
+		private string _folderPath;
 
 		[ObservableProperty]
 		private bool _trimFirstVideo;
@@ -76,8 +76,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 		[ObservableProperty]
 		private TimeRange _endRange  = new TimeRange();
 
-	private CombineFile? _selectedInputFile;
-	public CombineFile? SelectedInputFile
+	private CombineFile _selectedInputFile;
+	public CombineFile SelectedInputFile
 	{
 		get => _selectedInputFile;
 		set
@@ -196,7 +196,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 	}
 
 
-	private List<int>? _startVideoSecondRange;
+	private List<int> _startVideoSecondRange;
 	public IReadOnlyList<int> StartVideoSecondRange
 	{
 		get
@@ -213,7 +213,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 	}
 
-	private List<int>? _startVideoMinuteRange;
+	private List<int> _startVideoMinuteRange;
 	public IReadOnlyList<int> StartVideoMinuteRange
 	{
 		get
@@ -230,7 +230,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 	}
 
-	private List<int>? _endVideoMinuteRange;
+	private List<int> _endVideoMinuteRange;
 	public IReadOnlyList<int> EndVideoMinuteRange
 	{
 		get
@@ -246,7 +246,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			SetProperty(ref _endVideoMinuteRange, (List<int>)value);
 		}
 	}
-	private List<int>? _endVideoSecondRange;
+	private List<int> _endVideoSecondRange;
 	public IReadOnlyList<int> EndVideoSecondRange
 	{
 		get
@@ -428,10 +428,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 		CanCombine = false;
 		try
 		{
-			LoggingLine = "Starting combine...";
+			Logger.Log("Starting combine...");
 			if (InputPath == null)
 			{
-				LoggingLine = "Input path is null.";
+				Logger.Log("Input path is null.");
 				return;
 			}
 			OutputPath = FFMpegUtils.Instance.CleanupPath(OutputPath);
@@ -439,11 +439,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 			{
 				if (File.Exists(OutputPath))
 				{
-					LoggingLine = $"Output Already Exists: {OutputPath}";
+					Logger.Log($"Output Already Exists: {OutputPath}");
 				}
 				else
 				{
-					LoggingLine = "No input files to combine.";
+					Logger.Log("No input files to combine.");
 				}
 				return;
 			}
@@ -457,7 +457,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				}
 				catch
 				{
-					LoggingLine = $"Failed to create output folder: {outputFolder}";
+					Logger.Log($"Failed to create output folder: {outputFolder}");
 					return;
 				}
 			}
@@ -481,15 +481,15 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			};
 
-			LoggingLine ="Preparing input files...";
+			Logger.Log("Preparing input files...");
 			var writeFiles = new List<CombineFile>();
 			writeFiles.AddRange(InputFiles);
-			LoggingLine = $"Prepared {writeFiles.Count} files.";
+			Logger.Log($"Prepared {writeFiles.Count} files.");
 
 			int totalDurationSeconds = 0;
 			double dblTotalDuration = 0;
 			var videoDurations = new Dictionary<string, TimeRange>();
-			LoggingLine = "Reading input durations...";
+			Logger.Log("Reading input durations...");
 			foreach (var file in writeFiles)
 			{
 				try
@@ -516,7 +516,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			if (shouldAddIntro && writeFiles.Count > 0)
 			{
-				LoggingLine = "Building intro clip...";
+				Logger.Log("Building intro clip...");
 				var effectiveTitle = IntroTitle?.Trim() ?? string.Empty;
 				var effectiveSubtitle = IntroSubtitle?.Trim() ?? string.Empty;
 				var effectiveDetails = IntroDetails?.Trim() ?? string.Empty;
@@ -535,7 +535,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				var introInputFile = firstFile.Path;
 				if (!string.IsNullOrWhiteSpace(scanStart))
 				{
-					LoggingLine = "Applying first-file start trim before intro...";
+					Logger.Log("Applying first-file start trim before intro...");
 					var trimmedFirstFile = Path.Combine(GetTempPath(), $"first_trim_{Guid.NewGuid():N}.mp4");
 					RunAndLogFFMpeg($"{scanStart} -i \"{firstFile.Path}\" -c copy \"{trimmedFirstFile}\"");
 					if (File.Exists(trimmedFirstFile))
@@ -554,7 +554,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					introFirstFile,
 					IntroDurationSeconds,
 					detailsText: effectiveDetails,
-					log: (line) => { LoggingLine = line; });
+					log: Logger.Log);
 				if (File.Exists(introFirstFile))
 				{
 					writeFiles[0] = new CombineFile { Name = Path.GetFileName(introFirstFile), Path = introFirstFile };
@@ -566,7 +566,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			var trimEndPart = string.Empty;
 			if (TrimLastVideo)
 			{
-				LoggingLine = "Applying end-duration trim...";
+				Logger.Log("Applying end-duration trim...");
 				if (videoDurations.TryGetValue(writeFiles.LastOrDefault()?.Path ?? string.Empty, out var lastVideoTimeSpan))
 				{
 					var finalVideoDuration = new TimeSpan(lastVideoTimeSpan.Hours, lastVideoTimeSpan.Minutes, lastVideoTimeSpan.Seconds);
@@ -581,7 +581,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			if (!shouldAddIntro)
 			{
-				LoggingLine = "Combining with concat demuxer (no intro)...";
+				Logger.Log("Combining with concat demuxer (no intro)...");
 				var fileList = Path.GetTempFileName();
 				try
 				{
@@ -606,8 +606,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 			}
 			else
 			{
-				LoggingLine = "Combining with incremental TS merge (intro enabled)...";
-				string? mergedTsFile = null;
+				Logger.Log("Combining with incremental TS merge (intro enabled)...");
+				string mergedTsFile = null;
 				try
 				{
 					var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(writeFiles.FirstOrDefault()?.Path ?? string.Empty);
@@ -616,7 +616,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					for (int i = 0; i < writeFiles.Count; i++)
 					{
 						var input = writeFiles[i].Path;
-						LoggingLine = $"Remuxing part {i + 1}/{writeFiles.Count}: {Path.GetFileName(input)}";
+						Logger.Log($"Remuxing part {i + 1}/{writeFiles.Count}: {Path.GetFileName(input)}");
 						var partTsFile = Path.Combine(GetTempPath(), $"combine_part_{Guid.NewGuid():N}.ts");
 						var scanStartPart = i == 0 && !string.IsNullOrWhiteSpace(scanStart) ? $"{scanStart} " : string.Empty;
 						RunAndLogFFMpeg($"-y {scanStartPart}-i \"{input}\" -c copy -bsf:v {videoBsf} -f mpegts \"{partTsFile}\"");
@@ -648,7 +648,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 					if (!string.IsNullOrWhiteSpace(mergedTsFile) && File.Exists(mergedTsFile))
 					{
-						LoggingLine = "Finalizing merged TS into MP4...";
+						Logger.Log("Finalizing merged TS into MP4...");
 						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c:v copy -c:a {SelectedAudioCodec} -bsf:a aac_adtstoasc {trimEndPart} \"{combineOutputFile}\"");
 					}
 				}
@@ -669,17 +669,17 @@ public partial class CombineViewModel : MP4ViewModelBase
 					}
 					catch (Exception e)
 					{
-						LoggingLine = e.Message;
+						Logger.Log(e.Message);
 					}
 				}
 			}
 
 			OutputPath = FFMpegUtils.Instance.CleanupPath(Path.Combine(InputPath, "combined.mp4"));
-			LoggingLine = "Combine complete.";
+			Logger.Log("Combine complete.");
 		}
 		catch
 		{
-			LoggingLine = "Combine failed.";
+			Logger.Log("Combine failed.");
 		}
 		finally
 		{

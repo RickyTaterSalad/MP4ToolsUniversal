@@ -1,12 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui"
 			 xmlns:mlib="using:MP4ToolsLib"
-			 xmlns:vm="using:mp4tools_universal.ViewModels"
+			 xmlns:vm="using:MP4Tools.ViewModels"
        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-       x:Class="mp4tools_universal.Views.TrimView"
+       x:Class="MP4Tools.Views.TrimView"
 			 x:DataType="vm:TrimViewModel">
 	<Grid DragDrop.AllowDrop="True"
 		 Background="Transparent"
@@ -149,9 +149,6 @@
 			<Label Content="Out Folder" Grid.Row="0" Margin="0,10,0,5"/>
 			<TextBox PlaceholderText="Output Folder" Text="{Binding OutputFolderName}" Grid.Row="1" HorizontalAlignment="Stretch"/>
 		</StackPanel>
-		<Grid Grid.Row="4" Grid.ColumnSpan="3" MinHeight="30" Margin="0,0,0,20">
-			<Label Content="{Binding LoggingLine}" FontFamily="Consolas" FontSize="13"/>
-		</Grid>
 		<StackPanel Orientation="Horizontal" Grid.Row="5" HorizontalAlignment="Left">
 			<Button Command="{Binding StopCommand}" Padding="4" IsEnabled="{Binding CanStop}" Margin="0,0,5,0">
 				<Button.Content>

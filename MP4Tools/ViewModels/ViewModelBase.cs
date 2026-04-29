@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace mp4tools_universal.ViewModels;
+namespace MP4Tools.ViewModels;
 
 public abstract class ViewModelBase : ObservableObject
 {

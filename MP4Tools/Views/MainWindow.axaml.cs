@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace mp4tools_universal.Views;
+namespace MP4Tools.Views;
 
 public partial class MainWindow : Window
 {

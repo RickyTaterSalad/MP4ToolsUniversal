@@ -11,18 +11,18 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace mp4tools_universal.ViewModels;
+namespace MP4Tools.ViewModels;
 
 internal class ExportTrimState
 {
 
 	public List<StartStopRange> StartStopRanges { get; set; } = new List<StartStopRange>();
-	public string? InputFile { get; set; }
+	public string InputFile { get; set; }
 
-	public string? OutputFolderName { get; set; }
-	public string? IntroTitle { get; set; }
-	public string? IntroSubtitle { get; set; }
-	public string? IntroDetails { get; set; }
+	public string OutputFolderName { get; set; }
+	public string IntroTitle { get; set; }
+	public string IntroSubtitle { get; set; }
+	public string IntroDetails { get; set; }
 	public int? IntroDurationSeconds { get; set; }
 }
 
@@ -35,8 +35,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 	public ObservableCollection<StartStopRange> TrimRanges { get; set; }
 
-	private StartStopRange? _selectedStartStopRange;
-	public StartStopRange? SelectedStartStopRange
+	private StartStopRange _selectedStartStopRange;
+	public StartStopRange SelectedStartStopRange
 	{
 		get => _selectedStartStopRange;
 		set
@@ -47,7 +47,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 	}
 	public bool IsHoursRangeEnabled => VideoHourRange.Count > 1;
 
-	private List<int>? _videoHourRange;
+	private List<int> _videoHourRange;
 
 	public IReadOnlyList<int> VideoHourRange
 	{
@@ -61,11 +61,11 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 		set
 		{
-			SetProperty(ref _videoHourRange, (List<int>?)value);
+			SetProperty(ref _videoHourRange, (List<int>)value);
 			OnPropertyChanged(nameof(IsHoursRangeEnabled));
 		}
 	}
-	private List<int>? _videMinuteRange;
+	private List<int> _videMinuteRange;
 
 	public IReadOnlyList<int> VideoMinuteRange
 	{
@@ -79,7 +79,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 		set
 		{
-			SetProperty(ref _videMinuteRange, (List<int>?)value);
+			SetProperty(ref _videMinuteRange, (List<int>)value);
 		}
 	}
 
@@ -131,8 +131,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 			}
 		}
 	}
-	private string? _rangeLabel;
-	public string? RangeLabel
+	private string _rangeLabel;
+	public string RangeLabel
 	{
 		get => _rangeLabel;
 		set => SetProperty(ref _rangeLabel, value);
@@ -254,12 +254,12 @@ public partial class TrimViewModel : MP4ViewModelBase
 		{
 			Directory.CreateDirectory(outTrimmedFolder);
 		}
-		LoggingLine = "Starting trim and combine...";
+		Logger.Log("Starting trim and combine...");
 		CanTrim = false;
 		List<string> outputPaths = new List<string>();
 		foreach (var trim in validRanges)
 		{
-			LoggingLine = $"Trimming range: {trim.StartRange} - {trim.EndRange}";
+			Logger.Log($"Trimming range: {trim.StartRange} - {trim.EndRange}");
 			outputPaths.Add(await TrimRangeAsync(trim, outTrimmedFolder, forceReencode: true));
 		}
 
@@ -267,7 +267,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		var shouldAddIntro = !string.IsNullOrWhiteSpace(IntroTitle) || !string.IsNullOrWhiteSpace(IntroSubtitle) || !string.IsNullOrWhiteSpace(IntroDetails);
 		if (shouldAddIntro && outputPaths.Count > 0)
 		{
-			LoggingLine = "Adding intro to first trimmed segment...";
+			Logger.Log("Adding intro to first trimmed segment...");
 			var effectiveTitle = IntroTitle?.Trim() ?? string.Empty;
 			var effectiveSubtitle = IntroSubtitle?.Trim() ?? string.Empty;
 			var effectiveDetails = IntroDetails?.Trim() ?? string.Empty;
@@ -290,7 +290,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				introFirstFile,
 				IntroDurationSeconds,
 				detailsText: effectiveDetails,
-				log: (line) => { LoggingLine = line; });
+				log: Logger.Log);
 			if (File.Exists(introFirstFile))
 			{
 				outputPaths[0] = introFirstFile;
@@ -302,25 +302,25 @@ public partial class TrimViewModel : MP4ViewModelBase
 		WriteTrimExport(finalCombinedPath);
 		if (outputPaths.Count == 1)
 		{
-			LoggingLine = "Only one trimmed output. Copying to final output...";
+			Logger.Log("Only one trimmed output. Copying to final output...");
 			try
 			{
 				if (File.Exists(outputPaths[0]))
 				{
 					File.Copy(outputPaths[0], finalCombinedPath, overwrite: true);
-					LoggingLine = "Final Output:";
-					LoggingLine = finalCombinedPath;
+					Logger.Log("Final Output:");
+					Logger.Log(finalCombinedPath);
 				}
 			}
 			catch (Exception ex)
 			{
 				Debug.WriteLine($"[TrimAndCombineAsync][SingleOutputCopyError] {ex}");
-				LoggingLine = $"Copy Error: {ex.Message}";
+				Logger.Log($"Copy Error: {ex.Message}");
 			}
 		}
 		else if (outputPaths.Count > 1)
 		{
-			LoggingLine = "Combining trimmed files...";
+			Logger.Log("Combining trimmed files...");
 
 			var tempTsFiles = new List<string>();
 			var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(outputPaths.FirstOrDefault() ?? string.Empty);
@@ -328,7 +328,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 			foreach (var input in outputPaths)
 			{
-				LoggingLine = $"Remuxing trimmed segment to TS: {Path.GetFileName(input)}";
+				Logger.Log($"Remuxing trimmed segment to TS: {Path.GetFileName(input)}");
 				var tsFile = Path.Combine(Path.GetTempPath(), $"trim_part_{Guid.NewGuid():N}.ts");
 				RunAndLogFFMpeg($"-y -i \"{input}\" -c copy -bsf:v {videoBsf} -f mpegts \"{tsFile}\"");
 				if (File.Exists(tsFile))
@@ -339,7 +339,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 			if (tempTsFiles.Count > 1)
 			{
-				LoggingLine = "Concatenating TS segments...";
+				Logger.Log("Concatenating TS segments...");
 				var concatInput = string.Join("|", tempTsFiles);
 				RunAndLogFFMpeg($"-y -i \"concat:{concatInput}\" -c copy -bsf:a aac_adtstoasc \"{finalCombinedPath}\"");
 			}
@@ -359,9 +359,9 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 			}
 
-			LoggingLine = "Completed combining trimmed files.";
-			LoggingLine = "Final Output:";
-			LoggingLine = finalCombinedPath;
+			Logger.Log("Completed combining trimmed files.");
+			Logger.Log("Final Output:");
+			Logger.Log(finalCombinedPath);
 		}
 
 		try
@@ -380,7 +380,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 		CanTrim = true;
 		ClearTimeRanges();
-		LoggingLine = "Trim and combine complete.";
+		Logger.Log("Trim and combine complete.");
 	}
 
 	private async Task<string> TrimRangeAsync(StartStopRange range, string outFolder, bool forceReencode = false)
@@ -455,8 +455,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 				{
 					if (File.Exists(trimOutputPath))
 					{
-						LoggingLine = $"Output Already Exists: {trimOutputPath}";
-						LoggingLine = "Stopping....";
+						Logger.Log($"Output Already Exists: {trimOutputPath}");
+						Logger.Log("Stopping....");
 					}
 				}
 			}
@@ -479,7 +479,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		{
 			return;
 		}
-		LoggingLine = "Starting trim only...";
+		Logger.Log("Starting trim only...");
 		CanTrim = false;
 		var outFolder = Path.GetDirectoryName(InputPath) ?? string.Empty;
 		var outTrimmedFolder = Path.Combine(outFolder, OutputFolderName);
@@ -487,19 +487,19 @@ public partial class TrimViewModel : MP4ViewModelBase
 		{
 			Directory.CreateDirectory(outTrimmedFolder);
 		}
-		LoggingLine = $"Output folder: {outTrimmedFolder}";
+		Logger.Log($"Output folder: {outTrimmedFolder}");
 		var outExportName = System.IO.Path.ChangeExtension(Path.GetFileName(InputPath), ".json");
 		var path = FFMpegUtils.Instance.CleanupPath(Path.Combine(outFolder, outExportName));
 		WriteTrimExport(path);
-		LoggingLine = $"Exported trim state: {path}";
+		Logger.Log($"Exported trim state: {path}");
 		foreach (var trim in validRanges)
 		{
-			LoggingLine = $"Trimming range: {trim.StartRange} - {trim.EndRange}";
+			Logger.Log($"Trimming range: {trim.StartRange} - {trim.EndRange}");
 			await TrimRangeAsync(trim, outTrimmedFolder);
 		}
 		CanTrim = true;
 		ClearTimeRanges();
-		LoggingLine = "Trim complete.";
+		Logger.Log("Trim complete.");
 	}
 
 	private void WriteTrimExport(string exportFile)
@@ -552,7 +552,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		var durationSeconds = _inputDuration.TotalSeconds;
 		if (endSeconds > durationSeconds)
 		{
-			LoggingLine = "End seconds is longer than video duration";
+			Logger.Log("End seconds is longer than video duration");
 		}
 		return startSeconds >= 0 && endSeconds > startSeconds && endSeconds <= durationSeconds;
 	}
@@ -610,7 +610,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			catch (Exception e)
 			{
 				Debug.WriteLine($"[ImportTrimFile][Error] {e}");
-				LoggingLine = $"Import Error: {e.Message}";
+				Logger.Log($"Import Error: {e.Message}");
 			}
 		}
 	}
@@ -692,7 +692,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		catch (Exception ex)
 		{
 			Debug.WriteLine($"[ReadFileInfo][Error] {ex}");
-			LoggingLine = $"Read File Info Error: {ex.Message}";
+			Logger.Log($"Read File Info Error: {ex.Message}");
 		}
 		finally
 		{
