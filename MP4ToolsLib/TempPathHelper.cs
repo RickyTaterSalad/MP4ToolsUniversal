@@ -1,3 +1,4 @@
+
 using System;
 using System.IO;
 
@@ -19,7 +20,18 @@ namespace MP4ToolsLib
         private static string GetTempPathInternal()
         {
             // Check for custom environment variable first
-            string? customTemp =  "/opt/Encodes/tmp"; //Environment.GetEnvironmentVariable("MP4TOOLS_TEMP");
+            string customTemp =  "/opt/Encodes/tmp"; //Environment.GetEnvironmentVariable("MP4TOOLS_TEMP");
+
+            if (!Directory.Exists(customTemp))
+            {
+                try{
+                    Directory.CreateDirectory(customTemp);
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"Failed to create custom temp directory: {ex.Message}");
+                }
+            }
             if (!string.IsNullOrEmpty(customTemp) && Directory.Exists(customTemp))
             {
                 return customTemp;
