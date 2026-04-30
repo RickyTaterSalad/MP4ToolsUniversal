@@ -342,6 +342,7 @@ namespace MP4ToolsLib
 			Log ??= (s => Debug.WriteLine(s));
 			args = ApplyForcedFfmpegArgs(args);
 
+			Log($"Prepared ffmpeg args: {args}");
 			var psi = new ProcessStartInfo
 			{
 				FileName = FFPMEG_EXE,

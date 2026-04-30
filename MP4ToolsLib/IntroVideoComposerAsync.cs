@@ -59,9 +59,9 @@ namespace MP4ToolsLib
             if (!File.Exists(inputPath)) 
                 throw new FileNotFoundException(inputPath);
 
-            string introMp4 = Path.Combine(Path.GetTempPath(), $"intro_{Guid.NewGuid():N}.mp4");
-            string introTs = Path.Combine(Path.GetTempPath(), $"intro_{Guid.NewGuid():N}.ts");
-            string inputTs = Path.Combine(Path.GetTempPath(), $"input_{Guid.NewGuid():N}.ts");
+            string introMp4 = Path.Combine(TempPathHelper.GetTempPath(), $"intro_{Guid.NewGuid():N}.mp4");
+            string introTs = Path.Combine(TempPathHelper.GetTempPath(), $"intro_{Guid.NewGuid():N}.ts");
+            string inputTs = Path.Combine(TempPathHelper.GetTempPath(), $"input_{Guid.NewGuid():N}.ts");
 
             try
             {

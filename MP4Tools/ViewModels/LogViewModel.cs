@@ -9,6 +9,7 @@ namespace MP4Tools.ViewModels
     {
         private ObservableCollection<string> _logEntries;
         private string _logText;
+        private readonly int _maxLogEntries;
 
 
         public RelayCommand ClearLogCommand { get; private set; }
@@ -26,6 +27,7 @@ namespace MP4Tools.ViewModels
 
         public LogViewModel()
         {
+            _maxLogEntries = GetConfiguredLogMaxLines();
             LogEntries = new ObservableCollection<string>();
             ClearLogCommand = new RelayCommand(ClearLog);   
             // Subscribe to the static logging event
@@ -38,8 +40,24 @@ namespace MP4Tools.ViewModels
             Dispatcher.UIThread.InvokeAsync(() =>
             {
                 LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] {message}");
+                TrimOldEntries();
             });
         }
+
+        private void TrimOldEntries()
+        {
+            if (LogEntries.Count <= _maxLogEntries)
+            {
+                return;
+            }
+
+            var entriesToRemove = LogEntries.Count - _maxLogEntries;
+            for (int i = 0; i < entriesToRemove; i++)
+            {
+                LogEntries.RemoveAt(0);
+            }
+        }
+
         public void ClearLog()
         {
             LogEntries.Clear();

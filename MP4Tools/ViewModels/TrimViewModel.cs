@@ -282,7 +282,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				effectiveDetails = string.Empty;
 			}
 
-			var introFirstFile = Path.Combine(Path.GetTempPath(), $"first_trim_intro_{Guid.NewGuid():N}.mp4");
+			var introFirstFile = Path.Combine(TempPathHelper.GetTempPath(), $"first_trim_intro_{Guid.NewGuid():N}.mp4");
 			await IntroVideoComposerAsync.PrependIntroAsync(
 				outputPaths[0],
 				effectiveTitle,
@@ -329,7 +329,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			foreach (var input in outputPaths)
 			{
 				Logger.Log($"Remuxing trimmed segment to TS: {Path.GetFileName(input)}");
-				var tsFile = Path.Combine(Path.GetTempPath(), $"trim_part_{Guid.NewGuid():N}.ts");
+				var tsFile = Path.Combine(TempPathHelper.GetTempPath(), $"trim_part_{Guid.NewGuid():N}.ts");
 				RunAndLogFFMpeg($"-y -i \"{input}\" -c copy -bsf:v {videoBsf} -f mpegts \"{tsFile}\"");
 				if (File.Exists(tsFile))
 				{
@@ -535,7 +535,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		{
 			//
 		}
-		return System.IO.Path.GetTempFileName();
+		return TempPathHelper.GetTempFileName();
 	}
 	private bool IsRangeWithinInputBounds(StartStopRange range)
 	{

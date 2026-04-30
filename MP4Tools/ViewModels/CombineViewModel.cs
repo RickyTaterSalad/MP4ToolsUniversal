@@ -477,7 +477,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 				}
 				*/
-				return Path.GetTempPath();
+				return TempPathHelper.GetTempPath();
 
 			};
 
@@ -582,7 +582,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			if (!shouldAddIntro)
 			{
 				Logger.Log("Combining with concat demuxer (no intro)...");
-				var fileList = Path.GetTempFileName();
+				var fileList = TempPathHelper.GetTempFileName();
 				try
 				{
 					File.WriteAllLines(fileList, writeFiles.Select(x => $"file '{x.Path}'"));
@@ -594,6 +594,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 					}
 					*/
 					RunAndLogFFMpeg($"{scanStart} -f concat -safe 0 -i \"{fileList}\" {trimEndPart} {encodingParms} \"{combineOutputFile}\"");
+				}
+				catch(Exception e)
+				{
+					Logger.Log($"Error during combine: {e.Message}");
 				}
 				finally
 				{
@@ -651,6 +655,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 						Logger.Log("Finalizing merged TS into MP4...");
 						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c:v copy -c:a {SelectedAudioCodec} -bsf:a aac_adtstoasc {trimEndPart} \"{combineOutputFile}\"");
 					}
+				}	
+				catch(Exception e)
+				{
+					Logger.Log($"Error during combine: {e.Message}");
 				}
 				finally
 				{
