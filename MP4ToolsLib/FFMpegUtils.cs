@@ -347,11 +347,11 @@ namespace MP4ToolsLib
 			{
 				FileName = FFPMEG_EXE,
 				Arguments = args,
-				CreateNoWindow = true,
+				//CreateNoWindow = true,
 				WindowStyle = ProcessWindowStyle.Hidden,
-				UseShellExecute = false,
-				RedirectStandardError = true,
-				RedirectStandardOutput = true,
+				UseShellExecute = true,
+				//RedirectStandardError = true,
+				//RedirectStandardOutput = true,
 				WorkingDirectory = workingDirectory
 			};
 
@@ -360,10 +360,10 @@ namespace MP4ToolsLib
 			using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
 			if (ProcessOutputAction != null)
 			{
-				onErr = (a, b) => ProcessOutputAction(process, "stderr", b?.Data);
-				onOut = (a, b) => ProcessOutputAction(process, "stdout", b?.Data);
-				process.ErrorDataReceived += onErr;
-				process.OutputDataReceived += onOut;
+				//onErr = (a, b) => ProcessOutputAction(process, "stderr", b?.Data);
+			//	onOut = (a, b) => ProcessOutputAction(process, "stdout", b?.Data);
+			//	process.ErrorDataReceived += onErr;
+				//process.OutputDataReceived += onOut;
 			}
 
 			try

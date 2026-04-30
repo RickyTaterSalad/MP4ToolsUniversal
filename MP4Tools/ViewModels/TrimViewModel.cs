@@ -428,10 +428,18 @@ public partial class TrimViewModel : MP4ViewModelBase
 								vfArg = $"-vf {drawTextString}";
 							}
 						}
+						else
+						{
+							if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
+							{
+								vfArg = $"-vf format=nv12,hwupload";
+							}
+						}
 						if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
 						{
 							// VAAPI uses -rc_mode for rate control: 2 = CBR, 3 = VBR, 4 = ICQ
 							// Use profile from preset (main, main10, rext)
+							//args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -rc_mode 3 -c:a {SelectedAudioCodec} \"{trimOutputPath}\"";
 							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -rc_mode 3 -c:a {SelectedAudioCodec} \"{trimOutputPath}\"";
 						}
 						else
