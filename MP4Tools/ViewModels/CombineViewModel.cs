@@ -709,6 +709,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				try
 				{
 					var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(writeFiles.FirstOrDefault()?.Path ?? string.Empty);
+					//var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb,h265_metadata=audit_packet=1" : "h264_mp4toannexb,h264_metadata=audit_packet=1";
 					var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb" : "h264_mp4toannexb";
 
 					for (int i = 0; i < writeFiles.Count; i++)
@@ -730,7 +731,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 						}
 
 						var nextMergedTs = Path.Combine(GetTempPath(), $"combine_merge_{Guid.NewGuid():N}.ts");
-						RunAndLogFFMpeg($"-y -i \"concat:{mergedTsFile}|{partTsFile}\" -c copy -f mpegts \"{nextMergedTs}\"");
+						RunAndLogFFMpeg($"-y -i \"concat:{mergedTsFile}|{partTsFile}\" -c copy -bsf:v {videoBsf} -f mpegts \"{nextMergedTs}\"");
 						if (File.Exists(nextMergedTs))
 						{
 							FileUtils.TryDeleteFile(mergedTsFile);
@@ -747,7 +748,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					if (!string.IsNullOrWhiteSpace(mergedTsFile) && File.Exists(mergedTsFile))
 					{
 						Logger.Log("Finalizing merged TS into MP4...");
-						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c:v copy -c:a {SelectedAudioCodec} -bsf:a aac_adtstoasc {trimEndPart} \"{combineOutputFile}\"");
+						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c:v copy -c:a {SelectedAudioCodec} -bsf:v {videoBsf} -bsf:a aac_adtstoasc {trimEndPart} -movflags +faststart \"{combineOutputFile}\"");
 					}
 				}
 				catch (Exception e)

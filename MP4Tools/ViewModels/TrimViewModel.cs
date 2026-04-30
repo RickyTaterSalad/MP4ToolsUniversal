@@ -233,7 +233,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 	protected override async void OnInputPathSet()
 	{
-		_ = Task.Run(async () => {
+		_ = Task.Run(async () =>
+		{
 			await ReadInputVideoBitDepthAsync();
 			await Task.Run(ReadFileInfoAsync);
 		});
@@ -376,7 +377,9 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 			var tempTsFiles = new List<string>();
 			var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(outputPaths.FirstOrDefault() ?? string.Empty);
+			//var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb,h265_metadata=audit_packet=1" : "h264_mp4toannexb,h264_metadata=audit_packet=1";
 			var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb" : "h264_mp4toannexb";
+
 
 			foreach (var input in outputPaths)
 			{

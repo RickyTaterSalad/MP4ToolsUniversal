@@ -288,20 +288,21 @@ namespace MP4ToolsLib
 
 		}
 
-		public Task<string> RunCaptureFFMpegAsync(string args, CancellationToken ct, Action<string> onErr = null)
+		public Task<string> RunCaptureFFMpegAsync(string args, CancellationToken ct, Action<string> Log = null)
 		{
-			return RunCaptureAsync(FFPMEG_EXE, args, ct, onErr);
+			return RunCaptureAsync(FFPMEG_EXE, args, ct, Log);
 		}
 
-		public Task<string> RunCaptureFFProbeAsync(string args, CancellationToken ct, Action<string> onErr = null)
+		public Task<string> RunCaptureFFProbeAsync(string args, CancellationToken ct, Action<string> Log = null)
 		{
-			return RunCaptureAsync(FFPROBE_EXE, args, ct, onErr);
+			return RunCaptureAsync(FFPROBE_EXE, args, ct, Log);
 		}
 
-		public async Task<string> RunCaptureAsync(string exe, string args, CancellationToken ct, Action<string> onErr = null)
+		public async Task<string> RunCaptureAsync(string exe, string args, CancellationToken ct, Action<string> Log = null)
 		{
 			var psi = new ProcessStartInfo(exe, args)
 			{
+				WindowStyle = ProcessWindowStyle.Hidden,
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,
@@ -309,7 +310,7 @@ namespace MP4ToolsLib
 			};
 
 			using var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
-			p.ErrorDataReceived += (_, e) => { if (e.Data != null) onErr?.Invoke(e.Data); };
+			p.ErrorDataReceived += (_, e) => { if (e.Data != null) Log?.Invoke(e.Data); };
 
 			if (!p.Start()) throw new InvalidOperationException($"Failed to start: {exe}");
 			p.BeginErrorReadLine();
@@ -319,6 +320,11 @@ namespace MP4ToolsLib
 
 			try
 			{
+				Debug.WriteLine($"[RunAndLogProcessEx] FileName: {psi.FileName}");
+				Debug.WriteLine($"[RunAndLogProcessEx] Arguments: {psi.Arguments}");
+				Debug.WriteLine($"[RunAndLogProcessEx] WorkingDirectory: {psi.WorkingDirectory}");
+
+				Log($"{psi.FileName} ({psi.WorkingDirectory}): {psi.Arguments}");
 				var stdoutTask = p.StandardOutput.ReadToEndAsync(timeoutCts.Token);
 				await p.WaitForExitAsync(timeoutCts.Token);
 				string stdout = await stdoutTask;
@@ -326,13 +332,15 @@ namespace MP4ToolsLib
 				if (p.ExitCode != 0) throw new InvalidOperationException($"{exe} failed with exit code {p.ExitCode}");
 				return stdout;
 			}
-			catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+			catch (OperationCanceledException ex1) when (!ct.IsCancellationRequested)
 			{
+				Log($"** Error: {ex1.Message} **");
 				try { if (!p.HasExited) p.Kill(true); } catch { }
 				throw new TimeoutException($"{exe} timed out after {ProcessTimeout.TotalMinutes:0} minutes");
 			}
-			catch
+			catch (Exception ex)
 			{
+				Log($"** Error: {ex.Message} **");
 				try { if (!p.HasExited) p.Kill(true); } catch { }
 				throw;
 			}

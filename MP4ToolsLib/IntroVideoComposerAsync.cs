@@ -26,7 +26,7 @@ namespace MP4ToolsLib
                             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
                             "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
                         };
-                        
+
                         foreach (var fontPath in possibleFonts)
                         {
                             if (File.Exists(fontPath))
@@ -40,7 +40,7 @@ namespace MP4ToolsLib
                 return _font;
             }
         }
-        
+
         public static async Task PrependIntroAsync(
             string inputPath,
             string titleText,
@@ -56,7 +56,7 @@ namespace MP4ToolsLib
             CancellationToken ct = default)
         {
             log ??= _ => { };
-            if (!File.Exists(inputPath)) 
+            if (!File.Exists(inputPath))
                 throw new FileNotFoundException(inputPath);
 
             string introMp4 = Path.Combine(TempPathHelper.GetTempPath(), $"intro_{Guid.NewGuid():N}.mp4");
@@ -78,28 +78,34 @@ namespace MP4ToolsLib
                 string acl = !string.IsNullOrWhiteSpace(audio?.ChannelLayout) ? audio.ChannelLayout : (ach == "1" ? "mono" : "stereo");
                 string aCodec = (!string.IsNullOrWhiteSpace(audio?.CodecName) ? audio.CodecName : "aac").ToLowerInvariant();
 
-                string vEnc = vCodec switch 
-                { 
-                    "hevc" => "libx265", 
-                    "mpeg4" => "mpeg4", 
-                    _ => "libx264" 
+                string vEnc = vCodec switch
+                {
+                    "hevc" => "libx265",
+                    "mpeg4" => "mpeg4",
+                    _ => "libx264"
                 };
-                
-                string aEnc = aCodec switch 
-                { 
-                    "mp3" => "libmp3lame", 
-                    "ac3" => "ac3", 
-                    "opus" => "libopus", 
-                    _ => "aac" 
+
+                string aEnc = aCodec switch
+                {
+                    "mp3" => "libmp3lame",
+                    "ac3" => "ac3",
+                    "opus" => "libopus",
+                    _ => "aac"
                 };
-                
-                string GetBsfForCodec(string codec) => codec switch 
-                { 
-                    "hevc" => "hevc_mp4toannexb", 
-                    "h264" or "avc" => "h264_mp4toannexb", 
-                    _ => string.Empty 
+                string GetBsfForCodec(string codec) => codec switch
+                {
+                    "hevc" => "hevc_mp4toannexb",
+                    "h264" or "avc" => "h264_mp4toannexb",
+                    _ => string.Empty
                 };
-                
+                /*
+                                string GetBsfForCodec(string codec) => codec switch
+                                {
+                                    "hevc" => "hevc_mp4toannexb,h265_metadata=audit_packet=1",
+                                    "h264" or "avc" => "h264_mp4toannexb,h264_metadata=audit_packet=1",
+                                    _ => string.Empty
+                                };
+                                */
                 string vBsf = GetBsfForCodec(vCodec);
 
                 var escapedTitle = EscapeDrawtext(titleText);
@@ -125,7 +131,7 @@ namespace MP4ToolsLib
                     $"-f lavfi -i \"anullsrc=r={ar}:cl={acl}:d={durationSeconds}\" " +
                     $"-vf \"{vf}\" " +
                     $"-c:v {vEnc} -pix_fmt {pixFmt} -r {fps} -c:a {aEnc} -ar {ar} -ac {ach} -shortest \"{introMp4}\"",
-                    ct);
+                    ct, log);
 
                 log("Muxing TS streams...");
                 await FFMpegUtils.Instance.RunCaptureFFMpegAsync($"-nostdin -y -i \"{introMp4}\" -c copy -bsf:v {vBsf} -f mpegts \"{introTs}\"", ct, log);
@@ -152,13 +158,13 @@ namespace MP4ToolsLib
 
         private static void SafeDelete(string path)
         {
-            try 
-            { 
-                if (File.Exists(path)) 
-                    File.Delete(path); 
-            } 
-            catch 
-            { 
+            try
+            {
+                if (File.Exists(path))
+                    File.Delete(path);
+            }
+            catch
+            {
                 // Silently ignore errors during cleanup
             }
         }
