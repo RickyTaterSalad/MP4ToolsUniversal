@@ -410,7 +410,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				if (fileList.Count > 0)
 				{
 					var firstFile = fileList[0].Path;
-					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(firstFile, CancellationToken.None);
+					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(firstFile, CancellationToken.None, Logger.Log);
 					if (video != null)
 					{
 						var detectedBitDepth = video.BitDepth;

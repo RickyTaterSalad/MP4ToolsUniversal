@@ -300,6 +300,7 @@ namespace MP4ToolsLib
 
 		public async Task<string> RunCaptureAsync(string exe, string args, CancellationToken ct, Action<string> Log = null)
 		{
+			Log ??= _ => { };
 			var psi = new ProcessStartInfo(exe, args)
 			{
 				WindowStyle = ProcessWindowStyle.Hidden,
@@ -462,11 +463,12 @@ namespace MP4ToolsLib
 		}
 
 
-		public async Task<(StreamProbeInfo video, StreamProbeInfo audio)> ProbeMediaInfoAsync(string input, CancellationToken ct)
+		public async Task<(StreamProbeInfo video, StreamProbeInfo audio)> ProbeMediaInfoAsync(string input, CancellationToken ct, Action<string> Log = null)
 		{
+			Log ??= _ => { };
 			string args = "-v error -show_entries stream=index,codec_type,width,height,r_frame_rate,pix_fmt,codec_name,sample_rate,channels,channel_layout,bit_depth -of json " +
 				$"\"{input}\"";
-			string stdout = await FFMpegUtils.Instance.RunCaptureFFProbeAsync(args, ct);
+			string stdout = await FFMpegUtils.Instance.RunCaptureFFProbeAsync(args, ct, Log);
 			if (string.IsNullOrWhiteSpace(stdout))
 			{
 				return (null, null);

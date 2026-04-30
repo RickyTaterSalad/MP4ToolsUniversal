@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Threading;
+using System.Text.RegularExpressions;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 
@@ -16,6 +17,11 @@ namespace MP4Tools.ViewModels
         private readonly object _batchLock = new object();
         private bool _isBatchProcessing = false;
         private readonly TimeSpan _batchDelay = TimeSpan.FromMilliseconds(50);
+
+        // For tracking repeated ffmpeg lines
+        private string _lastFfmpegProgressLine = "";
+        private int _ffmpegProgressSkipCount = 0;
+        private const int _ffmpegProgressSkipEvery = 20;
 
 
         public RelayCommand ClearLogCommand { get; private set; }
@@ -40,8 +46,45 @@ namespace MP4Tools.ViewModels
             Logger.LogMessageReceived += OnLogMessageReceived;
         }
 
+        private bool ShouldSkipFfmpegProgress(string message)
+        {
+            // Check if this looks like ffmpeg progress output (frame= NNN fps=...)
+            if (message.Contains("frame=") && message.Contains("fps="))
+            {
+                // Check if it's the same as the last line
+                if (message == _lastFfmpegProgressLine)
+                {
+                    _ffmpegProgressSkipCount++;
+                    if (_ffmpegProgressSkipCount >= _ffmpegProgressSkipEvery)
+                    {
+                        _ffmpegProgressSkipCount = 0;
+                        return true; // Skip this line, log the 20th
+                    }
+                    return true; // Skip this line
+                }
+                else
+                {
+                    // Format changed or new line, reset
+                    _lastFfmpegProgressLine = message;
+                    _ffmpegProgressSkipCount = 0;
+                    return false;
+                }
+            }
+            
+            // Not an ffmpeg progress line, don't skip
+            _lastFfmpegProgressLine = "";
+            _ffmpegProgressSkipCount = 0;
+            return false;
+        }
+
         private void OnLogMessageReceived(object sender, string message)
         {
+            // Filter ffmpeg progress lines - skip every 20th repeated line
+            if (ShouldSkipFfmpegProgress(message))
+            {
+                return;
+            }
+
             _logQueue.Enqueue($"[{DateTime.Now:HH:mm:ss}] {message}");
             
             // Schedule batch processing if not already running
