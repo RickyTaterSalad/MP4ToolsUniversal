@@ -84,3 +84,45 @@ The application now supports setting the output video bit depth for both Trim an
    - Select **8 bit** for compatibility or reduced file size
    - Select **10 bit** for better quality and HDR support
 4. Proceed with Trim or Combine operation
+
+## Performance & Threading Best Practices
+
+### UI Freezing Issues
+
+The UI can freeze when performing intensive operations like video processing or logging. Here's how to avoid common pitfalls:
+
+#### Logging to the Log Pane
+
+**Problem**: Each FFmpeg log line was triggering an individual UI update via `InvokeAsync`, overwhelming the UI thread when FFmpeg outputs many lines rapidly.
+
+**Solution**: Implemented batching using a `ConcurrentQueue` with delayed batch processing in [`LogViewModel.cs`](/opt/Repos/MP4ToolsUniversal/MP4Tools/ViewModels/LogViewModel.cs):
+
+- Log messages are queued in `_logQueue` instead of directly updating the UI
+- A 50ms debounce delay allows multiple log messages to accumulate
+- Batches are processed together on the UI thread
+- Uses `DispatcherPriority.Background` to process during UI idle time
+
+**Additional Optimization**: For repeated ffmpeg progress lines (e.g., `frame= 3036 fps=...`), the logger now:
+- Detects ffmpeg progress output patterns
+- Skips repeated lines (only logs every 20th occurrence)
+- Resets the counter when the line format changes
+
+#### Async Command Execution
+
+**Problem**: `AsyncRelayCommand` handlers that call synchronous FFmpeg operations (`RunAndLogFFMpeg`) block the UI thread, causing the interface to freeze.
+
+**Solution**: Wrap FFmpeg operations in `Task.Run()` to execute them on background threads:
+
+- **[`CombineViewModel.cs`](/opt/Repos/MP4ToolsUniversal/MP4Tools/ViewModels/CombineViewModel.cs#L482)**:
+  ```csharp
+  // Run on background thread to avoid blocking UI
+  await Task.Run(() => CombineInternal());
+  ```
+
+- **[`TrimViewModel.cs`](/opt/Repos/MP4ToolsUniversal/MP4Tools/ViewModels/TrimViewModel.cs#L262)**:
+  ```csharp
+  // Run on background thread to avoid blocking UI
+  await Task.Run(() => TrimAndCombineAsyncInternal(outTrimmedFolder, combine));
+  ```
+
+**Key Principle**: Always use `Task.Run()` for CPU-bound or blocking operations that should not freeze the UI, while keeping UI updates (logging, property changes) on the UI thread.

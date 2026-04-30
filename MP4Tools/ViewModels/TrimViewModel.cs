@@ -259,7 +259,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		Logger.LogMessageReceived += handler;
 		try
 		{
-			await TrimAndCombineAsyncInternal(outTrimmedFolder, combine);
+			await Task.Run(() => TrimAndCombineAsyncInternal(outTrimmedFolder, combine));
 		}
 		catch (Exception ex)
 		{
@@ -396,7 +396,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 			{
 				Logger.Log("Concatenating TS segments...");
 				var concatInput = string.Join("|", tempTsFiles);
-				RunAndLogFFMpeg($"-y -i \"concat:{concatInput}\" -c copy -bsf:a aac_adtstoasc \"{finalCombinedPath}\"");
+				var aacBsf = SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase) ? "-bsf:a aac_adtstoasc" : string.Empty;
+				RunAndLogFFMpeg($"-y -i \"concat:{concatInput}\" -c copy {aacBsf} \"{finalCombinedPath}\"");
 			}
 
 			try

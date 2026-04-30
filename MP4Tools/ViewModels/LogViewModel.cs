@@ -41,7 +41,7 @@ namespace MP4Tools.ViewModels
         {
             _maxLogEntries = GetConfiguredLogMaxLines();
             LogEntries = new ObservableCollection<string>();
-            ClearLogCommand = new RelayCommand(ClearLog);   
+            ClearLogCommand = new RelayCommand(ClearLog);
             // Subscribe to the static logging event
             Logger.LogMessageReceived += OnLogMessageReceived;
         }
@@ -70,7 +70,7 @@ namespace MP4Tools.ViewModels
                     return false;
                 }
             }
-            
+
             // Not an ffmpeg progress line, don't skip
             _lastFfmpegProgressLine = "";
             _ffmpegProgressSkipCount = 0;
@@ -86,7 +86,7 @@ namespace MP4Tools.ViewModels
             }
 
             _logQueue.Enqueue($"[{DateTime.Now:HH:mm:ss}] {message}");
-            
+
             // Schedule batch processing if not already running
             lock (_batchLock)
             {
@@ -102,14 +102,14 @@ namespace MP4Tools.ViewModels
         {
             // Wait for more logs to arrive
             await System.Threading.Tasks.Task.Delay(_batchDelay);
-            
+
             // Collect all queued logs
             var batch = new System.Collections.Generic.List<string>();
             while (_logQueue.TryDequeue(out var entry))
             {
                 batch.Add(entry);
             }
-            
+
             if (batch.Count > 0)
             {
                 // Process batch on UI thread
@@ -122,11 +122,11 @@ namespace MP4Tools.ViewModels
                     TrimOldEntries();
                 });
             }
-            
+
             lock (_batchLock)
             {
                 _isBatchProcessing = false;
-                
+
                 // Check if more logs arrived during processing
                 if (_logQueue.Count > 0)
                 {

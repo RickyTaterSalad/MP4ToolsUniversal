@@ -140,7 +140,8 @@ namespace MP4ToolsLib
                 progress?.Report(0.9);
 
                 log("Concatenating...");
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync($"-nostdin -y -i \"concat:{introTs}|{inputTs}\" -c copy -bsf:a aac_adtstoasc \"{outputPath}\"", ct, log);
+                var aacBsf = aEnc.Equals("aac", StringComparison.OrdinalIgnoreCase) ? "-bsf:a aac_adtstoasc" : string.Empty;
+                await FFMpegUtils.Instance.RunCaptureFFMpegAsync($"-nostdin -y -i \"concat:{introTs}|{inputTs}\" -c copy {aacBsf} \"{outputPath}\"", ct, log);
                 progress?.Report(1.0);
 
                 log("Done.");

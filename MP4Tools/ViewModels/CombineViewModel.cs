@@ -479,7 +479,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		Logger.LogMessageReceived += handler;
 		try
 		{
-			await CombineInternal();
+			await Task.Run(() => CombineInternal());
 		}
 		catch (Exception ex)
 		{
@@ -748,7 +748,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 					if (!string.IsNullOrWhiteSpace(mergedTsFile) && File.Exists(mergedTsFile))
 					{
 						Logger.Log("Finalizing merged TS into MP4...");
-						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c:v copy -c:a {SelectedAudioCodec} -bsf:v {videoBsf} -bsf:a aac_adtstoasc {trimEndPart} -movflags +faststart \"{combineOutputFile}\"");
+						var aacBsf = SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase) ? "-bsf:a aac_adtstoasc" : string.Empty;
+						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c:v copy -c:a {SelectedAudioCodec} -bsf:v {videoBsf} {aacBsf} {trimEndPart} -movflags +faststart \"{combineOutputFile}\"");
 					}
 				}
 				catch (Exception e)
