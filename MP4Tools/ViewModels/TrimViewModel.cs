@@ -195,7 +195,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		});
 
 		TrimAndCombineCommand = new AsyncRelayCommand(async () => await TrimAndCombineAsync());
-		TrimCommand = new AsyncRelayCommand(async () => await TrimAsync());
+		TrimCommand = new AsyncRelayCommand(async () => await TrimAndCombineAsync(false));
 		AddTimeRangeCommand = new RelayCommand(() =>
 		{
 			var range = new StartStopRange(StartRange.Clone(), EndRange.Clone(), RangeLabel ?? string.Empty)
@@ -237,7 +237,55 @@ public partial class TrimViewModel : MP4ViewModelBase
 	}
 
 
-	private async Task TrimAndCombineAsync()
+	private async Task TrimAndCombineAsync(bool combine = true)
+	{
+		var outFolder = Path.GetDirectoryName(InputPath) ?? string.Empty;
+		var outTrimmedFolder = Path.Combine(outFolder, OutputFolderName);
+		var logOutputPath = Path.Combine(outTrimmedFolder, "log.txt");
+		if (!Directory.Exists(outTrimmedFolder))
+		{
+			Directory.CreateDirectory(outTrimmedFolder);
+		}
+		var logged_ffmpeg_output = new List<string>();
+		EventHandler<string> handler = (s, msg) =>
+		{
+			if (!string.IsNullOrWhiteSpace(msg))
+				logged_ffmpeg_output.Add(msg);
+		};
+		Logger.LogMessageReceived += handler;
+		try
+		{
+			await TrimAndCombineAsyncInternal(outTrimmedFolder, combine);
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"Error occurred while combining files: {ex.Message}");
+		}
+		finally
+		{
+			try
+			{
+				if (logged_ffmpeg_output.Count > 0 && !string.IsNullOrWhiteSpace(logOutputPath) && Path.GetDirectoryName(logOutputPath) != null && Directory.Exists(Path.GetDirectoryName(logOutputPath)))
+				{
+					try
+					{
+						File.WriteAllLines(logOutputPath, logged_ffmpeg_output);
+					}
+					catch (Exception ex)
+					{
+						Logger.Log($"Failed to write log file: {ex.Message}");
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Unexpected error during log file handling: {ex.Message}");
+			}
+		}
+		Logger.LogMessageReceived -= handler;
+	}
+
+	private async Task TrimAndCombineAsyncInternal(string outTrimmedFolder, bool combine = true)
 	{
 		if (!CanTrim || !TrimRanges.Any() || InputPath == null)
 		{
@@ -248,19 +296,20 @@ public partial class TrimViewModel : MP4ViewModelBase
 		{
 			return;
 		}
-		var outFolder = Path.GetDirectoryName(InputPath) ?? string.Empty;
-		var outTrimmedFolder = Path.Combine(outFolder, OutputFolderName);
-		if (!Directory.Exists(outTrimmedFolder))
-		{
-			Directory.CreateDirectory(outTrimmedFolder);
-		}
+
 		Logger.Log("Starting trim and combine...");
 		CanTrim = false;
 		List<string> outputPaths = new List<string>();
 		foreach (var trim in validRanges)
 		{
 			Logger.Log($"Trimming range: {trim.StartRange} - {trim.EndRange}");
-			outputPaths.Add(await TrimRangeAsync(trim, outTrimmedFolder, forceReencode: true));
+			outputPaths.Add(await TrimRangeAsync(trim, outTrimmedFolder));
+		}
+		if (!combine)
+		{
+			CanTrim = true;
+			ClearTimeRanges();
+			Logger.Log("Trim complete.");
 		}
 
 		var tempFilesToDelete = new List<string>();
@@ -383,7 +432,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		Logger.Log("Trim and combine complete.");
 	}
 
-	private async Task<string> TrimRangeAsync(StartStopRange range, string outFolder, bool forceReencode = false)
+	private async Task<string> TrimRangeAsync(StartStopRange range, string outFolder)
 	{
 		string trimOutputPath = string.Empty;
 		if (string.IsNullOrWhiteSpace(InputPath))
@@ -404,7 +453,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 					var endString = $"{dif.Hours:00}:{dif.Minutes:00}:{dif.Seconds:00}";
 					var inputFileName = System.IO.Path.GetFileName(InputPath);
 
-					if (!forceReencode && string.IsNullOrWhiteSpace(range.Label))
+					if (string.IsNullOrWhiteSpace(range.Label) && "copy".Equals(SelectedAudioCodec, StringComparison.OrdinalIgnoreCase))
 					{
 						args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} -c:v copy -c:a copy \"{trimOutputPath}\"";
 					}
@@ -475,40 +524,40 @@ public partial class TrimViewModel : MP4ViewModelBase
 		});
 		return trimOutputPath;
 	}
-
-	private async Task TrimAsync()
-	{
-		if (!CanTrim || !TrimRanges.Any() || InputPath == null)
+	/*
+		private async Task TrimAsync()
 		{
-			return;
-		}
-		var validRanges = TrimRanges.Where(IsRangeWithinInputBounds).ToList();
-		if (!validRanges.Any())
-		{
-			return;
-		}
-		Logger.Log("Starting trim only...");
-		CanTrim = false;
-		var outFolder = Path.GetDirectoryName(InputPath) ?? string.Empty;
-		var outTrimmedFolder = Path.Combine(outFolder, OutputFolderName);
-		if (!Directory.Exists(outTrimmedFolder))
-		{
-			Directory.CreateDirectory(outTrimmedFolder);
-		}
-		Logger.Log($"Output folder: {outTrimmedFolder}");
-		var outExportName = System.IO.Path.ChangeExtension(Path.GetFileName(InputPath), ".json");
-		var path = FFMpegUtils.Instance.CleanupPath(Path.Combine(outFolder, outExportName));
-		WriteTrimExport(path);
-		Logger.Log($"Exported trim state: {path}");
-		foreach (var trim in validRanges)
-		{
-			Logger.Log($"Trimming range: {trim.StartRange} - {trim.EndRange}");
-			await TrimRangeAsync(trim, outTrimmedFolder);
-		}
-		CanTrim = true;
-		ClearTimeRanges();
-		Logger.Log("Trim complete.");
-	}
+			if (!CanTrim || !TrimRanges.Any() || InputPath == null)
+			{
+				return;
+			}
+			var validRanges = TrimRanges.Where(IsRangeWithinInputBounds).ToList();
+			if (!validRanges.Any())
+			{
+				return;
+			}
+			Logger.Log("Starting trim only...");
+			CanTrim = false;
+			var outFolder = Path.GetDirectoryName(InputPath) ?? string.Empty;
+			var outTrimmedFolder = Path.Combine(outFolder, OutputFolderName);
+			if (!Directory.Exists(outTrimmedFolder))
+			{
+				Directory.CreateDirectory(outTrimmedFolder);
+			}
+			Logger.Log($"Output folder: {outTrimmedFolder}");
+			var outExportName = System.IO.Path.ChangeExtension(Path.GetFileName(InputPath), ".json");
+			var path = FFMpegUtils.Instance.CleanupPath(Path.Combine(outFolder, outExportName));
+			WriteTrimExport(path);
+			Logger.Log($"Exported trim state: {path}");
+			foreach (var trim in validRanges)
+			{
+				Logger.Log($"Trimming range: {trim.StartRange} - {trim.EndRange}");
+				await TrimRangeAsync(trim, outTrimmedFolder);
+			}
+			CanTrim = true;
+			ClearTimeRanges();
+			Logger.Log("Trim complete.");
+		}*/
 
 	private void WriteTrimExport(string exportFile)
 	{

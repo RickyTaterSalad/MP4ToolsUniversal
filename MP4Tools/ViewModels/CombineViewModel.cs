@@ -18,63 +18,63 @@ public partial class CombineViewModel : MP4ViewModelBase
 	private const string DefaultIntroTitle = "{VISITOR} vs. {HOME}";
 	private const string DefaultIntroDetails = "Final Score {SCORE} {WINNER}";
 
-		[ObservableProperty]
-		private int _introDurationSeconds = 10;
+	[ObservableProperty]
+	private int _introDurationSeconds = 10;
 
-		[ObservableProperty]
-		private string _introTitle;
-		[ObservableProperty]
-		private string _introDetails;
-		[ObservableProperty]
-		private string _introSubtitle;
+	[ObservableProperty]
+	private string _introTitle;
+	[ObservableProperty]
+	private string _introDetails;
+	[ObservableProperty]
+	private string _introSubtitle;
 
-		[ObservableProperty]
-		private string _outputPath;
-		private string _homeName;
+	[ObservableProperty]
+	private string _outputPath;
+	private string _homeName;
 
-				public string HomeName
+	public string HomeName
+	{
+		get => _homeName;
+		set
 		{
-			get => _homeName;
-			set
+			if (SetProperty(ref _homeName, value))
 			{
-				if (SetProperty(ref _homeName, value))
-				{
-					UpdateIntroTitleFromGameInfo();
-				}
+				UpdateIntroTitleFromGameInfo();
 			}
 		}
+	}
 
 
-		private string _visitorName;
+	private string _visitorName;
 
-		
 
-		public string VisitorName
+
+	public string VisitorName
+	{
+		get => _visitorName;
+		set
 		{
-			get => _visitorName;
-			set
+			if (SetProperty(ref _visitorName, value))
 			{
-				if (SetProperty(ref _visitorName, value))
-				{
-					UpdateIntroTitleFromGameInfo();
-				}
+				UpdateIntroTitleFromGameInfo();
 			}
 		}
+	}
 
-		[ObservableProperty]
-		private string _folderPath;
+	[ObservableProperty]
+	private string _folderPath;
 
-		[ObservableProperty]
-		private bool _trimFirstVideo;
+	[ObservableProperty]
+	private bool _trimFirstVideo;
 
-		[ObservableProperty]
-		private bool _trimLastVideo; 
-	
-		[ObservableProperty]
-		private TimeRange _startRange = new TimeRange();
+	[ObservableProperty]
+	private bool _trimLastVideo;
 
-		[ObservableProperty]
-		private TimeRange _endRange  = new TimeRange();
+	[ObservableProperty]
+	private TimeRange _startRange = new TimeRange();
+
+	[ObservableProperty]
+	private TimeRange _endRange = new TimeRange();
 
 	private CombineFile _selectedInputFile;
 	public CombineFile SelectedInputFile
@@ -106,13 +106,13 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 	}
 
-	public RelayCommand CombineCommand { get; private set; }
+	public AsyncRelayCommand CombineCommand { get; private set; }
 	public RelayCommand BrowseToFolderCommand { get; private set; }
 	public RelayCommand RemoveSelectedFileCommand { get; private set; }
 
 	public CombineViewModel()
 	{
-		CombineCommand = new RelayCommand(() => Combine());
+		CombineCommand = new AsyncRelayCommand(async () => await Combine());
 		BrowseToFolderCommand = new RelayCommand(HandleBrowseToDirectory);
 		RemoveSelectedFileCommand = new RelayCommand(RemoveSelectedFile);
 	}
@@ -414,12 +414,51 @@ public partial class CombineViewModel : MP4ViewModelBase
 		return base.Clear();
 	}
 
-	private Task Combine()
+	private async Task Combine()
 	{
-		return Task.Run(CombineInternal);
+		var logOutputPath = !string.IsNullOrWhiteSpace(OutputPath) ? Path.ChangeExtension(OutputPath, ".log") : null;
+		var logged_ffmpeg_output = new List<string>();
+		EventHandler<string> handler = (s, msg) =>
+		{
+			if (!string.IsNullOrWhiteSpace(msg))
+				logged_ffmpeg_output.Add(msg);
+		};
+		Logger.LogMessageReceived += handler;
+		try
+		{
+			await CombineInternal();
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"Error occurred while combining files: {ex.Message}");
+		}
+		finally
+		{
+			try
+			{
+				if (logged_ffmpeg_output.Count > 0 && !string.IsNullOrWhiteSpace(logOutputPath) && Path.GetDirectoryName(logOutputPath) != null && Directory.Exists(Path.GetDirectoryName(logOutputPath)))
+				{
+					try
+					{
+						File.WriteAllLines(logOutputPath, logged_ffmpeg_output);
+					}
+					catch (Exception ex)
+					{
+						Logger.Log($"Failed to write log file: {ex.Message}");
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Unexpected error during log file handling: {ex.Message}");
+			}
+		}
+		Logger.LogMessageReceived -= handler;
 	}
+
 	private async Task CombineInternal()
 	{
+
 		if (!CanCombine || string.IsNullOrWhiteSpace(OutputPath))
 		{
 			return;
@@ -595,7 +634,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					*/
 					RunAndLogFFMpeg($"{scanStart} -f concat -safe 0 -i \"{fileList}\" {trimEndPart} {encodingParms} \"{combineOutputFile}\"");
 				}
-				catch(Exception e)
+				catch (Exception e)
 				{
 					Logger.Log($"Error during combine: {e.Message}");
 				}
@@ -655,8 +694,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 						Logger.Log("Finalizing merged TS into MP4...");
 						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c:v copy -c:a {SelectedAudioCodec} -bsf:a aac_adtstoasc {trimEndPart} \"{combineOutputFile}\"");
 					}
-				}	
-				catch(Exception e)
+				}
+				catch (Exception e)
 				{
 					Logger.Log($"Error during combine: {e.Message}");
 				}
@@ -694,13 +733,13 @@ public partial class CombineViewModel : MP4ViewModelBase
 			CanCombine = true;
 		}
 	}
-			private void UpdateIntroTitleFromGameInfo()
+	private void UpdateIntroTitleFromGameInfo()
+	{
+		if (!string.IsNullOrWhiteSpace(VisitorName) && !string.IsNullOrWhiteSpace(HomeName))
 		{
-			if (!string.IsNullOrWhiteSpace(VisitorName) && !string.IsNullOrWhiteSpace(HomeName))
-			{
-				var newTitle = DefaultIntroTitle.Replace("{VISITOR}", VisitorName).Replace("{HOME}", HomeName);
-				IntroTitle = newTitle;
-			}
+			var newTitle = DefaultIntroTitle.Replace("{VISITOR}", VisitorName).Replace("{HOME}", HomeName);
+			IntroTitle = newTitle;
 		}
+	}
 
 }

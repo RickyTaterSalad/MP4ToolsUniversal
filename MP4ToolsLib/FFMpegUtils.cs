@@ -178,16 +178,16 @@ namespace MP4ToolsLib
 					var hwaccel = DetectBestHwAccel();
 					// Check if using VAAPI with video filters - if so, we should NOT use -hwaccel
 					// because the filters (like drawtext) work on CPU frames and we use hwupload
-					var hasVideoFilter = args.Contains("-vf ", StringComparison.OrdinalIgnoreCase) 
+					var hasVideoFilter = args.Contains("-vf ", StringComparison.OrdinalIgnoreCase)
 						|| args.Contains(" -filter:v", StringComparison.OrdinalIgnoreCase)
 						|| args.Contains(" -filter_complex", StringComparison.OrdinalIgnoreCase);
-					
+
 					// For vaapi, we need to add -vaapi_device for VAAPI filters and encoders
 					if (hwaccel.StartsWith("vaapi"))
 					{
 						var parts = hwaccel.Split('\n');
 						var vaapiDevice = parts.Length > 1 ? parts[1] : string.Empty; // "-vaapi_device /dev/dri/renderDxxx"
-						
+
 						if (!hasVideoFilter)
 						{
 							// No video filters - use hwaccel for decoding
@@ -347,11 +347,11 @@ namespace MP4ToolsLib
 			{
 				FileName = FFPMEG_EXE,
 				Arguments = args,
-				//CreateNoWindow = true,
+				CreateNoWindow = true,
 				WindowStyle = ProcessWindowStyle.Hidden,
 				UseShellExecute = true,
-				//RedirectStandardError = true,
-				//RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				RedirectStandardOutput = true,
 				WorkingDirectory = workingDirectory
 			};
 
@@ -361,8 +361,8 @@ namespace MP4ToolsLib
 			if (ProcessOutputAction != null)
 			{
 				//onErr = (a, b) => ProcessOutputAction(process, "stderr", b?.Data);
-			//	onOut = (a, b) => ProcessOutputAction(process, "stdout", b?.Data);
-			//	process.ErrorDataReceived += onErr;
+				//	onOut = (a, b) => ProcessOutputAction(process, "stdout", b?.Data);
+				//	process.ErrorDataReceived += onErr;
 				//process.OutputDataReceived += onOut;
 			}
 
@@ -511,8 +511,8 @@ namespace MP4ToolsLib
 				return (null, null);
 			}
 		}
-	
-		
+
+
 		public string GetPreferredRenderDevice()
 		{
 			try
