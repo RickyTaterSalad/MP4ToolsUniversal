@@ -55,6 +55,9 @@
 					<Label Content="Audio" VerticalAlignment="Center"/>
 					<ComboBox ItemsSource="{Binding AvailableAudioCodecs}" MinWidth="90" 
 					SelectedItem="{Binding SelectedAudioCodec}"/>
+					<Label Content="Video Bit Depth" VerticalAlignment="Center" Margin="10,0,0,0"/>
+					<ComboBox ItemsSource="{Binding AvailableVideoBitDepths}" MinWidth="90" 
+					SelectedItem="{Binding VideoBitDepth}"/>
 					</StackPanel>
 					<StackPanel Orientation="Horizontal" Margin="10,0,30,0">
 						<CheckBox IsChecked="{Binding TrimFirstVideo}" Content="Start Video Skip" MinWidth="110" />

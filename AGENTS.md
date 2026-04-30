@@ -51,3 +51,36 @@ The project uses .NET's built-in testing capabilities:
 ## Architecture Overview
 
 This is a .NET 10.0 desktop application using Avalonia UI framework for cross-platform compatibility. The application uses FFMPEG for video processing through the MP4ToolsLib library.
+
+## Video Bit Depth Feature
+
+The application now supports setting the output video bit depth for both Trim and Combine operations.
+
+### Bit Depth Options
+- **8 bit**: Standard 8-bit video output (yuv420p pixel format)
+- **10 bit**: High dynamic range 10-bit video output (yuv420p10le pixel format)
+
+### Default Behavior
+- The output bit depth defaults to **10 bit** for optimal quality
+- When a video file is selected, the application reads the input video's bit depth and displays it as `InputVideoBitDepth` for reference
+- The user can override the default bit depth setting to change output format
+
+### Technical Details
+- The bit depth setting controls the pixel format used during video encoding:
+  - 8 bit: `-pix_fmt yuv420p`
+  - 10 bit: `-pix_fmt yuv420p10le`
+- When copying video streams (copy mode), the original bit depth is preserved
+- When re-encoding video, the selected bit depth is applied
+
+### Implementation
+- **ViewModel**: `MP4ViewModelBase` contains `VideoBitDepth` property (defaults to "10 bit")
+- **View**: Both `TrimView.axaml` and `CombineView.axaml` include a bit depth dropdown
+- **FFmpeg**: Uses ffprobe to read input video bit depth and applies pixel format during encoding
+
+### Usage
+1. Select your input video file or folder
+2. The input video's bit depth will be displayed automatically
+3. Choose your desired output bit depth from the dropdown:
+   - Select **8 bit** for compatibility or reduced file size
+   - Select **10 bit** for better quality and HDR support
+4. Proceed with Trim or Combine operation

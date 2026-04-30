@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace MP4Tools
 {
@@ -64,7 +65,29 @@ namespace MP4Tools
 			}
 		}
 
-		public IReadOnlyList<string> AvailableAudioCodecs {get;} = new[] { "copy", /*"aac",*/ "libopus" };
+
+		private string _videoBitDepth = "10 bit";
+		public string VideoBitDepth
+		{
+			get => _videoBitDepth;
+			set
+			{
+				SetProperty(ref _videoBitDepth, value);
+			}
+		}
+
+		private string _inputVideoBitDepth = string.Empty;
+		public string InputVideoBitDepth
+		{
+			get => _inputVideoBitDepth;
+			set
+			{
+				SetProperty(ref _inputVideoBitDepth, value);
+			}
+		}
+
+		public IReadOnlyList<string> AvailableVideoBitDepths { get; } = new[] { "8 bit", "10 bit" };
+		public IReadOnlyList<string> AvailableAudioCodecs { get; } = new[] { "copy", /*"aac",*/ "libopus" };
 
 		// ====================
 		// METHODS (Bottom)
@@ -180,6 +203,41 @@ namespace MP4Tools
 			}
 		}
 
+
+		protected async Task ReadInputVideoBitDepthAsync()
+		{
+			try
+			{
+				if (!string.IsNullOrWhiteSpace(InputPath) && File.Exists(InputPath))
+				{
+					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(InputPath, CancellationToken.None);
+					if (video != null)
+					{
+						var detectedBitDepth = video.BitDepth;
+						if (!string.IsNullOrWhiteSpace(detectedBitDepth))
+						{
+							if (detectedBitDepth == "10" || detectedBitDepth.Contains("10"))
+							{
+								InputVideoBitDepth = "10 bit";
+							}
+							else if (detectedBitDepth == "8" || detectedBitDepth.Contains("8"))
+							{
+								InputVideoBitDepth = "8 bit";
+							}
+							else
+							{
+								InputVideoBitDepth = "Unknown";
+							}
+						}
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Debug.WriteLine($"[ReadInputVideoBitDepth][Error] {ex}");
+				Logger.Log($"Read Input Video Bit Depth Error: {ex.Message}");
+			}
+		}
 		public void RunAndLogFFMpeg(string args, string workingDirectory = "")
 		{
 			CanStop = true;

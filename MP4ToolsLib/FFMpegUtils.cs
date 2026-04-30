@@ -349,7 +349,7 @@ namespace MP4ToolsLib
 				Arguments = args,
 				CreateNoWindow = true,
 				WindowStyle = ProcessWindowStyle.Hidden,
-				UseShellExecute = true,
+				UseShellExecute = false,
 				RedirectStandardError = true,
 				RedirectStandardOutput = true,
 				WorkingDirectory = workingDirectory
@@ -360,10 +360,10 @@ namespace MP4ToolsLib
 			using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
 			if (ProcessOutputAction != null)
 			{
-				//onErr = (a, b) => ProcessOutputAction(process, "stderr", b?.Data);
-				//	onOut = (a, b) => ProcessOutputAction(process, "stdout", b?.Data);
-				//	process.ErrorDataReceived += onErr;
-				//process.OutputDataReceived += onOut;
+				onErr = (a, b) => ProcessOutputAction(process, "stderr", b?.Data);
+				onOut = (a, b) => ProcessOutputAction(process, "stdout", b?.Data);
+				process.ErrorDataReceived += onErr;
+				process.OutputDataReceived += onOut;
 			}
 
 			try
@@ -456,7 +456,7 @@ namespace MP4ToolsLib
 
 		public async Task<(StreamProbeInfo video, StreamProbeInfo audio)> ProbeMediaInfoAsync(string input, CancellationToken ct)
 		{
-			string args = "-v error -show_entries stream=index,codec_type,width,height,r_frame_rate,pix_fmt,codec_name,sample_rate,channels,channel_layout -of json " +
+			string args = "-v error -show_entries stream=index,codec_type,width,height,r_frame_rate,pix_fmt,codec_name,sample_rate,channels,channel_layout,bit_depth -of json " +
 				$"\"{input}\"";
 			string stdout = await FFMpegUtils.Instance.RunCaptureFFProbeAsync(args, ct);
 			if (string.IsNullOrWhiteSpace(stdout))
@@ -486,7 +486,8 @@ namespace MP4ToolsLib
 						CodecName = GetProbedString(s, "codec_name"),
 						SampleRate = GetProbedRawString(s, "sample_rate"),
 						Channels = GetProbedRawString(s, "channels"),
-						ChannelLayout = GetProbedString(s, "channel_layout")
+						ChannelLayout = GetProbedString(s, "channel_layout"),
+						BitDepth = GetProbedString(s, "bit_depth")
 					};
 
 					if (video == null && info.CodecType.Equals("video", StringComparison.OrdinalIgnoreCase))

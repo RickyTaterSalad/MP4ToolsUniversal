@@ -233,7 +233,10 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 	protected override async void OnInputPathSet()
 	{
-		_ = Task.Run(ReadFileInfoAsync);
+		_ = Task.Run(async () => {
+			await ReadInputVideoBitDepthAsync();
+			await Task.Run(ReadFileInfoAsync);
+		});
 	}
 
 
@@ -501,6 +504,9 @@ public partial class TrimViewModel : MP4ViewModelBase
 								encOpts += $" -tune:v {EncoderPresets.EncoderPreset.TuneV}";
 							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.RCV))
 								encOpts += $" -rc:v {EncoderPresets.EncoderPreset.RCV}";
+							// Set pixel format based on bit depth
+							var pixelFormat = VideoBitDepth == "10 bit" ? "yuv420p10le" : "yuv420p";
+							encOpts += $" -pix_fmt {pixelFormat}";
 							encOpts += $" -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {SelectedAudioCodec}";
 							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} {encOpts} \"{trimOutputPath}\"";
 						}

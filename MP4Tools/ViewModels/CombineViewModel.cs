@@ -4,6 +4,7 @@ using MP4Tools;
 using MP4ToolsLib;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -374,20 +375,72 @@ public partial class CombineViewModel : MP4ViewModelBase
 			}
 		}
 	}
-	protected override void OnInputPathSet()
+	protected override async void OnInputPathSet()
 	{
 		if (!string.IsNullOrWhiteSpace(InputPath))
 		{
 			CanClear = true;
+			// Read bit depth from first file if it's a file, otherwise first file in folder
+			if (File.Exists(InputPath))
+			{
+				var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(InputPath, CancellationToken.None);
+				if (video != null)
+				{
+					var detectedBitDepth = video.BitDepth;
+					if (!string.IsNullOrWhiteSpace(detectedBitDepth))
+					{
+						if (detectedBitDepth == "10" || detectedBitDepth.Contains("10"))
+						{
+							InputVideoBitDepth = "10 bit";
+						}
+						else if (detectedBitDepth == "8" || detectedBitDepth.Contains("8"))
+						{
+							InputVideoBitDepth = "8 bit";
+						}
+						else
+						{
+							InputVideoBitDepth = "Unknown";
+						}
+					}
+				}
+			}
+			else if (Directory.Exists(InputPath))
+			{
+				var fileList = CombineFile.FromFolder(InputPath);
+				if (fileList.Count > 0)
+				{
+					var firstFile = fileList[0].Path;
+					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(firstFile, CancellationToken.None);
+					if (video != null)
+					{
+						var detectedBitDepth = video.BitDepth;
+						if (!string.IsNullOrWhiteSpace(detectedBitDepth))
+						{
+							if (detectedBitDepth == "10" || detectedBitDepth.Contains("10"))
+							{
+								InputVideoBitDepth = "10 bit";
+							}
+							else if (detectedBitDepth == "8" || detectedBitDepth.Contains("8"))
+							{
+								InputVideoBitDepth = "8 bit";
+							}
+							else
+							{
+								InputVideoBitDepth = "Unknown";
+							}
+						}
+					}
+				}
+			}
 		}
-		var fileList = CombineFile.FromFolder(InputPath);
+		var fileListResult = CombineFile.FromFolder(InputPath);
 		if (Directory.Exists(InputPath))
 		{
 			OutputPath = FFMpegUtils.Instance.CleanupPath(Path.Combine(InputPath, "combined.mp4"));
 		}
-		CanCombine = fileList.Count > 0;
+		CanCombine = fileListResult.Count > 0;
 		InputFiles.Clear();
-		foreach (var file in fileList)
+		foreach (var file in fileListResult)
 		{
 			InputFiles.Add(file);
 		}
@@ -629,7 +682,9 @@ public partial class CombineViewModel : MP4ViewModelBase
 					/*
 					if (ReEncodeVideo)
 					{
-						encodingParms = "-map 0:v:0 -map 0:a:0? -c:v hevc_nvenc -preset p7 -cq 24 -b:v 0 -pix_fmt yuv420p -c:a copy -movflags +faststart";
+						// Set pixel format based on bit depth
+						var pixelFormat = VideoBitDepth == "10 bit" ? "yuv420p10le" : "yuv420p";
+						encodingParms = $"-map 0:v:0 -map 0:a:0? -c:v hevc_nvenc -preset p7 -cq 24 -b:v 0 -pix_fmt {pixelFormat} -c:a copy -movflags +faststart";
 					}
 					*/
 					RunAndLogFFMpeg($"{scanStart} -f concat -safe 0 -i \"{fileList}\" {trimEndPart} {encodingParms} \"{combineOutputFile}\"");
