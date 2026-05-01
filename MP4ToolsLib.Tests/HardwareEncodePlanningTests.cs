@@ -85,6 +85,33 @@ public sealed class HardwareEncodePlanningTests : IDisposable
 	}
 
 	[Fact]
+	public void Ts_finalize_stream_copy_when_encode_tab_matches_merged_hevc()
+	{
+		var dto = HwHevc("software");
+		Assert.True(VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(dto, "hevc"));
+		Assert.False(VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(dto, "h264"));
+	}
+
+	[Fact]
+	public void Ts_finalize_no_stream_copy_when_encode_tab_requests_cross_codec_transcode()
+	{
+		var dto = new EncodingSettingsDto
+		{
+			ReencodeOutput = true,
+			VideoCodec = "h264",
+			HardwareAcceleration = "software",
+		};
+		Assert.False(VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(dto, "hevc"));
+	}
+
+	[Fact]
+	public void Ts_finalize_stream_copy_false_when_video_codec_is_copy()
+	{
+		var dto = new EncodingSettingsDto { ReencodeOutput = false, VideoCodec = "copy" };
+		Assert.False(VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(dto, "hevc"));
+	}
+
+	[Fact]
 	public void Stream_copy_skips_encoder_tail()
 	{
 		var dto = new EncodingSettingsDto

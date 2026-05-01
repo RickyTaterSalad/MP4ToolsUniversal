@@ -81,6 +81,23 @@ public static class VideoEncodeSelector
 		return "";
 	}
 
+	/// <summary>
+	/// When Combine finishes from an MPEG-TS intermediate, if the Encode tab asks for HEVC/H.264 transcode but the merged TS is already that codec,
+	/// remux with <c>-c:v copy</c> instead of decoding/re-encoding (order-of-magnitude faster for 4K drone footage).
+	/// </summary>
+	public static bool ShouldStreamCopyVideoWhenRemuxingMergedTs(EncodingSettingsDto dto, string mergedTsFfprobeVideoCodecName)
+	{
+		if (dto == null || !dto.ReencodeOutput || IsCopyCodec(dto.VideoCodec))
+			return false;
+
+		var mergedFamily = MatchIntroVideoCodecFromProbe(mergedTsFfprobeVideoCodecName);
+		if (string.IsNullOrEmpty(mergedFamily))
+			return false;
+
+		var tabFamily = MatchIntroVideoCodecFromProbe(dto.VideoCodec);
+		return !string.IsNullOrEmpty(tabFamily) && mergedFamily == tabFamily;
+	}
+
 	/// <summary>Intro slide encode uses the same HW/software rules as the main encode tab (plus drawtext + VA-API hwupload when needed).</summary>
 	public static VideoEncodePlan BuildIntroPlan(EncodingSettingsDto dto, Action<string> log) =>
 		BuildIntroPlan(dto, matchMainClipFfprobeVideoCodec: null, log);

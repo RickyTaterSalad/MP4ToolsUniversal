@@ -1071,7 +1071,12 @@ public partial class CombineViewModel : MP4ViewModelBase
 					{
 						ReportCombineStep("Writing final MP4…");
 						Logger.Log("Finalizing merged TS into MP4...");
-						var streamCopyAudio = vplan.UseStreamCopy
+						var mergedTsVideoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(mergedTsFile, ct, Logger.Log).ConfigureAwait(false);
+						var finalizeVideoStreamCopy = vplan.UseStreamCopy
+							|| VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(encPrefs, mergedTsVideoCodec);
+						if (finalizeVideoStreamCopy && !vplan.UseStreamCopy)
+							Logger.Log($"Finalize: merged TS video is {mergedTsVideoCodec}; Encode tab matches — remuxing video (-c:v copy) instead of transcoding.");
+						var streamCopyAudio = finalizeVideoStreamCopy
 							&& string.Equals(audioEff, FfmpegArguments.StreamCopy, StringComparison.OrdinalIgnoreCase);
 						var allPartsAacInTs = writeFiles.All(w => MpegTsConcatAudio.IntermediateTsAudioIsAac(audioCodecByPath[w.Path]));
 						var needAacAdtsBsf = audioEff.Contains("aac", StringComparison.OrdinalIgnoreCase)
@@ -1084,11 +1089,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)),
 						};
-						if (vplan.UseStreamCopy)
+						if (finalizeVideoStreamCopy)
 						{
 							finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
 							finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
-							finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, videoBsf));
 						}
 						else
 						{
