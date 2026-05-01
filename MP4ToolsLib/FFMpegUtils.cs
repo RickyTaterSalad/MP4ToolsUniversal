@@ -76,25 +76,6 @@ namespace MP4ToolsLib
 		}
 
 
-		public bool IsFFmpegExe(string exe)
-		{
-			if (string.IsNullOrWhiteSpace(exe))
-			{
-				return false;
-			}
-			var fileName = Path.GetFileName(exe);
-			return fileName.Contains("ffmpeg", StringComparison.OrdinalIgnoreCase);
-		}
-		public bool IsFFmpegProcess(Process process)
-		{
-			if (process?.StartInfo?.FileName == null)
-			{
-				return false;
-			}
-			var fileName = Path.GetFileName(process.StartInfo.FileName);
-			return fileName.Equals("ffmpeg", StringComparison.OrdinalIgnoreCase);
-		}
-
 		public string FFPROBE_EXE
 		{
 			get
@@ -113,7 +94,6 @@ namespace MP4ToolsLib
 						var exe = Path.Combine(path, ffprobeName);
 						if (File.Exists(exe))
 						{
-							Console.WriteLine($"Using ffprobe at: {exe}");
 							_ffprobe_exe = exe;
 							break;
 						}
@@ -148,7 +128,6 @@ namespace MP4ToolsLib
 						var exe = Path.Combine(path, ffmpegName);
 						if (File.Exists(exe))
 						{
-							Console.WriteLine($"Using ffmpeg at: {exe}");
 							_ffmpeg_exe = exe;
 							break;
 						}
@@ -218,36 +197,6 @@ namespace MP4ToolsLib
 			}
 			return args;
 		}
-
-
-		public async Task<(int maxMinutes, int maxSecondsAtMaxMinute)> GetDurationBoundsAsync(string filePath)
-		{
-			try
-			{
-				if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-				{
-					return (59, 59);
-				}
-				var duration = await GetFileDurationAsync(filePath);
-				var tr = TimeRange.FromString(duration ?? string.Empty);
-				if (tr == null)
-				{
-					return (59, 59);
-				}
-				if (tr.Hours > 0)
-				{
-					return (59, 59);
-				}
-				var maxMinutes = Math.Clamp(tr.Minutes, 0, 59);
-				var maxSeconds = Math.Clamp(tr.Seconds, 0, 59);
-				return (maxMinutes, maxSeconds);
-			}
-			catch
-			{
-				return (59, 59);
-			}
-		}
-
 
 
 		public async Task<string> GetFileDurationAsync(string file)
@@ -346,6 +295,7 @@ namespace MP4ToolsLib
 				throw;
 			}
 		}
+
 		public void RunAndLogFFMpeg(string args, Action<Process, string, string> ProcessOutputAction, Action<string> Log, string workingDirectory = "")
 		{
 			Log ??= (s => Debug.WriteLine(s));
@@ -522,7 +472,6 @@ namespace MP4ToolsLib
 				return (null, null);
 			}
 		}
-
 
 		public string GetPreferredRenderDevice()
 		{

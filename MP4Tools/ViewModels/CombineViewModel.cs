@@ -108,13 +108,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 	}
 
 	public AsyncRelayCommand CombineCommand { get; private set; }
-	public RelayCommand BrowseToFolderCommand { get; private set; }
 	public RelayCommand RemoveSelectedFileCommand { get; private set; }
 
 	public CombineViewModel()
 	{
 		CombineCommand = new AsyncRelayCommand(async () => await Combine());
-		BrowseToFolderCommand = new RelayCommand(HandleBrowseToDirectory);
 		RemoveSelectedFileCommand = new RelayCommand(RemoveSelectedFile);
 	}
 
@@ -503,7 +501,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"Unexpected error during log file handling: {ex.Message}");
+				Logger.Log($"Unexpected error during log file handling: {ex.Message}");
 			}
 		}
 		Logger.LogMessageReceived -= handler;
@@ -553,26 +551,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 					return;
 				}
 			}
-			var GetTempPath = () =>
-			{
-				/*
-				try
-				{
-					var tempPath = Path.Combine(outputFolder, "temp");
-					if (!Directory.Exists(tempPath))
-					{
-						Directory.CreateDirectory(tempPath);
-					}
-					return tempPath;
-				}
-				catch
-				{
-				}
-				*/
-				return TempPathHelper.GetTempPath();
-
-			};
-
 			Logger.Log("Preparing input files...");
 			var writeFiles = new List<CombineFile>();
 			writeFiles.AddRange(InputFiles);
@@ -628,7 +606,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				if (!string.IsNullOrWhiteSpace(scanStart))
 				{
 					Logger.Log("Applying first-file start trim before intro...");
-					var trimmedFirstFile = Path.Combine(GetTempPath(), $"first_trim_{Guid.NewGuid():N}.mp4");
+					var trimmedFirstFile = Path.Combine(TempPathHelper.GetTempPath(), $"first_trim_{Guid.NewGuid():N}.mp4");
 					RunAndLogFFMpeg($"{scanStart} -i \"{firstFile.Path}\" -c copy \"{trimmedFirstFile}\"");
 					if (File.Exists(trimmedFirstFile))
 					{
@@ -638,7 +616,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					}
 				}
 
-				var introFirstFile = Path.Combine(GetTempPath(), $"first_intro_{Guid.NewGuid():N}.mp4");
+				var introFirstFile = Path.Combine(TempPathHelper.GetTempPath(), $"first_intro_{Guid.NewGuid():N}.mp4");
 				await IntroVideoComposerAsync.PrependIntroAsync(
 					introInputFile,
 					effectiveTitle,
@@ -679,14 +657,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 					File.WriteAllLines(fileList, writeFiles.Select(x => $"file '{x.Path}'"));
 					var encodingParms = $"-c:v copy -c:a {SelectedAudioCodec}";
-					/*
-					if (ReEncodeVideo)
-					{
-						// Set pixel format based on bit depth
-						var pixelFormat = VideoBitDepth == "10 bit" ? "yuv420p10le" : "yuv420p";
-						encodingParms = $"-map 0:v:0 -map 0:a:0? -c:v hevc_nvenc -preset p7 -cq 24 -b:v 0 -pix_fmt {pixelFormat} -c:a copy -movflags +faststart";
-					}
-					*/
 					RunAndLogFFMpeg($"{scanStart} -f concat -safe 0 -i \"{fileList}\" {trimEndPart} {encodingParms} \"{combineOutputFile}\"");
 				}
 				catch (Exception e)
@@ -716,7 +686,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					{
 						var input = writeFiles[i].Path;
 						Logger.Log($"Remuxing part {i + 1}/{writeFiles.Count}: {Path.GetFileName(input)}");
-						var partTsFile = Path.Combine(GetTempPath(), $"combine_part_{Guid.NewGuid():N}.ts");
+						var partTsFile = Path.Combine(TempPathHelper.GetTempPath(), $"combine_part_{Guid.NewGuid():N}.ts");
 						var scanStartPart = i == 0 && !string.IsNullOrWhiteSpace(scanStart) ? $"{scanStart} " : string.Empty;
 						RunAndLogFFMpeg($"-y {scanStartPart}-i \"{input}\" -c copy -bsf:v {videoBsf} -f mpegts \"{partTsFile}\"");
 						if (!File.Exists(partTsFile))
@@ -730,7 +700,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 							continue;
 						}
 
-						var nextMergedTs = Path.Combine(GetTempPath(), $"combine_merge_{Guid.NewGuid():N}.ts");
+						var nextMergedTs = Path.Combine(TempPathHelper.GetTempPath(), $"combine_merge_{Guid.NewGuid():N}.ts");
 						RunAndLogFFMpeg($"-y -i \"concat:{mergedTsFile}|{partTsFile}\" -c copy -bsf:v {videoBsf} -f mpegts \"{nextMergedTs}\"");
 						if (File.Exists(nextMergedTs))
 						{
@@ -760,8 +730,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 					try
 					{
-						var tempFolder = GetTempPath();
-						if (Path.GetDirectoryName(GetTempPath())?.Equals(Path.GetDirectoryName(OutputPath)) ?? false)
+						var tempFolder = TempPathHelper.GetTempPath();
+						if (Path.GetDirectoryName(TempPathHelper.GetTempPath())?.Equals(Path.GetDirectoryName(OutputPath)) ?? false)
 						{
 							Directory.Delete(tempFolder, true);
 						}

@@ -1,5 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.Input;
 using MP4Tools.ViewModels;
 using MP4ToolsLib;
 using System;
@@ -86,8 +85,8 @@ namespace MP4Tools
 			}
 		}
 
-		public IReadOnlyList<string> AvailableVideoBitDepths { get; } = new[] { "8 bit", "10 bit" };
-		public IReadOnlyList<string> AvailableAudioCodecs { get; } = new[] { "copy", /*"aac",*/ "libopus" };
+		public IReadOnlyList<string> AvailableVideoBitDepths { get; } = ["8 bit", "10 bit"];
+		public IReadOnlyList<string> AvailableAudioCodecs { get; } = ["copy", /*"aac",*/ "libopus"];
 
 		// ====================
 		// METHODS (Bottom)
@@ -112,46 +111,6 @@ namespace MP4Tools
 		{
 		}
 
-		protected void HandleBrowseToDirectory()
-		{
-			/*
-			FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-			if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
-			{
-				SetDirectory(folderBrowserDialog1.SelectedPath);
-			}
-			*/
-		}
-
-		protected void HandleBrowseToFile()
-		{
-			/*
-			// Configure open file dialog box
-			var dialog = new Microsoft.Win32.OpenFileDialog();
-			dialog.FileName = "MP4"; // Default file name
-			dialog.DefaultExt = ".mp4"; // Default file extension
-			dialog.Filter = "MP4 Files|*.mp4"; // Filter files by extension
-
-			// Show open file dialog box
-			bool? result = dialog.ShowDialog();
-
-			// Process open file dialog box results
-			if (result == true)
-			{
-				// Open document
-				string filename = dialog.FileName;
-				if (System.IO.File.Exists(filename))
-				{
-					SetFile(filename);
-				}
-			}
-			*/
-		}
-
-		public virtual void SetDirectory(string directory)
-		{
-			InputPath = directory;
-		}
 
 		[RelayCommand]
 		public virtual void SetFile(string file)
@@ -238,6 +197,7 @@ namespace MP4Tools
 				Logger.Log($"Read Input Video Bit Depth Error: {ex.Message}");
 			}
 		}
+
 		public void RunAndLogFFMpeg(string args, string workingDirectory = "")
 		{
 			CanStop = true;

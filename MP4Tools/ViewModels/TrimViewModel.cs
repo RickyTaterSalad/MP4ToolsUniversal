@@ -1,5 +1,5 @@
+using Avalonia.Controls.Embedding.Offscreen;
 using CommunityToolkit.Mvvm.Input;
-using MP4Tools;
 using MP4ToolsLib;
 using MP4ToolsLib.Preset;
 using System;
@@ -15,10 +15,8 @@ namespace MP4Tools.ViewModels;
 
 internal class ExportTrimState
 {
-
 	public List<StartStopRange> StartStopRanges { get; set; } = new List<StartStopRange>();
 	public string InputFile { get; set; }
-
 	public string OutputFolderName { get; set; }
 	public string IntroTitle { get; set; }
 	public string IntroSubtitle { get; set; }
@@ -65,6 +63,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			OnPropertyChanged(nameof(IsHoursRangeEnabled));
 		}
 	}
+
 	private List<int> _videMinuteRange;
 
 	public IReadOnlyList<int> VideoMinuteRange
@@ -82,7 +81,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 			SetProperty(ref _videMinuteRange, (List<int>)value);
 		}
 	}
-
 
 
 	private string _introTitle = string.Empty;
@@ -113,7 +111,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 		set => SetProperty(ref _introDurationSeconds, Math.Max(1, value));
 	}
 
-
 	private bool _canTrim = false;
 	public bool CanTrim
 	{
@@ -131,6 +128,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			}
 		}
 	}
+
 	private string _rangeLabel;
 	public string RangeLabel
 	{
@@ -160,16 +158,15 @@ public partial class TrimViewModel : MP4ViewModelBase
 	public TimeRange StartRange { get; } = new TimeRange();
 	public TimeRange EndRange { get; } = new TimeRange();
 
-	public RelayCommand BrowseToFileCommand { get; private set; }
-
-
 	public AsyncRelayCommand TrimCommand { get; private set; }
 	public AsyncRelayCommand TrimAndCombineCommand { get; private set; }
 
 	public RelayCommand AddTimeRangeCommand { get; private set; }
+
 	public RelayCommand RemoveTimeRangeCommand { get; private set; }
 
 	public RelayCommand ClearTimeRangesCommand { get; private set; }
+
 	public RelayCommand ResetTimeRangeCommand { get; private set; }
 
 
@@ -182,7 +179,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 		_videoHourRange = new List<int>(TimeRange.Range);
 		_videMinuteRange = new List<int>(TimeRange.Range);
 		_rangeLabel = string.Empty;
-		BrowseToFileCommand = new RelayCommand(HandleBrowseToFile);
 
 		ResetTimeRangeCommand = new RelayCommand(() =>
 		{
@@ -209,6 +205,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				RangeLabel = string.Empty;
 			}
 		});
+
 		RemoveTimeRangeCommand = new RelayCommand(() =>
 		{
 			if (SelectedStartStopRange != null)
@@ -230,7 +227,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 		});
 	}
 
-
 	protected override async void OnInputPathSet()
 	{
 		_ = Task.Run(async () =>
@@ -239,7 +235,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 			await Task.Run(ReadFileInfoAsync);
 		});
 	}
-
 
 	private async Task TrimAndCombineAsync(bool combine = true)
 	{
@@ -283,7 +278,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"Unexpected error during log file handling: {ex.Message}");
+				Logger.Log($"Unexpected error during log file handling: {ex.Message}");
 			}
 		}
 		Logger.LogMessageReceived -= handler;
@@ -410,9 +405,9 @@ public partial class TrimViewModel : MP4ViewModelBase
 					}
 				}
 			}
-			catch
+			catch (Exception e)
 			{
-
+				Logger.Log($"Error deleting temporary TS files: {e.Message}");
 			}
 
 			Logger.Log("Completed combining trimmed files.");
@@ -432,7 +427,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 		catch
 		{
-
+			Logger.Log("Error deleting temporary files");
 		}
 		CanTrim = true;
 		ClearTimeRanges();
@@ -527,47 +522,13 @@ public partial class TrimViewModel : MP4ViewModelBase
 					}
 				}
 			}
-			catch
+			catch (Exception e)
 			{
-
+				Logger.Log($"Error trimming range {range.StartRange} - {range.EndRange}: {e.Message}");
 			}
 		});
 		return trimOutputPath;
 	}
-	/*
-		private async Task TrimAsync()
-		{
-			if (!CanTrim || !TrimRanges.Any() || InputPath == null)
-			{
-				return;
-			}
-			var validRanges = TrimRanges.Where(IsRangeWithinInputBounds).ToList();
-			if (!validRanges.Any())
-			{
-				return;
-			}
-			Logger.Log("Starting trim only...");
-			CanTrim = false;
-			var outFolder = Path.GetDirectoryName(InputPath) ?? string.Empty;
-			var outTrimmedFolder = Path.Combine(outFolder, OutputFolderName);
-			if (!Directory.Exists(outTrimmedFolder))
-			{
-				Directory.CreateDirectory(outTrimmedFolder);
-			}
-			Logger.Log($"Output folder: {outTrimmedFolder}");
-			var outExportName = System.IO.Path.ChangeExtension(Path.GetFileName(InputPath), ".json");
-			var path = FFMpegUtils.Instance.CleanupPath(Path.Combine(outFolder, outExportName));
-			WriteTrimExport(path);
-			Logger.Log($"Exported trim state: {path}");
-			foreach (var trim in validRanges)
-			{
-				Logger.Log($"Trimming range: {trim.StartRange} - {trim.EndRange}");
-				await TrimRangeAsync(trim, outTrimmedFolder);
-			}
-			CanTrim = true;
-			ClearTimeRanges();
-			Logger.Log("Trim complete.");
-		}*/
 
 	private void WriteTrimExport(string exportFile)
 	{
@@ -585,7 +546,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 		catch
 		{
-			//
+			Logger.Log("Error clearing time ranges");
 		}
 	}
 
@@ -600,10 +561,11 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 		catch
 		{
-			//
+			Logger.Log("Error creating trim output path, using temp file name");
 		}
 		return TempPathHelper.GetTempFileName();
 	}
+
 	private bool IsRangeWithinInputBounds(StartStopRange range)
 	{
 		if (range == null || range.StartRange == null || range.EndRange == null)
@@ -623,6 +585,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 		return startSeconds >= 0 && endSeconds > startSeconds && endSeconds <= durationSeconds;
 	}
+
 	public void ImportTrimFile(string file)
 	{
 		if (File.Exists(file))
@@ -704,8 +667,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 	private async Task ReadFileInfoAsync()
 	{
-		VideoHourRange = new List<int>(Range);
-		VideoMinuteRange = new List<int>(Range);
+		VideoHourRange = [.. Range];
+		VideoMinuteRange = [.. Range];
 		StartRange.Hours = 0;
 		StartRange.Minutes = 0;
 		StartRange.Seconds = 0;
@@ -722,37 +685,24 @@ public partial class TrimViewModel : MP4ViewModelBase
 			{
 				if (TimeSpan.TryParse(duration, out var parsedDuration))
 				{
+					parsedDuration -= TimeSpan.FromSeconds(1); // Subtract 1 second to ensure trimming within bounds
 					_inputDuration = TimeSpan.FromSeconds(Math.Round(parsedDuration.TotalSeconds));
 				}
 				CanClear = true;
 				CanTrim = true;
-				var hmsSplitMs = duration.Split(".");
-				if (hmsSplitMs != null && hmsSplitMs.Length > 0)
+				// Use _inputDuration (already adjusted) to set hour/minute/second ranges
+				int hours = (int)_inputDuration.TotalHours;
+				int min = _inputDuration.Minutes;
+				int sec = _inputDuration.Seconds;
+				VideoHourRange = [.. Enumerable.Range(0, hours + 1)];
+				EndRange.Hours = hours;
+
+				if (hours < 1)
 				{
-					var hmsSplit = hmsSplitMs[0].Split(":");
-					if (hmsSplit != null && hmsSplit.Length == 3)
-					{
-						if (int.TryParse(hmsSplit[0], out var hours))
-						{
-							VideoHourRange = Enumerable.Range(0, hours + 1).ToList();
-							EndRange.Hours = hours;
-
-						}
-						if (int.TryParse(hmsSplit[1], out var min))
-						{
-							if (hours < 1)
-							{
-								VideoMinuteRange = Enumerable.Range(0, min + 1).ToList();
-							}
-							EndRange.Minutes = min;
-						}
-						if (int.TryParse(hmsSplit[2], out var sec))
-						{
-							EndRange.Seconds = Math.Min(sec + 1, 59);
-						}
-
-					}
+					VideoMinuteRange = [.. Enumerable.Range(0, min + 1)];
 				}
+				EndRange.Minutes = min;
+				EndRange.Seconds = Math.Min(sec + 1, 59);
 			}
 
 		}
@@ -761,10 +711,5 @@ public partial class TrimViewModel : MP4ViewModelBase
 			Debug.WriteLine($"[ReadFileInfo][Error] {ex}");
 			Logger.Log($"Read File Info Error: {ex.Message}");
 		}
-		finally
-		{
-			//	OnPropertyChanged(nameof(IsHoursRangeEnabled));
-		}
-
 	}
 }

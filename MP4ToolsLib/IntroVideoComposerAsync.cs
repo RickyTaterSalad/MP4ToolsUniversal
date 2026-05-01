@@ -98,14 +98,6 @@ namespace MP4ToolsLib
                     "h264" or "avc" => "h264_mp4toannexb",
                     _ => string.Empty
                 };
-                /*
-                                string GetBsfForCodec(string codec) => codec switch
-                                {
-                                    "hevc" => "hevc_mp4toannexb,h265_metadata=audit_packet=1",
-                                    "h264" or "avc" => "h264_mp4toannexb,h264_metadata=audit_packet=1",
-                                    _ => string.Empty
-                                };
-                                */
                 string vBsf = GetBsfForCodec(vCodec);
 
                 var escapedTitle = EscapeDrawtext(titleText);
