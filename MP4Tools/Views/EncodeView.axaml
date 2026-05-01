@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+						 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+						 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+						 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+						 xmlns:vm="using:MP4Tools.ViewModels"
+						 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="420"
+						 x:Class="MP4Tools.Views.EncodeView"
+						 x:DataType="vm:EncodeViewModel">
+	<ScrollViewer>
+		<StackPanel Margin="0,0,16,16" Spacing="14">
+			<TextBlock Text="Output encoding" FontWeight="SemiBold" FontSize="16"/>
+
+			<TextBlock TextWrapping="Wrap" Opacity="0.85"
+								 Text="Trim and Combine use these settings for final output. Stream copy is fastest when remuxing compatible streams; enable re-encode to transcode. Hardware acceleration in this build targets AMD GPUs via VA-API (-hwaccel vaapi / hevc_vaapi, h264_vaapi when available). Impossible mixes are hidden or adjusted: 10-bit H.264 requires Software hardware mode; H.264 with Auto or VA-API cannot pick 10-bit output. Output bit depth and hardware are only used when video is not Copy."/>
+
+			<CheckBox Content="Re-encode output (transcode video/audio instead of stream copy)"
+								IsChecked="{Binding ReencodeOutput}"/>
+
+			<Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+				<TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,10" Text="Video codec"/>
+				<ComboBox Grid.Row="0" Grid.Column="1" MinWidth="200" Margin="0,0,0,10"
+									ItemsSource="{Binding VideoCodecChoices}"
+									SelectedItem="{Binding SelectedVideoCodec}"
+									IsEnabled="{Binding ReencodeOutput}"/>
+
+				<TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,10" Text="Audio codec"/>
+				<ComboBox Grid.Row="1" Grid.Column="1" MinWidth="200" Margin="0,0,0,10"
+									ItemsSource="{Binding AudioCodecChoices}"
+									SelectedItem="{Binding SelectedAudioCodec}"
+									IsEnabled="{Binding ReencodeOutput}"/>
+
+				<TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,10" Text="Output bit depth"/>
+				<ComboBox Grid.Row="2" Grid.Column="1" MinWidth="200" Margin="0,0,0,10"
+									ItemsSource="{Binding OutputBitDepthChoicesFiltered}"
+									SelectedItem="{Binding SelectedOutputBitDepth}"
+									IsEnabled="{Binding IsOutputBitDepthEnabled}"/>
+
+				<TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0" Text="Hardware acceleration"/>
+				<ComboBox Grid.Row="3" Grid.Column="1" MinWidth="200"
+									ItemsSource="{Binding HardwareAccelerationChoicesFiltered}"
+									SelectedItem="{Binding SelectedHardwareAcceleration}"
+									IsEnabled="{Binding IsHardwareAccelerationEnabled}"/>
+			</Grid>
+
+			<TextBlock TextWrapping="Wrap" Opacity="0.75" FontSize="11"
+								 Text="h265 is HEVC. With Output bit depth set to Auto, 10-bit output is used when the setting matches probed input (and the encoder supports it)."/>
+
+			<Button Command="{Binding SaveEncodeSettingsCommand}"
+							HorizontalAlignment="Left"
+							Padding="16,8">
+				<TextBlock Text="Save encode settings"/>
+			</Button>
+
+			<TextBlock Text="Configuration file" Opacity="0.85" FontSize="12"/>
+			<TextBlock Text="{Binding SettingsFilePathDisplay}"
+								 TextWrapping="Wrap"
+								 Opacity="0.75"
+								 FontSize="11"/>
+		</StackPanel>
+	</ScrollViewer>
+</UserControl>

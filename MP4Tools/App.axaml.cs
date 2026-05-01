@@ -34,6 +34,9 @@ public partial class App : Application
         {
             var startupSettings = AppSettingsStore.LoadOrDefault();
             TempPathHelper.ApplyConfiguration(startupSettings.TempDirectory, startupSettings.RetainTemporaryFiles);
+            EncodingSettingsRuntime.Apply(startupSettings);
+            if (startupSettings.DryRunFfmpegCommands)
+                MP4Tools.Logger.Log("Dry run is enabled in settings: ffmpeg/ffprobe will log commands without executing.");
 
             desktop.MainWindow = new MainWindow
             {

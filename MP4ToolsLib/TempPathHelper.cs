@@ -38,11 +38,10 @@ namespace MP4ToolsLib
 			return Directory.Exists(candidate) ? candidate : Path.GetTempPath();
 		}
 
+		/// <summary>Returns a unique path under the temp folder; the file is not created until a caller writes it.</summary>
 		public static string GetTempFileName()
 		{
-			string fileName = Path.Combine(GetTempPath(), Guid.NewGuid().ToString() + ".tmp");
-			using (File.Create(fileName)) { }
-			return fileName;
+			return Path.Combine(GetTempPath(), Guid.NewGuid().ToString("N") + ".tmp");
 		}
 
 		public static void DeleteTemporaryFileUnlessRetained(string path)

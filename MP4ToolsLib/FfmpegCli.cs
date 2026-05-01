@@ -48,6 +48,7 @@ public static class FfmpegArguments
 
 	public const string AudioSampleRate = "-ar";
 	public const string AudioChannels = "-ac";
+	public const string AudioBitrate = "-b:a";
 
 	public const string OutputVideoFrameRate = "-r";
 	public const string StopEncodingWhenShortestStreamEnds = "-shortest";

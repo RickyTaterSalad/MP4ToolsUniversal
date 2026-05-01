@@ -12,6 +12,9 @@ namespace MP4ToolsLib
 
 	public class FFMpegUtils
 	{
+		/// <summary>When true, ffmpeg/ffprobe are not executed; callers log full exe + args instead.</summary>
+		public static bool DryRunExternalCommands { get; set; }
+
 		private static readonly Lazy<FFMpegUtils> _instance = new Lazy<FFMpegUtils>(() => new FFMpegUtils());
 		public static FFMpegUtils Instance => _instance.Value;
 		private FFMpegUtils()
@@ -163,6 +166,22 @@ namespace MP4ToolsLib
 			}
 		}
 
+		/// <summary>Maps Encode-tab preference to ffmpeg decode acceleration (prepended when not stream-copy).</summary>
+		public string ResolveHwAccelLineFromUserHints()
+		{
+			var m = (FfmpegUserHints.HardwareAcceleration ?? "auto").Trim().ToLowerInvariant();
+			return m switch
+			{
+				// Non-AMD decode hints disabled (AMD: VA-API + render node).
+				// "nvenc" => "cuda",
+				// "qsv" => "qsv",
+				"vaapi" => $"vaapi\n-vaapi_device {GetPreferredRenderDevice()}",
+				// "videotoolbox" => "videotoolbox",
+				"software" => "auto",
+				_ => "auto",
+			};
+		}
+
 		public string ApplyForcedFfmpegArgs(string args)
 		{
 			args = args ?? string.Empty;
@@ -178,43 +197,35 @@ namespace MP4ToolsLib
 			{
 				if (!args.Contains("-hwaccel", StringComparison.OrdinalIgnoreCase))
 				{
-					var hwaccel = DetectBestHwAccel();
-					// Check if using VAAPI with video filters - if so, we should NOT use -hwaccel
-					// because the filters (like drawtext) work on CPU frames and we use hwupload
+					var hwaccel = ResolveHwAccelLineFromUserHints();
 					var hasVideoFilter = args.Contains($"{FfmpegArguments.VideoFilter} ", StringComparison.OrdinalIgnoreCase)
 						|| args.Contains(" -filter:v", StringComparison.OrdinalIgnoreCase)
 						|| args.Contains(" -filter_complex", StringComparison.OrdinalIgnoreCase);
 
-					// For vaapi, we need to add -vaapi_device for VAAPI filters and encoders
-					if (hwaccel.StartsWith("vaapi"))
+					if (string.Equals(hwaccel, "auto", StringComparison.OrdinalIgnoreCase))
+					{
+						args = $"-hwaccel auto {args}".Trim();
+					}
+					else if (hwaccel.StartsWith("vaapi", StringComparison.OrdinalIgnoreCase))
 					{
 						var parts = hwaccel.Split('\n');
-						var vaapiDevice = parts.Length > 1 ? parts[1] : string.Empty; // "-vaapi_device /dev/dri/renderDxxx"
+						var vaapiDevice = parts.Length > 1 ? parts[1] : string.Empty;
 
 						if (!hasVideoFilter)
 						{
-							// No video filters - use hwaccel for decoding
 							if (!string.IsNullOrWhiteSpace(vaapiDevice))
-							{
 								args = $"{vaapiDevice} -hwaccel {parts[0]} {args}".Trim();
-							}
 							else
-							{
 								args = $"-hwaccel {hwaccel} {args}".Trim();
-							}
 						}
 						else
 						{
-							// Has video filters - don't use hwaccel, but still need -vaapi_device for hwupload and encoder
 							if (!string.IsNullOrWhiteSpace(vaapiDevice) && !args.Contains("-vaapi_device"))
-							{
 								args = $"{vaapiDevice} {args}".Trim();
-							}
 						}
 					}
 					else
 					{
-						// Non-VAAPI hwaccel
 						args = $"-hwaccel {hwaccel} {args}".Trim();
 					}
 				}
@@ -269,6 +280,27 @@ namespace MP4ToolsLib
 
 		}
 
+		public async Task<string> GetFirstAudioCodecNameAsync(string inputFile, CancellationToken cancellationToken = default, Action<string> log = null)
+		{
+			if (string.IsNullOrWhiteSpace(inputFile) || !File.Exists(inputFile))
+				return string.Empty;
+			try
+			{
+				var args = $"-v error -select_streams a:0 -show_entries stream=codec_name -of default=nk=1:nw=1 \"{inputFile}\"";
+				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
+				return (output ?? string.Empty).Trim();
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
+			}
+			catch
+			{
+			}
+
+			return string.Empty;
+		}
+
 		public Task<string> RunCaptureFFMpegAsync(string args, CancellationToken ct, Action<string> Log = null)
 		{
 			return RunCaptureAsync(FFPMEG_EXE, args, ct, Log);
@@ -282,6 +314,14 @@ namespace MP4ToolsLib
 		public async Task<string> RunCaptureAsync(string exe, string args, CancellationToken ct, Action<string> Log = null)
 		{
 			Log ??= _ => { };
+			if (DryRunExternalCommands)
+			{
+				Log($"[DRY RUN] exe: {exe}");
+				Log($"[DRY RUN] args: {args}");
+				Log("[DRY RUN] Capture skipped — process not started (empty stdout assumed).");
+				return string.Empty;
+			}
+
 			var psi = new ProcessStartInfo(exe, args)
 			{
 				WindowStyle = ProcessWindowStyle.Hidden,
@@ -401,6 +441,15 @@ namespace MP4ToolsLib
 			args = ApplyForcedFfmpegArgs(args);
 
 			log($"Prepared ffmpeg args: {args}");
+			if (DryRunExternalCommands)
+			{
+				log($"[DRY RUN] exe: {FFPMEG_EXE}");
+				log($"[DRY RUN] working_directory: {workingDirectory ?? string.Empty}");
+				log($"[DRY RUN] args (after ApplyForcedFfmpegArgs): {args}");
+				log("[DRY RUN] Encode skipped — process not started.");
+				return;
+			}
+
 			var psi = new ProcessStartInfo
 			{
 				FileName = FFPMEG_EXE,
@@ -645,8 +694,8 @@ namespace MP4ToolsLib
 					return $"vaapi\n-vaapi_device {renderDev}";
 				}
 			}
-			// Default to cuda for NVIDIA
-			return "cuda";
+			// Non-AMD fallback — avoid NVIDIA-specific hwaccel when AMD not detected.
+			return "auto";
 		}
 
 		private bool HasAmdGpu()

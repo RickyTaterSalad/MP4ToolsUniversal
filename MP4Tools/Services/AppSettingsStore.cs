@@ -8,6 +8,14 @@ public sealed class AppUserSettings
 {
 	public string TempDirectory { get; set; } = "";
 	public bool RetainTemporaryFiles { get; set; }
+
+	/// <summary>Folder for default Combine paths and Trim session folders. Empty in JSON uses <see cref="DefaultOutputPathRuntime.BuiltinFallbackDirectory"/>.</summary>
+	public string DefaultOutputDirectory { get; set; } = "";
+
+	/// <summary>Log ffmpeg/ffprobe command lines without starting processes (preview/debug).</summary>
+	public bool DryRunFfmpegCommands { get; set; }
+
+	public MP4ToolsLib.EncodingSettingsDto Encoding { get; set; } = new();
 }
 
 public static class AppSettingsStore

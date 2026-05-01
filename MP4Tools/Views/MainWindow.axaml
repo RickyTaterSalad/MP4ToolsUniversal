@@ -20,6 +20,9 @@
         <TabItem Header="Trim">
             <views:TrimView DataContext="{Binding TrimViewModel}" Margin="10"/>
         </TabItem>
+        <TabItem Header="Encode">
+            <views:EncodeView DataContext="{Binding EncodeViewModel}" Margin="10"/>
+        </TabItem>
         <TabItem Header="Options">
             <views:OptionsView DataContext="{Binding OptionsViewModel}" Margin="10"/>
         </TabItem>

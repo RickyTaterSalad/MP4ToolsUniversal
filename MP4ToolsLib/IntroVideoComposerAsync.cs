@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -53,13 +54,16 @@ namespace MP4ToolsLib
             string detailsText = "",
             Action<string> log = null,
             IProgress<double> progress = null, // 0..1
-            CancellationToken ct = default)
+            CancellationToken ct = default,
+            EncodingSettingsDto encodingPrefs = null,
+            Action<string> operationStep = null,
+            FfmpegOption seekBeforeMainInput = default)
         {
             log ??= _ => { };
+            void Step(string message) => operationStep?.Invoke(message);
             if (!File.Exists(inputPath))
                 throw new FileNotFoundException(inputPath);
 
-            string introMp4 = Path.Combine(TempPathHelper.GetTempPath(), $"intro_{Guid.NewGuid():N}.mp4");
             string introTs = Path.Combine(TempPathHelper.GetTempPath(), $"intro_{Guid.NewGuid():N}.ts");
             string inputTs = Path.Combine(TempPathHelper.GetTempPath(), $"input_{Guid.NewGuid():N}.ts");
 
@@ -92,6 +96,21 @@ namespace MP4ToolsLib
                     "opus" => "libopus",
                     _ => "aac"
                 };
+
+                var useTabEncode = encodingPrefs != null && encodingPrefs.ReencodeOutput
+                    && !string.Equals(encodingPrefs.VideoCodec, "copy", StringComparison.OrdinalIgnoreCase);
+
+                var introPlan = useTabEncode ? VideoEncodeSelector.BuildIntroPlan(encodingPrefs, log) : null;
+
+                string introAudioEnc = aEnc;
+                if (encodingPrefs != null && encodingPrefs.ReencodeOutput)
+                {
+                    var eff = VideoEncodeSelector.EffectiveAudioCodec(encodingPrefs);
+                    introAudioEnc = string.Equals(eff, FfmpegArguments.StreamCopy, StringComparison.OrdinalIgnoreCase)
+                        ? "aac"
+                        : eff;
+                }
+
                 string GetBsfForCodec(string codec) => codec switch
                 {
                     "hevc" => "hevc_mp4toannexb",
@@ -118,51 +137,78 @@ namespace MP4ToolsLib
                 }
 
                 log("Creating intro...");
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
-                    FfmpegCommandLine.Build(
-                        FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
-                        FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
-                        FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
-                        FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}")),
-                        FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
-                        FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"anullsrc=r={ar}:cl={acl}:d={durationSeconds}")),
-                        FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{vf}\""),
-                        FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, vEnc),
-                        FfmpegOption.Pair(FfmpegArguments.PixelFormat, pixFmt),
-                        FfmpegOption.Pair(FfmpegArguments.OutputVideoFrameRate, fps),
-                        FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, aEnc),
-                        FfmpegOption.Pair(FfmpegArguments.AudioSampleRate, ar),
-                        FfmpegOption.Pair(FfmpegArguments.AudioChannels, ach),
-                        FfmpegOption.Unary(FfmpegArguments.StopEncodingWhenShortestStreamEnds),
-                        FfmpegOption.Positional(FfmpegCommandLine.Quoted(introMp4))),
-                    ct, log);
+                Step("Encoding intro to MPEG-TS…");
 
-                log("Muxing TS streams...");
+                var introVidTail = new List<FfmpegOption?>();
+                if (useTabEncode && introPlan != null && !introPlan.UseStreamCopy)
+                {
+                    foreach (var o in introPlan.VideoEncodeOptions)
+                        introVidTail.Add(o);
+                }
+                else
+                {
+                    introVidTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, vEnc));
+                    introVidTail.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, pixFmt));
+                }
+
+                var introMp4Parts = new List<FfmpegOption?>
+                {
+                    FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
+                    FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+                    FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
+                    FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}")),
+                    FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
+                    FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"anullsrc=r={ar}:cl={acl}:d={durationSeconds}")),
+                    FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{vf}\""),
+                };
+                introMp4Parts.AddRange(introVidTail);
+                introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.OutputVideoFrameRate, fps));
+                if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(introAudioEnc))
+                {
+                    log("Intro audio is Opus: using AAC in MPEG-TS intermediate (avoids opus packet header errors when concatenating).");
+                    introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, "aac"));
+                    introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
+                }
+                else
+                    introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, introAudioEnc));
+
+                introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioSampleRate, ar));
+                introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioChannels, ach));
+                introMp4Parts.Add(FfmpegOption.Unary(FfmpegArguments.StopEncodingWhenShortestStreamEnds));
+                if (!string.IsNullOrWhiteSpace(vBsf))
+                    introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, vBsf));
+                introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
+                introMp4Parts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(introTs)));
+
                 await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
-                    FfmpegCommandLine.Build(
-                        FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
-                        FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
-                        FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(introMp4)),
-                        FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
-                        FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, vBsf),
-                        FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
-                        FfmpegOption.Positional(FfmpegCommandLine.Quoted(introTs))),
+                    FfmpegCommandLine.Build(introMp4Parts),
                     ct, log);
                 progress?.Report(0.8);
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
-                    FfmpegCommandLine.Build(
-                        FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
-                        FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
-                        FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputPath)),
-                        FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
-                        FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, vBsf),
-                        FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
-                        FfmpegOption.Positional(FfmpegCommandLine.Quoted(inputTs))),
-                    ct, log);
+
+                Step("Muxing main clip to MPEG-TS…");
+                if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aCodec))
+                    log("Main clip audio is Opus: using AAC in MPEG-TS intermediate (avoids opus packet header errors when concatenating).");
+                var inputToTs = new List<FfmpegOption?>
+                {
+                    FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
+                    FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+                    seekBeforeMainInput,
+                    FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputPath)),
+                    FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
+                };
+                if (!string.IsNullOrWhiteSpace(vBsf))
+                    inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, vBsf));
+                MpegTsConcatAudio.AppendMp4ToTsAudioOptions(inputToTs, aCodec);
+                inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
+                inputToTs.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(inputTs)));
+                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(inputToTs), ct, log);
                 progress?.Report(0.9);
 
                 log("Concatenating...");
-                var aacBsfOpt = aEnc.Equals("aac", StringComparison.OrdinalIgnoreCase)
+                Step("Joining intro and main clip…");
+                var needAacAdtsBsf = MpegTsConcatAudio.IntermediateTsAudioIsAac(introAudioEnc)
+                    && MpegTsConcatAudio.IntermediateTsAudioIsAac(aCodec);
+                var aacBsfOpt = needAacAdtsBsf
                     ? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
                     : (FfmpegOption?)null;
                 await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
@@ -180,7 +226,6 @@ namespace MP4ToolsLib
             }
             finally
             {
-                SafeDelete(introMp4);
                 SafeDelete(introTs);
                 SafeDelete(inputTs);
             }
