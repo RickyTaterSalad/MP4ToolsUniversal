@@ -1,5 +1,9 @@
 ﻿using Avalonia;
+using Avalonia.Fonts.Inter;
 using System;
+using System.IO;
+using System.Reflection;
+using System.Runtime.Loader;
 
 namespace MP4Tools;
 
@@ -9,8 +13,21 @@ sealed class Program
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args) => BuildAvaloniaApp()
-        .StartWithClassicDesktopLifetime(args);
+    public static void Main(string[] args)
+    {
+        // When MP4Tools.deps.json is stale, the runtime still refuses to load project refs even if
+        // MP4ToolsLib.dll is next to MP4Tools.dll. Resolve from the app base as a fallback.
+        AssemblyLoadContext.Default.Resolving += (_, name) =>
+        {
+            if (!string.Equals(name.Name, "MP4ToolsLib", StringComparison.Ordinal))
+                return null;
+            var path = Path.Combine(AppContext.BaseDirectory, "MP4ToolsLib.dll");
+            return File.Exists(path) ? AssemblyLoadContext.Default.LoadFromAssemblyPath(path) : null;
+        };
+
+        BuildAvaloniaApp()
+            .StartWithClassicDesktopLifetime(args);
+    }
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
