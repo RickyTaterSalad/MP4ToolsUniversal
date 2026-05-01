@@ -60,6 +60,31 @@ public sealed class HardwareEncodePlanningTests : IDisposable
 	}
 
 	[Fact]
+	public void Intro_plan_uses_probe_hevc_when_encode_tab_is_h264()
+	{
+		var dto = new EncodingSettingsDto
+		{
+			ReencodeOutput = true,
+			VideoCodec = "h264",
+			AudioCodec = "aac",
+			OutputBitDepth = "8 bit",
+			HardwareAcceleration = "software",
+		};
+		var intro = VideoEncodeSelector.BuildIntroPlan(dto, "hevc", _ => { });
+		Assert.False(intro.UseStreamCopy);
+		Assert.Contains("libx265", intro.EncoderSummary, StringComparison.OrdinalIgnoreCase);
+		Assert.False(intro.NeedsVaapiUploadFilter);
+	}
+
+	[Fact]
+	public void MatchIntroVideoCodecFromProbe_maps_common_names()
+	{
+		Assert.Equal("hevc", VideoEncodeSelector.MatchIntroVideoCodecFromProbe("hvc1"));
+		Assert.Equal("h264", VideoEncodeSelector.MatchIntroVideoCodecFromProbe("avc1"));
+		Assert.Equal("", VideoEncodeSelector.MatchIntroVideoCodecFromProbe("vp9"));
+	}
+
+	[Fact]
 	public void Stream_copy_skips_encoder_tail()
 	{
 		var dto = new EncodingSettingsDto

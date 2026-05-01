@@ -1,0 +1,116 @@
+[14:23:59] ffprobe: -v error -show_entries stream=index,codec_type,width,height,r_frame_rate,pix_fmt,codec_name,sample_rate,channels,channel_layout,bit_depth -of json "/home/server/Desktop/DJI_001/file_2.MP4"
+[14:23:59] [stdout] {
+[14:23:59] [stdout]     "programs": [
+[14:23:59] [stdout]     ],
+[14:23:59] [stdout]     "stream_groups": [
+[14:23:59] [stdout]     ],
+[14:23:59] [stdout]     "streams": [
+[14:23:59] [stdout]         {
+[14:23:59] [stdout]             "index": 0,
+[14:23:59] [stdout]             "codec_name": "hevc",
+[14:23:59] [stdout]             "codec_type": "video",
+[14:23:59] [stdout]             "width": 3840,
+[14:23:59] [stdout]             "height": 2160,
+[14:23:59] [stdout]             "pix_fmt": "yuv420p",
+[14:23:59] [stdout]             "r_frame_rate": "30000/1001"
+[14:23:59] [stdout]         },
+[14:23:59] [stdout]         {
+[14:23:59] [stdout]             "index": 1,
+[14:23:59] [stdout]             "codec_name": "aac",
+[14:23:59] [stdout]             "codec_type": "audio",
+[14:23:59] [stdout]             "sample_rate": "48000",
+[14:23:59] [stdout]             "channels": 2,
+[14:23:59] [stdout]             "channel_layout": "stereo",
+[14:23:59] [stdout]             "r_frame_rate": "0/0"
+[14:23:59] [stdout]         },
+[14:23:59] [stdout]         {
+[14:23:59] [stdout]             "index": 2,
+[14:23:59] [stdout]             "codec_type": "data",
+[14:23:59] [stdout]             "r_frame_rate": "0/0"
+[14:23:59] [stdout]         }
+[14:23:59] [stdout]     ]
+[14:23:59] [stdout] }
+[14:23:59] ffprobe: -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal "/home/server/Desktop/DJI_001/file_2.MP4"
+[14:23:59] [stdout] 0:10:00.032767
+[14:23:59] ffprobe: -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal "/home/server/Desktop/DJI_001/file_1.MP4"
+[14:23:59] [stdout] 0:10:00.032767
+[14:24:22] Starting combine...
+[14:24:22] Hardware acceleration: Encode tab="vaapi", ffmpeg decode hint="vaapi -vaapi_device /dev/dri/renderD128"
+[14:24:22] Preparing input files...
+[14:24:22] Prepared 2 files.
+[14:24:22] Reading input durations...
+[14:24:22] ffprobe: -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal "/home/server/Desktop/DJI_001/file_2.MP4"
+[14:24:23] [stdout] 0:10:00.032767
+[14:24:23] ffprobe: -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal "/home/server/Desktop/DJI_001/file_1.MP4"
+[14:24:23] [stdout] 0:10:00.032767
+[14:24:23] Building intro clip...
+[14:24:23] ffprobe: -v error -show_entries stream=index,codec_type,width,height,r_frame_rate,pix_fmt,codec_name,sample_rate,channels,channel_layout,bit_depth -of json "/home/server/Desktop/DJI_001/file_2.MP4"
+[14:24:23] [stdout] {
+[14:24:23] [stdout]     "programs": [
+[14:24:23] [stdout]     ],
+[14:24:23] [stdout]     "stream_groups": [
+[14:24:23] [stdout]     ],
+[14:24:23] [stdout]     "streams": [
+[14:24:23] [stdout]         {
+[14:24:23] [stdout]             "index": 0,
+[14:24:23] [stdout]             "codec_name": "hevc",
+[14:24:23] [stdout]             "codec_type": "video",
+[14:24:23] [stdout]             "width": 3840,
+[14:24:23] [stdout]             "height": 2160,
+[14:24:23] [stdout]             "pix_fmt": "yuv420p",
+[14:24:23] [stdout]             "r_frame_rate": "30000/1001"
+[14:24:23] [stdout]         },
+[14:24:23] [stdout]         {
+[14:24:23] [stdout]             "index": 1,
+[14:24:23] [stdout]             "codec_name": "aac",
+[14:24:23] [stdout]             "codec_type": "audio",
+[14:24:23] [stdout]             "sample_rate": "48000",
+[14:24:23] [stdout]             "channels": 2,
+[14:24:23] [stdout]             "channel_layout": "stereo",
+[14:24:23] [stdout]             "r_frame_rate": "0/0"
+[14:24:23] [stdout]         },
+[14:24:23] [stdout]         {
+[14:24:23] [stdout]             "index": 2,
+[14:24:23] [stdout]             "codec_type": "data",
+[14:24:23] [stdout]             "r_frame_rate": "0/0"
+[14:24:23] [stdout]         }
+[14:24:23] [stdout]     ]
+[14:24:23] [stdout] }
+[14:24:23] VA-API encoder not available; using software encoder.
+[14:24:23] Creating intro...
+[14:24:23] ffmpeg: -nostdin -y -f lavfi -i "color=c=0x1E1E1E:s=3840x2160:r=30000/1001:d=10" -f lavfi -i "anullsrc=r=48000:cl=stereo:d=10" -vf "drawtext=text='jlkjlk vs. kljkl':fontfile='/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf':fontcolor=white:fontsize=128:x=(w-text_w)/2:y=(h/2)-text_h-18,drawtext=text='05/01/2026 jjlk':fontfile='/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf':fontcolor=white:fontsize=64:x=(w-text_w)/2:y=(h/2)+18,drawtext=text='Final Score 2-2 TIE':fontfile='/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h/2)+18+64+36" -c:v libx264 -preset:v fast -b:v 12M -maxrate 24M -pix_fmt yuv420p -profile:v high -r 30000/1001 -c:a aac -ar 48000 -ac 2 -shortest -bsf:v hevc_mp4toannexb -f mpegts "/opt/Encodes/tmp/intro_1f93cea294ac401991472d8787deb34b.ts"
+[14:24:23] [stderr] ffmpeg version 8.0.1-3ubuntu2 Copyright (c) 2000-2025 the FFmpeg developers
+[14:24:23] [stderr]   built with gcc 15 (Ubuntu 15.2.0-13ubuntu3)
+[14:24:23] [stderr]   configuration: --prefix=/usr --extra-version=3ubuntu2 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --disable-pocketsphinx --disable-libcaca --disable-libmfx --disable-omx --enable-gnutls --enable-libaom --enable-libass --enable-libbs2b --enable-libcdio --enable-libcodec2 --enable-libdav1d --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libglslang --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzimg --enable-openal --enable-opencl --enable-opengl --disable-sndio --enable-libvpl --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-ladspa --enable-libbluray --enable-libdvdnav --enable-libdvdread --enable-libjack --enable-libjxl --enable-libpulse --enable-librabbitmq --enable-librist --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libx264 --enable-libzmq --enable-libzvbi --enable-lv2 --enable-sdl2 --enable-libplacebo --enable-librav1e --enable-librsvg --enable-shared
+[14:24:23] [stderr]   libavutil      60.  8.100 / 60.  8.100
+[14:24:23] [stderr]   libavcodec     62. 11.100 / 62. 11.100
+[14:24:23] [stderr]   libavformat    62.  3.100 / 62.  3.100
+[14:24:23] [stderr]   libavdevice    62.  1.100 / 62.  1.100
+[14:24:23] [stderr]   libavfilter    11.  4.100 / 11.  4.100
+[14:24:23] [stderr]   libswscale      9.  1.100 /  9.  1.100
+[14:24:23] [stderr]   libswresample   6.  1.100 /  6.  1.100
+[14:24:23] [stderr] Input #0, lavfi, from 'color=c=0x1E1E1E:s=3840x2160:r=30000/1001:d=10':
+[14:24:23] [stderr]   Duration: N/A, start: 0.000000, bitrate: N/A
+[14:24:23] [stderr]   Stream #0:0: Video: wrapped_avframe, yuv420p, 3840x2160 [SAR 1:1 DAR 16:9], 29.97 fps, 29.97 tbr, 29.97 tbn
+[14:24:23] [stderr] Input #1, lavfi, from 'anullsrc=r=48000:cl=stereo:d=10':
+[14:24:23] [stderr]   Duration: N/A, start: 0.000000, bitrate: 768 kb/s
+[14:24:23] [stderr]   Stream #1:0: Audio: pcm_u8, 48000 Hz, stereo, u8, 768 kb/s
+[14:24:23] [stderr] Stream mapping:
+[14:24:23] [stderr]   Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (libx264))
+[14:24:23] [stderr]   Stream #1:0 -> #0:1 (pcm_u8 (native) -> aac (native))
+[14:24:23] [stderr] [libx264 @ 0x5711b3274c40] VBV maxrate specified, but no bufsize, ignored
+[14:24:23] [stderr] [libx264 @ 0x5711b3274c40] using SAR=1/1
+[14:24:23] [stderr] [libx264 @ 0x5711b3274c40] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[14:24:23] [stderr] [libx264 @ 0x5711b3274c40] profile High, level 5.1, 4:2:0, 8-bit
+[14:24:23] [stderr] [hevc_mp4toannexb @ 0x5711b326ae80] Codec 'h264' (27) is not supported by the bitstream filter 'hevc_mp4toannexb'. Supported codecs are: hevc (173) 
+[14:24:23] [stderr] [vost#0:0/libx264 @ 0x5711b3274700] Error initializing bitstream filter: hevc_mp4toannexb
+[14:24:23] [stderr] [vf#0:0 @ 0x5711b3275b40] Error sending frames to consumers: Invalid argument
+[14:24:23] [stderr] [vf#0:0 @ 0x5711b3275b40] Task finished with error code: -22 (Invalid argument)
+[14:24:23] [stderr] [vf#0:0 @ 0x5711b3275b40] Terminating thread with return code -22 (Invalid argument)
+[14:24:23] [stderr] [out#0/mpegts @ 0x5711b3274140] Nothing was written into output file, because at least one of its streams received no packets.
+[14:24:23] [stderr] frame=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.14    
+[14:24:23] [stderr] [libx264 @ 0x5711b3274c40] final ratefactor: 17.93
+[14:24:23] [stderr] [aac @ 0x5711b3276f00] Qavg: nan
+[14:24:23] [stderr] Conversion failed!
+[14:24:23] ** Error: ffmpeg failed with exit code 234 **
+[14:24:23] Combine failed: ffmpeg failed with exit code 234

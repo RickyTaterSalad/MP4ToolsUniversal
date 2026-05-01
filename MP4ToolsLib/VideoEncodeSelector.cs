@@ -67,8 +67,30 @@ public static class VideoEncodeSelector
 		};
 	}
 
+	/// <summary>
+	/// Maps ffprobe <c>codec_name</c> (video) to the Encode-tab style codec used for intro encoder selection.
+	/// Empty when unknown — caller keeps dto-only behavior.
+	/// </summary>
+	public static string MatchIntroVideoCodecFromProbe(string ffprobeVideoCodecName)
+	{
+		var x = ffprobeVideoCodecName?.Trim().ToLowerInvariant() ?? "";
+		if (x is "hevc" or "h265" or "h.265" or "hev1" or "hvc1")
+			return "hevc";
+		if (x is "h264" or "avc" or "avc1")
+			return "h264";
+		return "";
+	}
+
 	/// <summary>Intro slide encode uses the same HW/software rules as the main encode tab (plus drawtext + VA-API hwupload when needed).</summary>
-	public static VideoEncodePlan BuildIntroPlan(EncodingSettingsDto dto, Action<string> log)
+	public static VideoEncodePlan BuildIntroPlan(EncodingSettingsDto dto, Action<string> log) =>
+		BuildIntroPlan(dto, matchMainClipFfprobeVideoCodec: null, log);
+
+	/// <inheritdoc cref="BuildIntroPlan(EncodingSettingsDto, Action{string})"/>
+	/// <param name="matchMainClipFfprobeVideoCodec">
+	/// When set (ffprobe video <c>codec_name</c> for the clip concatenated after the intro), the intro is encoded with this codec family
+	/// so MPEG-TS <c>concat:</c> matches stream-copied segments (e.g. HEVC drone + intro both HEVC).
+	/// </param>
+	public static VideoEncodePlan BuildIntroPlan(EncodingSettingsDto dto, string matchMainClipFfprobeVideoCodec, Action<string> log)
 	{
 		log ??= _ => { };
 		var pseudo = new EncodingSettingsDto
@@ -79,7 +101,16 @@ public static class VideoEncodeSelector
 			AudioCodec = dto?.AudioCodec ?? "copy",
 		};
 
-		if (dto == null || !dto.ReencodeOutput || IsCopyCodec(dto.VideoCodec))
+		var matched = MatchIntroVideoCodecFromProbe(matchMainClipFfprobeVideoCodec ?? "");
+		if (!string.IsNullOrEmpty(matched))
+		{
+			pseudo.VideoCodec = matched;
+			if (dto == null || !dto.ReencodeOutput || IsCopyCodec(dto.VideoCodec))
+				pseudo.OutputBitDepth = string.IsNullOrWhiteSpace(dto?.OutputBitDepth) ? "8 bit" : dto.OutputBitDepth;
+			else
+				pseudo.OutputBitDepth = dto.OutputBitDepth ?? "auto";
+		}
+		else if (dto == null || !dto.ReencodeOutput || IsCopyCodec(dto.VideoCodec))
 		{
 			pseudo.VideoCodec = "h264";
 			pseudo.OutputBitDepth = "8 bit";
