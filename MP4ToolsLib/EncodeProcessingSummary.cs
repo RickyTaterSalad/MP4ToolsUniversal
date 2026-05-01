@@ -33,7 +33,7 @@ public static class EncodeProcessingSummary
 		var introPlan = VideoEncodeSelector.BuildIntroPlan(dto, _ => { });
 		yield return introPlan.UseStreamCopy
 			? "Intro slide (when used): stream copy (unexpected)."
-			: $"Intro slide (when used): {SummarizeOptions(introPlan.VideoEncodeOptions)} — VA-API encoder skipped for lavfi/drawtext path.";
+			: $"Intro slide (when used): {SummarizeOptions(introPlan.VideoEncodeOptions)}{(introPlan.NeedsVaapiUploadFilter ? " (+ VA-API hwupload after drawtext)" : "")}";
 
 		yield return "Note: RunCaptureFFMpegAsync (intro MP4/TS steps, ffprobe) does not prepend ApplyForcedFfmpegArgs hwaccel.";
 		yield return "--- End encode pipeline summary ---";

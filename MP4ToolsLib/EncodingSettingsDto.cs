@@ -14,6 +14,6 @@ public sealed class EncodingSettingsDto
 	/// <summary>auto | 8 bit | 10 bit</summary>
 	public string OutputBitDepth { get; set; } = "auto";
 
-	/// <summary>auto | vaapi | software (stored string; non-AMD modes are normalized to auto in UI/lib)</summary>
+	/// <summary>auto | nvenc | qsv | vaapi | videotoolbox | software — auto picks first available HW encoder from FFmpeg; software forces CPU.</summary>
 	public string HardwareAcceleration { get; set; } = "auto";
 }

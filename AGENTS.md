@@ -7,6 +7,7 @@ Contributor-facing notes for **MP4ToolsUniversal**: an Avalonia desktop app (.NE
 | Area | Role |
 |------|------|
 | **MP4ToolsLib/** | FFmpeg/ffprobe wrappers (`FFMpegUtils`), CLI helpers (`FfmpegCli`, `FfmpegCommandLine`), encode planning (`VideoEncodeSelector`, `FfmpegEncoderCatalog`), intro pipeline (`IntroVideoComposerAsync`), combine metadata (`CombineFile`), Opus-safe TS mux helper (`MpegTsConcatAudio`), DTOs (`EncodingSettingsDto`). |
+| **MP4ToolsLib.Tests/** | xUnit tests: hardware encode planning (dry-run encoder catalog), optional FFmpeg integration tests (see env vars below). |
 | **MP4Tools/** | UI (Views), MVVM ViewModels, `Program.cs`, static `Logger`, Services (`AppSettingsStore`, `TempPathHelper`, `EncodingSettingsRuntime`, `DefaultOutputPathRuntime`). |
 
 Settings persist under `%AppData%/MP4Tools/settings.json` (see `AppSettingsStore.SettingsFilePath`).
@@ -15,7 +16,7 @@ Settings persist under `%AppData%/MP4Tools/settings.json` (see `AppSettingsStore
 
 - **Build**: `dotnet build`
 - **Run**: `dotnet run` from `MP4Tools/`
-- **Tests**: `dotnet test` (conventions: `*Tests.cs`)
+- **Tests**: `dotnet test` — library tests live in **`MP4ToolsLib.Tests/`** (xUnit). Hardware-focused integration tests are skipped unless you set **`MP4TOOLS_TEST_TRIM_INPUT_DIR`** and **`MP4TOOLS_TEST_COMBINE_INPUT_DIR`** to folders of long (≥10 min default) `.mp4` files and **`ffmpeg`** / **`ffprobe`** are on `PATH`. Optional: **`MP4TOOLS_TEST_OUTPUT_DIR`**, **`MP4TOOLS_TEST_MIN_DURATION_SECONDS`** (default `600`). See **`TestMediaConfiguration`** in the test project.
 
 Indent with **4 spaces**. Naming follows usual .NET / PascalCase for types.
 

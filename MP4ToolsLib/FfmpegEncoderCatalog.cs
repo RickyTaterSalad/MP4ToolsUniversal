@@ -36,7 +36,11 @@ public static class FfmpegEncoderCatalog
 			if (FFMpegUtils.DryRunExternalCommands)
 			{
 				// Encoder probes are skipped; seed names so VideoEncodeSelector matches real VA-API/software paths in logged commands.
-				foreach (var id in new[] { "hevc_vaapi", "h264_vaapi", "libx264", "libx265" })
+				foreach (var id in new[]
+				         {
+					         "hevc_nvenc", "h264_nvenc", "hevc_qsv", "h264_qsv", "hevc_vaapi", "h264_vaapi",
+					         "hevc_videotoolbox", "h264_videotoolbox", "libx264", "libx265",
+				         })
 					_encoderIds.Add(id);
 				Debug.WriteLine("[DRY RUN] ffmpeg -encoders skipped — using assumed encoder list for planning.");
 				return;

@@ -172,11 +172,10 @@ namespace MP4ToolsLib
 			var m = (FfmpegUserHints.HardwareAcceleration ?? "auto").Trim().ToLowerInvariant();
 			return m switch
 			{
-				// Non-AMD decode hints disabled (AMD: VA-API + render node).
-				// "nvenc" => "cuda",
-				// "qsv" => "qsv",
+				"nvenc" => "cuda",
+				"qsv" => "qsv",
 				"vaapi" => $"vaapi\n-vaapi_device {GetPreferredRenderDevice()}",
-				// "videotoolbox" => "videotoolbox",
+				"videotoolbox" => "videotoolbox",
 				"software" => "auto",
 				_ => "auto",
 			};

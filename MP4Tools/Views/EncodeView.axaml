@@ -11,7 +11,7 @@
 			<TextBlock Text="Output encoding" FontWeight="SemiBold" FontSize="16"/>
 
 			<TextBlock TextWrapping="Wrap" Opacity="0.85"
-								 Text="Trim and Combine use these settings for final output. Stream copy is fastest when remuxing compatible streams; enable re-encode to transcode. Hardware acceleration in this build targets AMD GPUs via VA-API (-hwaccel vaapi / hevc_vaapi, h264_vaapi when available). Impossible mixes are hidden or adjusted: 10-bit H.264 requires Software hardware mode; H.264 with Auto or VA-API cannot pick 10-bit output. Output bit depth and hardware are only used when video is not Copy."/>
+								 Text="Trim and Combine use these settings for final output. Stream copy is fastest when remuxing compatible streams; enable re-encode to transcode. Hardware acceleration (when set to Auto) picks the first encoder FFmpeg exposes: NVENC, Quick Sync, VA-API, then VideoToolbox. Choose Software to force CPU (libx264/libx265). Impossible mixes are adjusted: 10-bit H.264 requires Software mode when using hardware. Output bit depth and hardware apply only when video is not Copy."/>
 
 			<CheckBox Content="Re-encode output (transcode video/audio instead of stream copy)"
 								IsChecked="{Binding ReencodeOutput}"/>

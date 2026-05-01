@@ -80,7 +80,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 		set
 		{
-			SetProperty(ref _videoHourRange, (List<int>)value);
+			var list = value == null ? new List<int>(TimeRange.Range) : new List<int>(value);
+			SetProperty(ref _videoHourRange, list);
 			OnPropertyChanged(nameof(IsHoursRangeEnabled));
 		}
 	}
@@ -99,7 +100,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 		set
 		{
-			SetProperty(ref _videMinuteRange, (List<int>)value);
+			var list = value == null ? new List<int>(TimeRange.Range) : new List<int>(value);
+			SetProperty(ref _videMinuteRange, list);
 		}
 	}
 
@@ -224,6 +226,12 @@ public partial class TrimViewModel : MP4ViewModelBase
 				TrimRanges.Add(range);
 				RangeLabel = string.Empty;
 			}
+			else if (!range.IsValidRange())
+				Logger.Log("Add range: end time must be after start.");
+			else if (_inputDuration <= TimeSpan.Zero)
+				Logger.Log("Add range: video duration not loaded yet — wait for the input file to finish probing.");
+			else
+				Logger.Log($"Add range: selection exceeds clip duration (~{_inputDuration}).");
 		});
 
 		RemoveTimeRangeCommand = new RelayCommand(() =>
@@ -249,11 +257,16 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 	protected override async void OnInputPathSet()
 	{
-		_ = Task.Run(async () =>
+		try
 		{
-			await ReadInputVideoBitDepthAsync();
-			await Task.Run(ReadFileInfoAsync);
-		});
+			await ReadInputVideoBitDepthAsync().ConfigureAwait(true);
+			await ReadFileInfoAsync().ConfigureAwait(true);
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"[Trim OnInputPathSet] {ex}");
+			Logger.Log($"Trim input load: {ex.Message}");
+		}
 	}
 
 	private async Task TrimAndCombineAsync(bool combine = true)
@@ -794,31 +807,33 @@ public partial class TrimViewModel : MP4ViewModelBase
 		_inputDuration = TimeSpan.Zero;
 		try
 		{
-			var duration = await FFMpegUtils.Instance.GetFileDurationAsync(InputPath, CancellationToken.None, Logger.Log);
-			if (!string.IsNullOrWhiteSpace(duration))
+			var durationStr = await FFMpegUtils.Instance.GetFileDurationAsync(InputPath, CancellationToken.None, Logger.Log)
+				.ConfigureAwait(false);
+
+			// FFprobe -sexagesimal matches Combine (TimeRange.FromString); TimeSpan.TryParse fails on H:MM:SS.xxx.
+			var tr = string.IsNullOrWhiteSpace(durationStr) ? null : TimeRange.FromString(durationStr.Trim());
+			if (tr == null || tr.TotalSeconds <= 0)
+				return;
+
+			var parsedSeconds = Math.Max(0d, tr.TotalSeconds - 1); // same 1s margin as before
+			var parsedDuration = TimeSpan.FromSeconds(Math.Round(parsedSeconds));
+
+			await Dispatcher.UIThread.InvokeAsync(() =>
 			{
-				if (TimeSpan.TryParse(duration, out var parsedDuration))
-				{
-					parsedDuration -= TimeSpan.FromSeconds(1); // Subtract 1 second to ensure trimming within bounds
-					_inputDuration = TimeSpan.FromSeconds(Math.Round(parsedDuration.TotalSeconds));
-				}
+				_inputDuration = parsedDuration;
 				CanClear = true;
 				CanTrim = true;
-				// Use _inputDuration (already adjusted) to set hour/minute/second ranges
-				int hours = (int)_inputDuration.TotalHours;
-				int min = _inputDuration.Minutes;
-				int sec = _inputDuration.Seconds;
+				var hours = (int)_inputDuration.TotalHours;
+				var min = _inputDuration.Minutes;
+				var sec = _inputDuration.Seconds;
 				VideoHourRange = [.. Enumerable.Range(0, hours + 1)];
 				EndRange.Hours = hours;
 
 				if (hours < 1)
-				{
 					VideoMinuteRange = [.. Enumerable.Range(0, min + 1)];
-				}
 				EndRange.Minutes = min;
 				EndRange.Seconds = Math.Min(sec + 1, 59);
-			}
-
+			});
 		}
 		catch (Exception ex)
 		{

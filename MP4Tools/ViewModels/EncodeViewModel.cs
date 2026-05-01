@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using MP4Tools;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -13,9 +14,8 @@ public partial class EncodeViewModel : ViewModelBase
 {
 	private static readonly string[] AllBitDepths = ["auto", "8 bit", "10 bit"];
 
-	// AMD-focused build: VA-API only for GPU encode/decode hints (see VideoEncodeSelector / FFMpegUtils).
 	private static readonly string[] AllHardware =
-		["auto", /* "nvenc", "qsv", */ "vaapi", /* "videotoolbox", */ "software"];
+		["auto", "nvenc", "qsv", "vaapi", "videotoolbox", "software"];
 
 	private bool _applyingConstraints;
 
@@ -34,9 +34,9 @@ public partial class EncodeViewModel : ViewModelBase
 
 	public IReadOnlyList<string> AudioCodecChoices { get; } = ["copy", "aac", "libopus"];
 
-	public IReadOnlyList<string> OutputBitDepthChoicesFiltered => ComputeFilteredBitDepths();
+	public ObservableCollection<string> OutputBitDepthChoicesFiltered { get; } = new();
 
-	public IReadOnlyList<string> HardwareAccelerationChoicesFiltered => ComputeFilteredHardware();
+	public ObservableCollection<string> HardwareAccelerationChoicesFiltered { get; } = new();
 
 	/// <summary>Bit depth applies only when re-encoding a non-copy video stream.</summary>
 	public bool IsOutputBitDepthEnabled => ReencodeOutput && !IsVideoCopy;
@@ -97,10 +97,24 @@ public partial class EncodeViewModel : ViewModelBase
 			_applyingConstraints = false;
 		}
 
-		OnPropertyChanged(nameof(OutputBitDepthChoicesFiltered));
-		OnPropertyChanged(nameof(HardwareAccelerationChoicesFiltered));
+		SyncObservablePrefixThenTail(OutputBitDepthChoicesFiltered, ComputeFilteredBitDepths());
+		SyncObservablePrefixThenTail(HardwareAccelerationChoicesFiltered, ComputeFilteredHardware());
 		OnPropertyChanged(nameof(IsOutputBitDepthEnabled));
 		OnPropertyChanged(nameof(IsHardwareAccelerationEnabled));
+	}
+
+	private static void SyncObservablePrefixThenTail(ObservableCollection<string> target, IReadOnlyList<string> source)
+	{
+		var prefix = 0;
+		var max = Math.Min(target.Count, source.Count);
+		while (prefix < max && string.Equals(target[prefix], source[prefix], StringComparison.Ordinal))
+			prefix++;
+
+		for (var i = target.Count - 1; i >= prefix; i--)
+			target.RemoveAt(i);
+
+		for (var i = prefix; i < source.Count; i++)
+			target.Add(source[i]);
 	}
 
 	private IReadOnlyList<string> ComputeFilteredBitDepths()
@@ -133,7 +147,7 @@ public partial class EncodeViewModel : ViewModelBase
 	}
 
 	private static bool IsHardwareLimitedForH264TenBit(string hw) =>
-		hw is "vaapi" or "auto";
+		!string.Equals(hw, "software", StringComparison.OrdinalIgnoreCase);
 
 	private static string NormalizeVideo(string v)
 	{
@@ -162,8 +176,7 @@ public partial class EncodeViewModel : ViewModelBase
 	private static string NormalizeHw(string v)
 	{
 		var x = (v ?? "auto").Trim().ToLowerInvariant();
-		// Coerce legacy non-AMD settings from saved JSON to auto (VA-API is tried first in lib).
-		return x is "nvidia" or "cuda" or "nvenc" or "qsv" or "videotoolbox" ? "auto" : x;
+		return x is "nvidia" or "cuda" ? "nvenc" : x;
 	}
 
 	[RelayCommand]

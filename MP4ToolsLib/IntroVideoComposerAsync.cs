@@ -136,6 +136,9 @@ namespace MP4ToolsLib
                     vf += $",drawtext=text='{escapedDetails}':fontfile='{Font}':fontcolor=white:fontsize={detailsFontSize}:x=(w-text_w)/2:y=(h/2)+{lineGap / 2}+{subtitleFontSize}+{lineGap}";
                 }
 
+                if (useTabEncode && introPlan != null && !introPlan.UseStreamCopy && introPlan.NeedsVaapiUploadFilter)
+                    vf += $",{VideoEncodeSelector.VaapiUploadSuffix}";
+
                 log("Creating intro...");
                 Step("Encoding intro to MPEG-TS…");
 

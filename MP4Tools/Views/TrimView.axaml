@@ -36,10 +36,10 @@
 				<RowDefinition Height="auto"/>
 				<RowDefinition Height="auto"/>
 			</Grid.RowDefinitions>
-			<StackPanel Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,20">
+			<StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
 				<TextBox PlaceholderText="Input Video" Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"/>
 			</StackPanel>
-			<Button Grid.Column="1" Grid.Row="1" Click="BrowseButton_OnClick" Padding="4" VerticalAlignment="Top" Margin="0,-3,0,0">
+			<Button Grid.Column="1" Grid.Row="1" Click="BrowseButton_OnClick" Padding="4">
 				<Button.Content>
 					<StackPanel Orientation="Horizontal">
 						<materialIcons:MaterialIcon Kind="Video"/>

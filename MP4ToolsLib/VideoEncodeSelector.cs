@@ -38,7 +38,7 @@ public static class VideoEncodeSelector
 		};
 	}
 
-	public static VideoEncodePlan BuildPlan(EncodingSettingsDto dto, string inputVideoBitDepthUi, Action<string> log, bool forbidVaapi = false)
+	public static VideoEncodePlan BuildPlan(EncodingSettingsDto dto, string inputVideoBitDepthUi, Action<string> log)
 	{
 		log ??= _ => { };
 
@@ -54,7 +54,7 @@ public static class VideoEncodeSelector
 
 		bool hevc = IsHevcFamily(dto.VideoCodec);
 		bool want10 = ResolveWantTenBit(dto.OutputBitDepth, inputVideoBitDepthUi);
-		string encoder = PickEncoder(hevc, want10, NormalizeHwMode(dto.HardwareAcceleration), log, forbidVaapi);
+		string encoder = PickEncoder(hevc, want10, NormalizeHwMode(dto.HardwareAcceleration), log);
 		bool vaapi = encoder.Contains("vaapi", StringComparison.OrdinalIgnoreCase);
 		var tail = BuildEncodeTail(encoder, hevc, want10, log);
 
@@ -67,7 +67,7 @@ public static class VideoEncodeSelector
 		};
 	}
 
-	/// <summary>Intro slide avoids VA-API upload chains (lavfi drawtext path).</summary>
+	/// <summary>Intro slide encode uses the same HW/software rules as the main encode tab (plus drawtext + VA-API hwupload when needed).</summary>
 	public static VideoEncodePlan BuildIntroPlan(EncodingSettingsDto dto, Action<string> log)
 	{
 		log ??= _ => { };
@@ -89,7 +89,7 @@ public static class VideoEncodeSelector
 			pseudo.VideoCodec = dto.VideoCodec;
 		}
 
-		return BuildPlan(pseudo, string.Empty, log, forbidVaapi: true);
+		return BuildPlan(pseudo, string.Empty, log);
 	}
 
 	private static bool IsCopyCodec(string v) =>
@@ -117,13 +117,12 @@ public static class VideoEncodeSelector
 		var x = (h ?? "auto").Trim().ToLowerInvariant();
 		return x switch
 		{
-			// Non-AMD modes disabled: map legacy prefs away from NVENC/QSV/VideoToolbox.
-			"nvidia" or "cuda" or "nvenc" or "qsv" or "videotoolbox" => "auto",
+			"nvidia" or "cuda" => "nvenc",
 			_ => x,
 		};
 	}
 
-	private static string PickEncoder(bool hevc, bool want10Bit, string hwMode, Action<string> log, bool forbidVaapi)
+	private static string PickEncoder(bool hevc, bool want10Bit, string hwMode, Action<string> log)
 	{
 		string Try(params string[] ids)
 		{
@@ -144,42 +143,39 @@ public static class VideoEncodeSelector
 		if (hwMode == "software")
 			return SoftwareFallback();
 
-		if (forbidVaapi && hwMode == "vaapi")
-			hwMode = "auto";
-
-		// string NvEnc() => Try(hevc ? "hevc_nvenc" : "h264_nvenc");
-		// string Qsv() => Try(hevc ? "hevc_qsv" : "h264_qsv");
-		// string Vtb() => Try(hevc ? "hevc_videotoolbox" : "h264_videotoolbox");
+		string NvEnc() => Try(hevc ? "hevc_nvenc" : "h264_nvenc");
+		string Qsv() => Try(hevc ? "hevc_qsv" : "h264_qsv");
 		string Vaapi() => Try(hevc ? "hevc_vaapi" : "h264_vaapi");
+		string Vtb() => Try(hevc ? "hevc_videotoolbox" : "h264_videotoolbox");
 
 		string PickForced(string mode)
 		{
 			switch (mode)
 			{
-				// case "nvenc":
-				// {
-				// 	var e = NvEnc();
-				// 	if (!string.IsNullOrEmpty(e))
-				// 		return e;
-				// 	log($"NVENC H.{(hevc ? "265" : "264")} not available; using software encoder.");
-				// 	return SoftwareFallback();
-				// }
-				// case "qsv":
-				// {
-				// 	var e = Qsv();
-				// 	if (!string.IsNullOrEmpty(e))
-				// 		return e;
-				// 	log("Intel Quick Sync encoder not available; using software encoder.");
-				// 	return SoftwareFallback();
-				// }
-				// case "videotoolbox":
-				// {
-				// 	var e = Vtb();
-				// 	if (!string.IsNullOrEmpty(e))
-				// 		return e;
-				// 	log("VideoToolbox encoder not available; using software encoder.");
-				// 	return SoftwareFallback();
-				// }
+				case "nvenc":
+				{
+					var e = NvEnc();
+					if (!string.IsNullOrEmpty(e))
+						return e;
+					log($"NVENC H.{(hevc ? "265" : "264")} not available; using software encoder.");
+					return SoftwareFallback();
+				}
+				case "qsv":
+				{
+					var e = Qsv();
+					if (!string.IsNullOrEmpty(e))
+						return e;
+					log("Intel Quick Sync encoder not available; using software encoder.");
+					return SoftwareFallback();
+				}
+				case "videotoolbox":
+				{
+					var e = Vtb();
+					if (!string.IsNullOrEmpty(e))
+						return e;
+					log("VideoToolbox encoder not available; using software encoder.");
+					return SoftwareFallback();
+				}
 				case "vaapi":
 				{
 					var e = Vaapi();
@@ -199,12 +195,8 @@ public static class VideoEncodeSelector
 			return string.IsNullOrEmpty(forced) ? SoftwareFallback() : forced;
 		}
 
-		// auto — AMD VA-API only (NVENC / QSV / VideoToolbox paths commented out above).
-		var chain = new List<Func<string>>();
-		if (!forbidVaapi)
-			chain.Add(Vaapi);
-
-		foreach (var pick in chain)
+		// auto — try hardware encoders FFmpeg lists; order favors discrete NVIDIA, then Intel, then VA-API, then macOS.
+		foreach (var pick in new Func<string>[] { NvEnc, Qsv, Vaapi, Vtb })
 		{
 			var e = pick();
 			if (!string.IsNullOrEmpty(e))
@@ -222,45 +214,45 @@ public static class VideoEncodeSelector
 			FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, encoder),
 		};
 
-		// if (encoder.Contains("nvenc", StringComparison.OrdinalIgnoreCase))
-		// {
-		// 	list.Add(FfmpegOption.Pair(FfmpegArguments.VideoPreset, "p5"));
-		// 	list.Add(FfmpegOption.Pair("-cq", "26"));
-		// 	list.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitrate, "12M"));
-		// 	list.Add(FfmpegOption.Pair(FfmpegArguments.VideoMaxBitrate, "24M"));
-		//
-		// 	if (hevc && want10Bit)
-		// 	{
-		// 		list.Add(FfmpegOption.Pair(FfmpegArguments.VideoProfile, "main10"));
-		// 		list.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, "p010le"));
-		// 	}
-		// 	else
-		// 	{
-		// 		if (want10Bit && !hevc)
-		// 			log("10-bit H.264 is not used with NVENC here; output uses 8-bit yuv420p.");
-		//
-		// 		list.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, "yuv420p"));
-		// 	}
-		//
-		// 	return list;
-		// }
-		//
-		// if (encoder.Contains("_qsv", StringComparison.OrdinalIgnoreCase))
-		// {
-		// 	list.Add(FfmpegOption.Pair("-global_quality", "26"));
-		// 	list.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitrate, "12M"));
-		// 	list.Add(FfmpegOption.Pair(FfmpegArguments.VideoMaxBitrate, "24M"));
-		// 	list.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, hevc && want10Bit ? "p010le" : "nv12"));
-		// 	return list;
-		// }
-		//
-		// if (encoder.Contains("videotoolbox", StringComparison.OrdinalIgnoreCase))
-		// {
-		// 	list.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitrate, "12M"));
-		// 	list.Add(FfmpegOption.Pair(FfmpegArguments.VideoMaxBitrate, "24M"));
-		// 	list.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, hevc && want10Bit ? "p010le" : "nv12"));
-		// 	return list;
-		// }
+		if (encoder.Contains("nvenc", StringComparison.OrdinalIgnoreCase))
+		{
+			list.Add(FfmpegOption.Pair(FfmpegArguments.VideoPreset, "p5"));
+			list.Add(FfmpegOption.Pair("-cq", "26"));
+			list.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitrate, "12M"));
+			list.Add(FfmpegOption.Pair(FfmpegArguments.VideoMaxBitrate, "24M"));
+
+			if (hevc && want10Bit)
+			{
+				list.Add(FfmpegOption.Pair(FfmpegArguments.VideoProfile, "main10"));
+				list.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, "p010le"));
+			}
+			else
+			{
+				if (want10Bit && !hevc)
+					log("10-bit H.264 is not used with NVENC here; output uses 8-bit yuv420p.");
+
+				list.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, "yuv420p"));
+			}
+
+			return list;
+		}
+
+		if (encoder.Contains("_qsv", StringComparison.OrdinalIgnoreCase))
+		{
+			list.Add(FfmpegOption.Pair("-global_quality", "26"));
+			list.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitrate, "12M"));
+			list.Add(FfmpegOption.Pair(FfmpegArguments.VideoMaxBitrate, "24M"));
+			list.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, hevc && want10Bit ? "p010le" : "nv12"));
+			return list;
+		}
+
+		if (encoder.Contains("videotoolbox", StringComparison.OrdinalIgnoreCase))
+		{
+			list.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitrate, "12M"));
+			list.Add(FfmpegOption.Pair(FfmpegArguments.VideoMaxBitrate, "24M"));
+			list.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, hevc && want10Bit ? "p010le" : "nv12"));
+			return list;
+		}
 
 		if (encoder.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
 		{
