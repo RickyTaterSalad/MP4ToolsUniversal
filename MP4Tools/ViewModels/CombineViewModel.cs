@@ -1,15 +1,18 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MP4Tools;
 using MP4ToolsLib;
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MP4Tools.ViewModels;
 
@@ -77,6 +80,18 @@ public partial class CombineViewModel : MP4ViewModelBase
 	[ObservableProperty]
 	private TimeRange _endRange = new TimeRange();
 
+	/// <summary>Max representable skip/keep in the minute+second combo boxes (UI uses 0–59 per field).</summary>
+	private const int MaxUiSeconds = 59 * 60 + 59;
+
+	private CancellationTokenSource _edgeDurationRefreshCts;
+	private double? _firstClipDurationSeconds;
+	private double? _lastClipDurationSeconds;
+
+	private List<int> _startVideoMinuteRange = new List<int>(TimeRange.Range);
+	private List<int> _startVideoSecondRange = new List<int>(TimeRange.Range);
+	private List<int> _endVideoMinuteRange = new List<int>(TimeRange.Range);
+	private List<int> _endVideoSecondRange = new List<int>(TimeRange.Range);
+
 	private CombineFile _selectedInputFile;
 	public CombineFile SelectedInputFile
 	{
@@ -115,6 +130,9 @@ public partial class CombineViewModel : MP4ViewModelBase
 		CombineCommand = new AsyncRelayCommand(async () => await Combine());
 		RemoveSelectedFileCommand = new RelayCommand(RemoveSelectedFile);
 		EventDate = DateTime.Today;
+		_inputFiles.CollectionChanged += OnInputFilesCollectionChanged;
+		_startRange.PropertyChanged += OnStartRangeTimePartChanged;
+		_endRange.PropertyChanged += OnEndRangeTimePartChanged;
 	}
 
 	private void RemoveSelectedFile()
@@ -125,6 +143,280 @@ public partial class CombineViewModel : MP4ViewModelBase
 			SelectedInputFile = null;
 			CanCombine = InputFiles.Count > 0;
 		}
+	}
+
+	private void OnInputFilesCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+	{
+		ScheduleEdgeDurationRefresh();
+	}
+
+	private void OnStartRangeTimePartChanged(object sender, PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName is nameof(TimeRange.Minutes) or nameof(TimeRange.Hours))
+		{
+			RebuildStartSecondRangeOnly();
+		}
+	}
+
+	private void OnEndRangeTimePartChanged(object sender, PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName is nameof(TimeRange.Minutes) or nameof(TimeRange.Hours))
+		{
+			RebuildEndSecondRangeOnly();
+		}
+	}
+
+	private void CancelEdgeDurationRefresh()
+	{
+		try
+		{
+			_edgeDurationRefreshCts?.Cancel();
+		}
+		catch
+		{
+			// ignored
+		}
+
+		_edgeDurationRefreshCts?.Dispose();
+		_edgeDurationRefreshCts = null;
+	}
+
+	private void ScheduleEdgeDurationRefresh()
+	{
+		try
+		{
+			_edgeDurationRefreshCts?.Cancel();
+		}
+		catch
+		{
+			// ignored
+		}
+
+		_edgeDurationRefreshCts?.Dispose();
+		_edgeDurationRefreshCts = new CancellationTokenSource();
+		var token = _edgeDurationRefreshCts.Token;
+		_ = RunEdgeRefreshAsync(token);
+	}
+
+	private async Task RunEdgeRefreshAsync(CancellationToken ct)
+	{
+		try
+		{
+			await Task.Delay(50, ct).ConfigureAwait(false);
+
+			string[] pathsSnapshot = await Dispatcher.UIThread.InvokeAsync(
+				() => _inputFiles.Select(f => f.Path).ToArray());
+
+			if (pathsSnapshot.Length == 0)
+			{
+				await Dispatcher.UIThread.InvokeAsync(() =>
+				{
+					if (!ct.IsCancellationRequested)
+					{
+						_firstClipDurationSeconds = null;
+						_lastClipDurationSeconds = null;
+						ApplyDefaultSkipRanges();
+					}
+				});
+				return;
+			}
+
+			string firstPath = pathsSnapshot[0];
+			string lastPath = pathsSnapshot[^1];
+
+			double? firstDur = null;
+			double? lastDur = null;
+
+			try
+			{
+				var durStr = await FFMpegUtils.Instance.GetFileDurationAsync(firstPath, ct, Logger.Log).ConfigureAwait(false);
+				var tr = TimeRange.FromString(durStr ?? string.Empty);
+				if (tr != null)
+				{
+					firstDur = tr.TotalSeconds;
+				}
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
+			}
+			catch
+			{
+				// keep null — fall back to full combo ranges
+			}
+
+			if (string.Equals(firstPath, lastPath, StringComparison.OrdinalIgnoreCase))
+			{
+				lastDur = firstDur;
+			}
+			else
+			{
+				try
+				{
+					var durStr = await FFMpegUtils.Instance.GetFileDurationAsync(lastPath, ct, Logger.Log).ConfigureAwait(false);
+					var tr = TimeRange.FromString(durStr ?? string.Empty);
+					if (tr != null)
+					{
+						lastDur = tr.TotalSeconds;
+					}
+				}
+				catch (OperationCanceledException)
+				{
+					throw;
+				}
+				catch
+				{
+					// ignored
+				}
+			}
+
+			await Dispatcher.UIThread.InvokeAsync(() =>
+			{
+				if (ct.IsCancellationRequested)
+				{
+					return;
+				}
+
+				_firstClipDurationSeconds = firstDur;
+				_lastClipDurationSeconds = lastDur;
+				RebuildAllEdgeSkipRanges();
+			});
+		}
+		catch (OperationCanceledException)
+		{
+			// refresh superseded or Clear()
+		}
+	}
+
+	private void ApplyDefaultSkipRanges()
+	{
+		_startVideoMinuteRange = new List<int>(TimeRange.Range);
+		_startVideoSecondRange = new List<int>(TimeRange.Range);
+		_endVideoMinuteRange = new List<int>(TimeRange.Range);
+		_endVideoSecondRange = new List<int>(TimeRange.Range);
+		OnPropertyChanged(nameof(StartVideoMinuteRange));
+		OnPropertyChanged(nameof(StartVideoSecondRange));
+		OnPropertyChanged(nameof(EndVideoMinuteRange));
+		OnPropertyChanged(nameof(EndVideoSecondRange));
+	}
+
+	/// <summary>
+	/// UI max for skip (start) or keep-from-end (end): one second less than reported duration so the trim never consumes the entire clip.
+	/// </summary>
+	private static int MaxSkipOrKeepSecondsFromDuration(double durationSeconds)
+	{
+		var durFloor = (int)Math.Floor(durationSeconds);
+		return Math.Max(0, durFloor - 1);
+	}
+
+	private int GetMaxStartSkipSecondsBounded()
+	{
+		if (!_firstClipDurationSeconds.HasValue)
+		{
+			return MaxUiSeconds;
+		}
+
+		return Math.Min(MaxUiSeconds, MaxSkipOrKeepSecondsFromDuration(_firstClipDurationSeconds.Value));
+	}
+
+	private int GetMaxEndKeepSecondsBounded()
+	{
+		if (!_lastClipDurationSeconds.HasValue)
+		{
+			return MaxUiSeconds;
+		}
+
+		return Math.Min(MaxUiSeconds, MaxSkipOrKeepSecondsFromDuration(_lastClipDurationSeconds.Value));
+	}
+
+	private static void ClampTimeRangeToMax(TimeRange range, int maxTotalSeconds)
+	{
+		maxTotalSeconds = Math.Max(0, maxTotalSeconds);
+		var cur = (int)range.TotalSeconds;
+		if (cur <= maxTotalSeconds)
+		{
+			return;
+		}
+
+		range.Hours = 0;
+		range.Minutes = Math.Min(59, maxTotalSeconds / 60);
+		range.Seconds = Math.Min(59, maxTotalSeconds - range.Minutes * 60);
+	}
+
+	private void RebuildStartSkipRangesAndClamp()
+	{
+		int maxSec = GetMaxStartSkipSecondsBounded();
+		ClampTimeRangeToMax(StartRange, maxSec);
+		int maxMin = Math.Min(59, maxSec / 60);
+		_startVideoMinuteRange = Enumerable.Range(0, maxMin + 1).ToList();
+		if (StartRange.Minutes > maxMin)
+		{
+			StartRange.Minutes = maxMin;
+		}
+
+		RebuildStartSecondRangeOnly();
+		OnPropertyChanged(nameof(StartVideoMinuteRange));
+	}
+
+	private void RebuildStartSecondRangeOnly()
+	{
+		int maxSec = GetMaxStartSkipSecondsBounded();
+		int maxMin = Math.Min(59, maxSec / 60);
+		int selMin = Math.Clamp(StartRange.Minutes, 0, maxMin);
+		if (StartRange.Minutes != selMin)
+		{
+			StartRange.Minutes = selMin;
+		}
+
+		int secMax = Math.Min(59, Math.Max(0, maxSec - selMin * 60));
+		_startVideoSecondRange = Enumerable.Range(0, secMax + 1).ToList();
+		if (StartRange.Seconds > secMax)
+		{
+			StartRange.Seconds = secMax;
+		}
+
+		OnPropertyChanged(nameof(StartVideoSecondRange));
+	}
+
+	private void RebuildEndSkipRangesAndClamp()
+	{
+		int maxSec = GetMaxEndKeepSecondsBounded();
+		ClampTimeRangeToMax(EndRange, maxSec);
+		int maxMin = Math.Min(59, maxSec / 60);
+		_endVideoMinuteRange = Enumerable.Range(0, maxMin + 1).ToList();
+		if (EndRange.Minutes > maxMin)
+		{
+			EndRange.Minutes = maxMin;
+		}
+
+		RebuildEndSecondRangeOnly();
+		OnPropertyChanged(nameof(EndVideoMinuteRange));
+	}
+
+	private void RebuildEndSecondRangeOnly()
+	{
+		int maxSec = GetMaxEndKeepSecondsBounded();
+		int maxMin = Math.Min(59, maxSec / 60);
+		int selMin = Math.Clamp(EndRange.Minutes, 0, maxMin);
+		if (EndRange.Minutes != selMin)
+		{
+			EndRange.Minutes = selMin;
+		}
+
+		int secMax = Math.Min(59, Math.Max(0, maxSec - selMin * 60));
+		_endVideoSecondRange = Enumerable.Range(0, secMax + 1).ToList();
+		if (EndRange.Seconds > secMax)
+		{
+			EndRange.Seconds = secMax;
+		}
+
+		OnPropertyChanged(nameof(EndVideoSecondRange));
+	}
+
+	private void RebuildAllEdgeSkipRanges()
+	{
+		RebuildStartSkipRangesAndClamp();
+		RebuildEndSkipRangesAndClamp();
 	}
 
 	private bool _canCombine = false;
@@ -196,72 +488,13 @@ public partial class CombineViewModel : MP4ViewModelBase
 	}
 
 
-	private List<int> _startVideoSecondRange;
-	public IReadOnlyList<int> StartVideoSecondRange
-	{
-		get
-		{
-			if (_startVideoSecondRange == null)
-			{
-				_startVideoSecondRange = new List<int>(TimeRange.Range);
-			}
-			return _startVideoSecondRange;
-		}
-		set
-		{
-			SetProperty(ref _startVideoSecondRange, (List<int>)value);
-		}
-	}
+	public IReadOnlyList<int> StartVideoMinuteRange => _startVideoMinuteRange;
 
-	private List<int> _startVideoMinuteRange;
-	public IReadOnlyList<int> StartVideoMinuteRange
-	{
-		get
-		{
-			if (_startVideoMinuteRange == null)
-			{
-				_startVideoMinuteRange = new List<int>(TimeRange.Range);
-			}
-			return _startVideoMinuteRange;
-		}
-		set
-		{
-			SetProperty(ref _startVideoMinuteRange, (List<int>)value);
-		}
-	}
+	public IReadOnlyList<int> StartVideoSecondRange => _startVideoSecondRange;
 
-	private List<int> _endVideoMinuteRange;
-	public IReadOnlyList<int> EndVideoMinuteRange
-	{
-		get
-		{
-			if (_endVideoMinuteRange == null)
-			{
-				_endVideoMinuteRange = new List<int>(TimeRange.Range);
-			}
-			return _endVideoMinuteRange;
-		}
-		set
-		{
-			SetProperty(ref _endVideoMinuteRange, (List<int>)value);
-		}
-	}
-	private List<int> _endVideoSecondRange;
-	public IReadOnlyList<int> EndVideoSecondRange
-	{
-		get
-		{
-			if (_endVideoSecondRange == null)
-			{
-				_endVideoSecondRange = new List<int>(TimeRange.Range);
-			}
-			return _endVideoSecondRange;
-		}
-		set
-		{
-			SetProperty(ref _endVideoSecondRange, (List<int>)value);
-		}
-	}
+	public IReadOnlyList<int> EndVideoMinuteRange => _endVideoMinuteRange;
+
+	public IReadOnlyList<int> EndVideoSecondRange => _endVideoSecondRange;
 
 	private string _eventInfo = string.Empty;
 	public string EventInfo
@@ -446,6 +679,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 	}
 	protected override Task Clear()
 	{
+		CancelEdgeDurationRefresh();
 		OutputPath = string.Empty;
 		EventInfo = string.Empty;
 		TrimFirstVideo = TrimLastVideo = false;
