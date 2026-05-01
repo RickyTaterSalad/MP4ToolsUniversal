@@ -117,3 +117,4 @@ Thumbs.db
 *.axaml.cs.generated
 
 **/.codex
+*.codex
