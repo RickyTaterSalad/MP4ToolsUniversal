@@ -191,15 +191,7 @@ namespace MP4ToolsLib
 
         private static void SafeDelete(string path)
         {
-            try
-            {
-                if (File.Exists(path))
-                    File.Delete(path);
-            }
-            catch
-            {
-                // Silently ignore errors during cleanup
-            }
+            TempPathHelper.DeleteTemporaryFileUnlessRetained(path);
         }
     }
 }

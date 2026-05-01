@@ -92,13 +92,55 @@ namespace MP4Tools
 		// METHODS (Bottom)
 		// ====================
 
-		internal MP4ViewModelBase()
+		private CancellationTokenSource _ffmpegOperationCts;
+
+	internal MP4ViewModelBase()
 		{
-			StopCommand = new RelayCommand(() =>
-			{
-				FFMpegUtils.Instance.KillCurrentRunningProcess();
-			});
+			StopCommand = new RelayCommand(CancelFfmpegOperation);
 			ClearCommand = new RelayCommand(() => Clear());
+		}
+
+	/// <summary>Starts a cancellable ffmpeg/ffprobe operation scope (Stop cancels the token).</summary>
+	protected CancellationToken BeginFfmpegOperation()
+		{
+			try
+			{
+				_ffmpegOperationCts?.Cancel();
+			}
+			catch
+			{
+				// ignored
+			}
+
+			_ffmpegOperationCts?.Dispose();
+			_ffmpegOperationCts = new CancellationTokenSource();
+			CanStop = true;
+			return _ffmpegOperationCts.Token;
+		}
+
+	protected void EndFfmpegOperation()
+		{
+			CanStop = false;
+			try
+			{
+				_ffmpegOperationCts?.Dispose();
+			}
+			finally
+			{
+				_ffmpegOperationCts = null;
+			}
+		}
+
+	protected void CancelFfmpegOperation()
+		{
+			try
+			{
+				_ffmpegOperationCts?.Cancel();
+			}
+			catch
+			{
+				// ignored
+			}
 		}
 
 		protected virtual Task Clear()
@@ -198,22 +240,25 @@ namespace MP4Tools
 			}
 		}
 
-		public void RunAndLogFFMpeg(string args, string workingDirectory = "")
+		public async Task RunAndLogFFMpegAsync(string args, CancellationToken cancellationToken, string workingDirectory = "")
 		{
-			CanStop = true;
+			var workDir = !string.IsNullOrWhiteSpace(workingDirectory)
+				? workingDirectory
+				: System.IO.Path.GetDirectoryName(InputPath ?? string.Empty) ?? string.Empty;
 			try
 			{
-				var workDir = !string.IsNullOrWhiteSpace(workingDirectory) ? workingDirectory : System.IO.Path.GetDirectoryName(InputPath ?? string.Empty) ?? string.Empty;
-				FFMpegUtils.Instance.RunAndLogFFMpeg(args, HandleProcessOutput, Logger.Log, workDir);
+				await FFMpegUtils.Instance
+					.RunAndLogFFMpegAsync(args, HandleProcessOutput, Logger.Log, cancellationToken, workDir)
+					.ConfigureAwait(false);
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
 			}
 			catch (Exception ex)
 			{
-				Debug.WriteLine($"[RunAndLogFFMpeg][Error] {ex}");
+				Debug.WriteLine($"[RunAndLogFFMpegAsync][Error] {ex}");
 				Logger.Log($"** Error: {ex.Message} **");
-			}
-			finally
-			{
-				CanStop = false;
 			}
 		}
 	}

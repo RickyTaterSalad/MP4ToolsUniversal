@@ -22,25 +22,47 @@ namespace MP4ToolsLib
 		private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(30);
 		private static string _ffprobe_exe = string.Empty;
 
-		private readonly object _processLock = new object();
+		private static readonly object TrackedProcessesLock = new object();
+		private static readonly HashSet<int> TrackedMediaProcessIds = new HashSet<int>();
 
-		private Process _currentRunningProcess = null;
-
-		public void KillCurrentRunningProcess()
+		private static void RegisterTrackedMediaProcess(Process process)
 		{
-			if (_currentRunningProcess != null)
+			if (process?.HasExited == false)
+			{
+				lock (TrackedProcessesLock)
+					TrackedMediaProcessIds.Add(process.Id);
+			}
+		}
+
+		private static void UnregisterTrackedMediaProcess(Process process)
+		{
+			if (process == null)
+				return;
+			lock (TrackedProcessesLock)
+				TrackedMediaProcessIds.Remove(process.Id);
+		}
+
+		/// <summary>Kills ffmpeg/ffprobe child processes started by this app (e.g. on shutdown).</summary>
+		public void KillAllTrackedMediaProcesses()
+		{
+			int[] snapshot;
+			lock (TrackedProcessesLock)
+			{
+				snapshot = TrackedMediaProcessIds.ToArray();
+				TrackedMediaProcessIds.Clear();
+			}
+
+			foreach (var id in snapshot)
 			{
 				try
 				{
-					if (!_currentRunningProcess.HasExited)
-					{
-						_currentRunningProcess.Kill();
-						_currentRunningProcess = null;
-					}
+					using var p = Process.GetProcessById(id);
+					if (!p.HasExited)
+						p.Kill(entireProcessTree: true);
 				}
 				catch
 				{
-
+					// already exited or inaccessible
 				}
 			}
 		}
@@ -201,7 +223,7 @@ namespace MP4ToolsLib
 		}
 
 
-		public async Task<string> GetFileDurationAsync(string file)
+		public async Task<string> GetFileDurationAsync(string file, CancellationToken cancellationToken = default)
 		{
 			if (string.IsNullOrWhiteSpace(file) || !File.Exists(file))
 			{
@@ -210,9 +232,13 @@ namespace MP4ToolsLib
 			try
 			{
 				var args = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal \"{file}\"";
-				var output = await RunCaptureAsync(FFPROBE_EXE, args, CancellationToken.None);
+				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken).ConfigureAwait(false);
 				return (output ?? string.Empty).Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
 					.FirstOrDefault()?.Trim() ?? string.Empty;
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
 			}
 			catch
 			{
@@ -220,7 +246,7 @@ namespace MP4ToolsLib
 			}
 		}
 
-		public async Task<string> GetFirstVideoCodecNameAsync(string inputFile)
+		public async Task<string> GetFirstVideoCodecNameAsync(string inputFile, CancellationToken cancellationToken = default)
 		{
 			if (string.IsNullOrWhiteSpace(inputFile) || !File.Exists(inputFile))
 			{
@@ -229,8 +255,12 @@ namespace MP4ToolsLib
 			try
 			{
 				var args = $"-v error -select_streams v:0 -show_entries stream=codec_name -of default=nk=1:nw=1 \"{inputFile}\"";
-				var output = await RunCaptureAsync(FFPROBE_EXE, args, CancellationToken.None);
+				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken).ConfigureAwait(false);
 				return (output ?? string.Empty).Trim();
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
 			}
 			catch
 			{
@@ -261,49 +291,105 @@ namespace MP4ToolsLib
 				CreateNoWindow = true
 			};
 
-			using var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
-			p.ErrorDataReceived += (_, e) => { if (e.Data != null) Log?.Invoke(e.Data); };
-
-			if (!p.Start()) throw new InvalidOperationException($"Failed to start: {exe}");
-			p.BeginErrorReadLine();
-
-			using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-			timeoutCts.CancelAfter(ProcessTimeout);
+			var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+			process.ErrorDataReceived += (_, e) => { if (e.Data != null) Log?.Invoke(e.Data); };
 
 			try
 			{
-				Debug.WriteLine($"[RunAndLogProcessEx] FileName: {psi.FileName}");
-				Debug.WriteLine($"[RunAndLogProcessEx] Arguments: {psi.Arguments}");
-				Debug.WriteLine($"[RunAndLogProcessEx] WorkingDirectory: {psi.WorkingDirectory}");
+				if (!process.Start())
+					throw new InvalidOperationException($"Failed to start: {exe}");
 
-				Log($"{psi.FileName} ({psi.WorkingDirectory}): {psi.Arguments}");
-				var stdoutTask = p.StandardOutput.ReadToEndAsync(timeoutCts.Token);
-				await p.WaitForExitAsync(timeoutCts.Token);
-				string stdout = await stdoutTask;
+				process.BeginErrorReadLine();
+				process.BeginOutputReadLine();
+				RegisterTrackedMediaProcess(process);
 
-				if (p.ExitCode != 0) throw new InvalidOperationException($"{exe} failed with exit code {p.ExitCode}");
-				return stdout;
+				using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+				linkedCts.CancelAfter(ProcessTimeout);
+
+				Debug.WriteLine($"[RunCaptureAsync] FileName: {psi.FileName}");
+				Debug.WriteLine($"[RunCaptureAsync] Arguments: {psi.Arguments}");
+
+				Log($"{psi.FileName}: {psi.Arguments}");
+
+				using (ct.Register(() =>
+				{
+					try
+					{
+						if (!process.HasExited)
+							process.Kill(entireProcessTree: true);
+					}
+					catch
+					{
+						// ignored
+					}
+				}))
+				{
+					var stdoutTask = process.StandardOutput.ReadToEndAsync(linkedCts.Token);
+					await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
+					var stdout = await stdoutTask.ConfigureAwait(false);
+
+					if (process.ExitCode != 0)
+						throw new InvalidOperationException($"{exe} failed with exit code {process.ExitCode}");
+					return stdout;
+				}
 			}
-			catch (OperationCanceledException ex1) when (!ct.IsCancellationRequested)
+			catch (OperationCanceledException) when (!ct.IsCancellationRequested)
 			{
-				Log($"** Error: {ex1.Message} **");
-				try { if (!p.HasExited) p.Kill(true); } catch { }
+				Log($"** Timeout after {ProcessTimeout.TotalMinutes:0} minutes **");
+				try
+				{
+					if (!process.HasExited)
+						process.Kill(entireProcessTree: true);
+				}
+				catch
+				{
+					// ignored
+				}
+
 				throw new TimeoutException($"{exe} timed out after {ProcessTimeout.TotalMinutes:0} minutes");
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
 			}
 			catch (Exception ex)
 			{
 				Log($"** Error: {ex.Message} **");
-				try { if (!p.HasExited) p.Kill(true); } catch { }
+				try
+				{
+					if (!process.HasExited)
+						process.Kill(entireProcessTree: true);
+				}
+				catch
+				{
+					// ignored
+				}
+
 				throw;
+			}
+			finally
+			{
+				UnregisterTrackedMediaProcess(process);
+				try
+				{
+					process.CancelErrorRead();
+					process.CancelOutputRead();
+				}
+				catch
+				{
+					// ignored
+				}
+
+				process.Dispose();
 			}
 		}
 
-		public void RunAndLogFFMpeg(string args, Action<Process, string, string> ProcessOutputAction, Action<string> Log, string workingDirectory = "")
+		public async Task RunAndLogFFMpegAsync(string args, Action<Process, string, string> processOutputAction, Action<string> log, CancellationToken cancellationToken, string workingDirectory = "")
 		{
-			Log ??= (s => Debug.WriteLine(s));
+			log ??= (s => Debug.WriteLine(s));
 			args = ApplyForcedFfmpegArgs(args);
 
-			Log($"Prepared ffmpeg args: {args}");
+			log($"Prepared ffmpeg args: {args}");
 			var psi = new ProcessStartInfo
 			{
 				FileName = FFPMEG_EXE,
@@ -313,87 +399,95 @@ namespace MP4ToolsLib
 				UseShellExecute = false,
 				RedirectStandardError = true,
 				RedirectStandardOutput = true,
-				WorkingDirectory = workingDirectory
+				WorkingDirectory = workingDirectory ?? string.Empty
 			};
 
 			DataReceivedEventHandler onErr = null;
 			DataReceivedEventHandler onOut = null;
-			using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
-			if (ProcessOutputAction != null)
+			var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+			if (processOutputAction != null)
 			{
-				onErr = (a, b) => ProcessOutputAction(process, "stderr", b?.Data);
-				onOut = (a, b) => ProcessOutputAction(process, "stdout", b?.Data);
+				onErr = (_, b) => processOutputAction(process, "stderr", b?.Data);
+				onOut = (_, b) => processOutputAction(process, "stdout", b?.Data);
 				process.ErrorDataReceived += onErr;
 				process.OutputDataReceived += onOut;
 			}
 
 			try
 			{
-				lock (_processLock)
-				{
-					if (_currentRunningProcess != null)
-					{
-						try
-						{
-							if (!_currentRunningProcess.HasExited)
-								_currentRunningProcess.Kill(true);
-						}
-						catch (Exception ex)
-						{
-							Debug.WriteLine($"[RunAndLogProcessEx][KillExistingError] {ex}");
-						}
-						finally
-						{
-							_currentRunningProcess = null;
-						}
-					}
-					_currentRunningProcess = process;
-				}
-
-				Debug.WriteLine($"[RunAndLogProcessEx] FileName: {psi.FileName}");
-				Debug.WriteLine($"[RunAndLogProcessEx] Arguments: {psi.Arguments}");
-				Debug.WriteLine($"[RunAndLogProcessEx] WorkingDirectory: {psi.WorkingDirectory}");
-
-				Log($"{psi.FileName} ({psi.WorkingDirectory}): {psi.Arguments}");
+				log($"{psi.FileName} ({psi.WorkingDirectory}): {psi.Arguments}");
 
 				if (!process.Start())
 					throw new InvalidOperationException($"Failed to start: {FFPMEG_EXE}");
 
 				process.BeginErrorReadLine();
 				process.BeginOutputReadLine();
+				RegisterTrackedMediaProcess(process);
 
-				process.WaitForExit(TimeSpan.FromHours(2));
+				using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+				linkedCts.CancelAfter(TimeSpan.FromHours(2));
+
+				using (cancellationToken.Register(() =>
+				{
+					try
+					{
+						if (!process.HasExited)
+							process.Kill(entireProcessTree: true);
+					}
+					catch
+					{
+						// ignored
+					}
+				}))
+				{
+					await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
+				}
+
 				if (process.ExitCode == 0)
-					Log("** Complete **");
+					log("** Complete **");
 				else
-					Log($"** Exit Code {process.ExitCode} **");
+					log($"** Exit Code {process.ExitCode} **");
+			}
+			catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+			{
+				log("** FFmpeg timed out after 2 hours **");
+			}
+			catch (OperationCanceledException)
+			{
+				log("** Cancelled **");
+				throw;
 			}
 			catch (Exception ex)
 			{
-				Debug.WriteLine($"[RunAndLogProcessEx][Error] {ex}");
-				Log($"** Error: {ex.Message} **");
+				Debug.WriteLine($"[RunAndLogFFMpegAsync][Error] {ex}");
+				log($"** Error: {ex.Message} **");
 			}
 			finally
 			{
 				try
 				{
 					if (onErr != null)
-					{
 						process.ErrorDataReceived -= onErr;
-					}
 					if (onOut != null)
-					{
 						process.OutputDataReceived -= onOut;
-					}
 				}
-				catch { }
-
-				lock (_processLock)
+				catch
 				{
-					if (ReferenceEquals(_currentRunningProcess, process))
-						_currentRunningProcess = null;
+					// ignored
 				}
 
+				UnregisterTrackedMediaProcess(process);
+				try
+				{
+					process.CancelErrorRead();
+					process.CancelOutputRead();
+				}
+				catch
+				{
+					// ignored
+				}
+
+				process.Dispose();
 			}
 		}
 

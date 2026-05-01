@@ -5,11 +5,11 @@ using MP4ToolsLib;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace MP4Tools.ViewModels;
 
@@ -114,6 +114,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 	{
 		CombineCommand = new AsyncRelayCommand(async () => await Combine());
 		RemoveSelectedFileCommand = new RelayCommand(RemoveSelectedFile);
+		EventDate = DateTime.Today;
 	}
 
 	private void RemoveSelectedFile()
@@ -454,7 +455,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		IntroSubtitle = string.Empty;
 		IntroDetails = string.Empty;
 		IntroDurationSeconds = 10;
-		EventDate = null;
+		EventDate = DateTime.Today;
 		VisitorName = string.Empty;
 		VisitorScore = null;
 		HomeName = string.Empty;
@@ -475,9 +476,14 @@ public partial class CombineViewModel : MP4ViewModelBase
 				logged_ffmpeg_output.Add(msg);
 		};
 		Logger.LogMessageReceived += handler;
+		var ct = BeginFfmpegOperation();
 		try
 		{
-			await Task.Run(() => CombineInternal());
+			await Task.Run(async () => await CombineInternal(ct), ct).ConfigureAwait(false);
+		}
+		catch (OperationCanceledException)
+		{
+			Logger.Log("Combine cancelled.");
 		}
 		catch (Exception ex)
 		{
@@ -503,11 +509,13 @@ public partial class CombineViewModel : MP4ViewModelBase
 			{
 				Logger.Log($"Unexpected error during log file handling: {ex.Message}");
 			}
+
+			EndFfmpegOperation();
 		}
 		Logger.LogMessageReceived -= handler;
 	}
 
-	private async Task CombineInternal()
+	private async Task CombineInternal(CancellationToken ct)
 	{
 
 		if (!CanCombine || string.IsNullOrWhiteSpace(OutputPath))
@@ -564,13 +572,18 @@ public partial class CombineViewModel : MP4ViewModelBase
 			{
 				try
 				{
-					var vidDurationString = await FFMpegUtils.Instance.GetFileDurationAsync(file.Path);
+					ct.ThrowIfCancellationRequested();
+					var vidDurationString = await FFMpegUtils.Instance.GetFileDurationAsync(file.Path, ct).ConfigureAwait(false);
 					var tr = TimeRange.FromString(vidDurationString ?? "");
 					if (tr != null)
 					{
 						videoDurations[file.Path] = tr;
 						dblTotalDuration += tr.TotalSeconds;
 					}
+				}
+				catch (OperationCanceledException)
+				{
+					throw;
 				}
 				catch
 				{
@@ -609,11 +622,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 					Logger.Log("Applying first-file start trim before intro...");
 					var trimmedFirstFile = Path.Combine(TempPathHelper.GetTempPath(), $"first_trim_{Guid.NewGuid():N}.mp4");
-					RunAndLogFFMpeg(FfmpegCommandLine.Build(
+					await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
 						scanOpt,
 						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(firstFile.Path)),
 						FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
-						FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimmedFirstFile))));
+						FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimmedFirstFile))), ct).ConfigureAwait(false);
 					if (File.Exists(trimmedFirstFile))
 					{
 						introInputFile = trimmedFirstFile;
@@ -630,7 +643,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 					introFirstFile,
 					IntroDurationSeconds,
 					detailsText: effectiveDetails,
-					log: Logger.Log);
+					log: Logger.Log,
+					ct: ct).ConfigureAwait(false);
 				if (File.Exists(introFirstFile))
 				{
 					writeFiles[0] = new CombineFile { Name = Path.GetFileName(introFirstFile), Path = introFirstFile };
@@ -662,7 +676,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				try
 				{
 					File.WriteAllLines(fileList, writeFiles.Select(x => $"file '{x.Path}'"));
-					RunAndLogFFMpeg(FfmpegCommandLine.Build(
+					await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
 						scanOpt,
 						FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatConcatDemuxer),
 						FfmpegOption.Pair(FfmpegArguments.ConcatDemuxerSafeFlag, FfmpegArguments.ConcatDemuxerAllowAnyPath),
@@ -670,7 +684,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 						trimEndOpt,
 						FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
 						FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, SelectedAudioCodec),
-						FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile))));
+						FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile))), ct).ConfigureAwait(false);
+				}
+				catch (OperationCanceledException)
+				{
+					throw;
 				}
 				catch (Exception e)
 				{
@@ -678,10 +696,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 				}
 				finally
 				{
-					FileUtils.TryDeleteFile(fileList);
+					TempPathHelper.DeleteTemporaryFileUnlessRetained(fileList);
 					foreach (var tempFile in tempFilesToDelete)
 					{
-						FileUtils.TryDeleteFile(tempFile);
+						TempPathHelper.DeleteTemporaryFileUnlessRetained(tempFile);
 					}
 				}
 			}
@@ -691,23 +709,24 @@ public partial class CombineViewModel : MP4ViewModelBase
 				string mergedTsFile = null;
 				try
 				{
-					var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(writeFiles.FirstOrDefault()?.Path ?? string.Empty);
+					var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(writeFiles.FirstOrDefault()?.Path ?? string.Empty, ct).ConfigureAwait(false);
 					//var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb,h265_metadata=audit_packet=1" : "h264_mp4toannexb,h264_metadata=audit_packet=1";
 					var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb" : "h264_mp4toannexb";
 
 					for (int i = 0; i < writeFiles.Count; i++)
 					{
+						ct.ThrowIfCancellationRequested();
 						var input = writeFiles[i].Path;
 						Logger.Log($"Remuxing part {i + 1}/{writeFiles.Count}: {Path.GetFileName(input)}");
 						var partTsFile = Path.Combine(TempPathHelper.GetTempPath(), $"combine_part_{Guid.NewGuid():N}.ts");
-						RunAndLogFFMpeg(FfmpegCommandLine.Build(
+						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							i == 0 ? scanOpt : default,
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
 							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
 							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, videoBsf),
 							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
-							FfmpegOption.Positional(FfmpegCommandLine.Quoted(partTsFile))));
+							FfmpegOption.Positional(FfmpegCommandLine.Quoted(partTsFile))), ct).ConfigureAwait(false);
 						if (!File.Exists(partTsFile))
 						{
 							continue;
@@ -720,23 +739,23 @@ public partial class CombineViewModel : MP4ViewModelBase
 						}
 
 						var nextMergedTs = Path.Combine(TempPathHelper.GetTempPath(), $"combine_merge_{Guid.NewGuid():N}.ts");
-						RunAndLogFFMpeg(FfmpegCommandLine.Build(
+						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{mergedTsFile}|{partTsFile}")),
 							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
 							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, videoBsf),
 							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
-							FfmpegOption.Positional(FfmpegCommandLine.Quoted(nextMergedTs))));
+							FfmpegOption.Positional(FfmpegCommandLine.Quoted(nextMergedTs))), ct).ConfigureAwait(false);
 						if (File.Exists(nextMergedTs))
 						{
-							FileUtils.TryDeleteFile(mergedTsFile);
-							FileUtils.TryDeleteFile(partTsFile);
+							TempPathHelper.DeleteTemporaryFileUnlessRetained(mergedTsFile);
+							TempPathHelper.DeleteTemporaryFileUnlessRetained(partTsFile);
 							mergedTsFile = nextMergedTs;
 						}
 						else
 						{
-							FileUtils.TryDeleteFile(partTsFile);
-							FileUtils.TryDeleteFile(nextMergedTs);
+							TempPathHelper.DeleteTemporaryFileUnlessRetained(partTsFile);
+							TempPathHelper.DeleteTemporaryFileUnlessRetained(nextMergedTs);
 						}
 					}
 
@@ -746,7 +765,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 						var aacBsfOpt = SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase)
 							? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
 							: (FfmpegOption?)null;
-						RunAndLogFFMpeg(FfmpegCommandLine.Build(
+						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)),
 							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
@@ -755,8 +774,12 @@ public partial class CombineViewModel : MP4ViewModelBase
 							aacBsfOpt,
 							trimEndOpt,
 							FfmpegOption.Pair(FfmpegArguments.Movflags, FfmpegArguments.MovflagFastStart),
-							FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile))));
+							FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile))), ct).ConfigureAwait(false);
 					}
+				}
+				catch (OperationCanceledException)
+				{
+					throw;
 				}
 				catch (Exception e)
 				{
@@ -769,12 +792,12 @@ public partial class CombineViewModel : MP4ViewModelBase
 						var tempFolder = TempPathHelper.GetTempPath();
 						if (Path.GetDirectoryName(TempPathHelper.GetTempPath())?.Equals(Path.GetDirectoryName(OutputPath)) ?? false)
 						{
-							Directory.Delete(tempFolder, true);
+							TempPathHelper.DeleteTemporaryDirectoryUnlessRetained(tempFolder, recursive: true);
 						}
-						FileUtils.TryDeleteFile(mergedTsFile);
+						TempPathHelper.DeleteTemporaryFileUnlessRetained(mergedTsFile);
 						foreach (var tempFile in tempFilesToDelete)
 						{
-							FileUtils.TryDeleteFile(tempFile);
+							TempPathHelper.DeleteTemporaryFileUnlessRetained(tempFile);
 						}
 					}
 					catch (Exception e)
@@ -787,9 +810,14 @@ public partial class CombineViewModel : MP4ViewModelBase
 			OutputPath = FFMpegUtils.Instance.CleanupPath(Path.Combine(InputPath, "combined.mp4"));
 			Logger.Log("Combine complete.");
 		}
-		catch
+		catch (OperationCanceledException)
 		{
-			Logger.Log("Combine failed.");
+			Logger.Log("Combine cancelled.");
+			throw;
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"Combine failed: {ex.Message}");
 		}
 		finally
 		{
