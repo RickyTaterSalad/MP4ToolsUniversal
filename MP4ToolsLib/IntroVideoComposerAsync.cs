@@ -119,21 +119,61 @@ namespace MP4ToolsLib
 
                 log("Creating intro...");
                 await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
-                    $"-nostdin -y -f lavfi -i \"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}\" " +
-                    $"-f lavfi -i \"anullsrc=r={ar}:cl={acl}:d={durationSeconds}\" " +
-                    $"-vf \"{vf}\" " +
-                    $"-c:v {vEnc} -pix_fmt {pixFmt} -r {fps} -c:a {aEnc} -ar {ar} -ac {ach} -shortest \"{introMp4}\"",
+                    FfmpegCommandLine.Build(
+                        FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
+                        FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+                        FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
+                        FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}")),
+                        FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
+                        FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"anullsrc=r={ar}:cl={acl}:d={durationSeconds}")),
+                        FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{vf}\""),
+                        FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, vEnc),
+                        FfmpegOption.Pair(FfmpegArguments.PixelFormat, pixFmt),
+                        FfmpegOption.Pair(FfmpegArguments.OutputVideoFrameRate, fps),
+                        FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, aEnc),
+                        FfmpegOption.Pair(FfmpegArguments.AudioSampleRate, ar),
+                        FfmpegOption.Pair(FfmpegArguments.AudioChannels, ach),
+                        FfmpegOption.Unary(FfmpegArguments.StopEncodingWhenShortestStreamEnds),
+                        FfmpegOption.Positional(FfmpegCommandLine.Quoted(introMp4))),
                     ct, log);
 
                 log("Muxing TS streams...");
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync($"-nostdin -y -i \"{introMp4}\" -c copy -bsf:v {vBsf} -f mpegts \"{introTs}\"", ct, log);
+                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+                    FfmpegCommandLine.Build(
+                        FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
+                        FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+                        FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(introMp4)),
+                        FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
+                        FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, vBsf),
+                        FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
+                        FfmpegOption.Positional(FfmpegCommandLine.Quoted(introTs))),
+                    ct, log);
                 progress?.Report(0.8);
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync($"-nostdin -y -i \"{inputPath}\" -c copy -bsf:v {vBsf} -f mpegts \"{inputTs}\"", ct, log);
+                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+                    FfmpegCommandLine.Build(
+                        FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
+                        FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+                        FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputPath)),
+                        FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
+                        FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, vBsf),
+                        FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
+                        FfmpegOption.Positional(FfmpegCommandLine.Quoted(inputTs))),
+                    ct, log);
                 progress?.Report(0.9);
 
                 log("Concatenating...");
-                var aacBsf = aEnc.Equals("aac", StringComparison.OrdinalIgnoreCase) ? "-bsf:a aac_adtstoasc" : string.Empty;
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync($"-nostdin -y -i \"concat:{introTs}|{inputTs}\" -c copy {aacBsf} \"{outputPath}\"", ct, log);
+                var aacBsfOpt = aEnc.Equals("aac", StringComparison.OrdinalIgnoreCase)
+                    ? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
+                    : (FfmpegOption?)null;
+                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+                    FfmpegCommandLine.Build(
+                        FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
+                        FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+                        FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{introTs}|{inputTs}")),
+                        FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
+                        aacBsfOpt,
+                        FfmpegOption.Positional(FfmpegCommandLine.Quoted(outputPath))),
+                    ct, log);
                 progress?.Report(1.0);
 
                 log("Done.");

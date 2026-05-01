@@ -144,12 +144,14 @@ namespace MP4ToolsLib
 		public string ApplyForcedFfmpegArgs(string args)
 		{
 			args = args ?? string.Empty;
-			if (!args.Contains("-nostdin", StringComparison.OrdinalIgnoreCase))
+			if (!args.Contains(FfmpegArguments.DisableInteractiveStdin, StringComparison.OrdinalIgnoreCase))
 			{
-				args = $"-nostdin {args}".Trim();
+				args = $"{FfmpegArguments.DisableInteractiveStdin} {args}".Trim();
 			}
-			var isCopyOnly = args.Contains("-c copy", StringComparison.OrdinalIgnoreCase)
-				|| args.Contains("-c:v copy", StringComparison.OrdinalIgnoreCase);
+			var codecCopyAll = $"{FfmpegArguments.SelectCodec} {FfmpegArguments.StreamCopy}";
+			var codecCopyVideo = $"{FfmpegArguments.SelectVideoCodec} {FfmpegArguments.StreamCopy}";
+			var isCopyOnly = args.Contains(codecCopyAll, StringComparison.OrdinalIgnoreCase)
+				|| args.Contains(codecCopyVideo, StringComparison.OrdinalIgnoreCase);
 			if (!isCopyOnly)
 			{
 				if (!args.Contains("-hwaccel", StringComparison.OrdinalIgnoreCase))
@@ -157,7 +159,7 @@ namespace MP4ToolsLib
 					var hwaccel = DetectBestHwAccel();
 					// Check if using VAAPI with video filters - if so, we should NOT use -hwaccel
 					// because the filters (like drawtext) work on CPU frames and we use hwupload
-					var hasVideoFilter = args.Contains("-vf ", StringComparison.OrdinalIgnoreCase)
+					var hasVideoFilter = args.Contains($"{FfmpegArguments.VideoFilter} ", StringComparison.OrdinalIgnoreCase)
 						|| args.Contains(" -filter:v", StringComparison.OrdinalIgnoreCase)
 						|| args.Contains(" -filter_complex", StringComparison.OrdinalIgnoreCase);
 

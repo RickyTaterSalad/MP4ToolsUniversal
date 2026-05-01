@@ -380,7 +380,13 @@ public partial class TrimViewModel : MP4ViewModelBase
 			{
 				Logger.Log($"Remuxing trimmed segment to TS: {Path.GetFileName(input)}");
 				var tsFile = Path.Combine(TempPathHelper.GetTempPath(), $"trim_part_{Guid.NewGuid():N}.ts");
-				RunAndLogFFMpeg($"-y -i \"{input}\" -c copy -bsf:v {videoBsf} -f mpegts \"{tsFile}\"");
+				RunAndLogFFMpeg(FfmpegCommandLine.Build(
+					FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+					FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
+					FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
+					FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, videoBsf),
+					FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
+					FfmpegOption.Positional(FfmpegCommandLine.Quoted(tsFile))));
 				if (File.Exists(tsFile))
 				{
 					tempTsFiles.Add(tsFile);
@@ -391,8 +397,15 @@ public partial class TrimViewModel : MP4ViewModelBase
 			{
 				Logger.Log("Concatenating TS segments...");
 				var concatInput = string.Join("|", tempTsFiles);
-				var aacBsf = SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase) ? "-bsf:a aac_adtstoasc" : string.Empty;
-				RunAndLogFFMpeg($"-y -i \"concat:{concatInput}\" -c copy {aacBsf} \"{finalCombinedPath}\"");
+				var aacBsfOpt = SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase)
+					? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
+					: (FfmpegOption?)null;
+				RunAndLogFFMpeg(FfmpegCommandLine.Build(
+					FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+					FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{concatInput}")),
+					FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
+					aacBsfOpt,
+					FfmpegOption.Positional(FfmpegCommandLine.Quoted(finalCombinedPath))));
 			}
 
 			try
@@ -455,13 +468,19 @@ public partial class TrimViewModel : MP4ViewModelBase
 					var endString = $"{dif.Hours:00}:{dif.Minutes:00}:{dif.Seconds:00}";
 					var inputFileName = System.IO.Path.GetFileName(InputPath);
 
-					if (string.IsNullOrWhiteSpace(range.Label) && "copy".Equals(SelectedAudioCodec, StringComparison.OrdinalIgnoreCase))
+					if (string.IsNullOrWhiteSpace(range.Label) && FfmpegArguments.StreamCopy.Equals(SelectedAudioCodec, StringComparison.OrdinalIgnoreCase))
 					{
-						args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} -c:v copy -c:a copy \"{trimOutputPath}\"";
+						args = FfmpegCommandLine.Build(
+							FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputFileName)),
+							FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
+							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
+							FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy),
+							FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimOutputPath)));
 					}
 					else
 					{
-						var vfArg = string.Empty;
+						FfmpegOption vfOpt = default;
 						if (!string.IsNullOrWhiteSpace(range.Label))
 						{
 							var drawTextString = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition);
@@ -472,42 +491,61 @@ public partial class TrimViewModel : MP4ViewModelBase
 								var innerFilter = drawTextString.Trim('\"');
 								// drawtext outputs in same format as input; convert to nv12, upload to VAAPI
 								// hwupload needs extra_hw_frames and derive_device=vaapi to work properly
-								vfArg = $"-vf \"{innerFilter},format=nv12,hwupload=derive_device=vaapi:extra_hw_frames=64\"";
+								vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{innerFilter},format=nv12,hwupload=derive_device=vaapi:extra_hw_frames=64\"");
 							}
 							else
 							{
-								vfArg = $"-vf {drawTextString}";
+								vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, drawTextString);
 							}
 						}
-						else
+						else if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
 						{
-							if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
-							{
-								vfArg = $"-vf format=nv12,hwupload";
-							}
+							vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, "format=nv12,hwupload");
 						}
 						if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
 						{
 							// VAAPI uses -rc_mode for rate control: 2 = CBR, 3 = VBR, 4 = ICQ
 							// Use profile from preset (main, main10, rext)
-							//args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -rc_mode 3 -c:a {SelectedAudioCodec} \"{trimOutputPath}\"";
-							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -rc_mode 3 -c:a {SelectedAudioCodec} \"{trimOutputPath}\"";
+							args = FfmpegCommandLine.Build(
+								FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
+								FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputFileName)),
+								FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
+								vfOpt,
+								FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, EncoderPresets.EncoderPreset.CV),
+								FfmpegOption.Pair(FfmpegArguments.VideoBitrate, EncoderPresets.EncoderPreset.BV),
+								FfmpegOption.Pair(FfmpegArguments.VideoMaxBitrate, EncoderPresets.EncoderPreset.MaxRate),
+								FfmpegOption.Pair(FfmpegArguments.VideoProfile, EncoderPresets.EncoderPreset.ProfileV),
+								FfmpegOption.Pair(FfmpegArguments.VaapiRateControlMode, "3"),
+								FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, SelectedAudioCodec),
+								FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimOutputPath)));
 						}
 						else
 						{
-							// Build encoder options, skipping empty values
-							var encOpts = $"-c:v {EncoderPresets.EncoderPreset.CV}";
+							var encodingTail = new List<FfmpegOption?>
+							{
+								FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, EncoderPresets.EncoderPreset.CV),
+							};
 							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.PresetV))
-								encOpts += $" -preset:v {EncoderPresets.EncoderPreset.PresetV}";
+								encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.VideoPreset, EncoderPresets.EncoderPreset.PresetV));
 							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.TuneV))
-								encOpts += $" -tune:v {EncoderPresets.EncoderPreset.TuneV}";
+								encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.VideoTune, EncoderPresets.EncoderPreset.TuneV));
 							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.RCV))
-								encOpts += $" -rc:v {EncoderPresets.EncoderPreset.RCV}";
-							// Set pixel format based on bit depth
+								encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.VideoRateControl, EncoderPresets.EncoderPreset.RCV));
 							var pixelFormat = VideoBitDepth == "10 bit" ? "yuv420p10le" : "yuv420p";
-							encOpts += $" -pix_fmt {pixelFormat}";
-							encOpts += $" -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {SelectedAudioCodec}";
-							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} {encOpts} \"{trimOutputPath}\"";
+							encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, pixelFormat));
+							encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitrate, EncoderPresets.EncoderPreset.BV));
+							encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.VideoMaxBitrate, EncoderPresets.EncoderPreset.MaxRate));
+							encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.VideoProfile, EncoderPresets.EncoderPreset.ProfileV));
+							encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, SelectedAudioCodec));
+
+							args = FfmpegCommandLine.Build(
+								new FfmpegOption?[]
+								{
+									FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
+									FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputFileName)),
+									FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
+									vfOpt,
+								}.Concat(encodingTail));
 						}
 					}
 

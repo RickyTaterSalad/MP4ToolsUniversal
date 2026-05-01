@@ -581,7 +581,9 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			var combineOutputFile = OutputPath;
 			var shouldAddIntro = !string.IsNullOrWhiteSpace(IntroTitle) || !string.IsNullOrWhiteSpace(IntroSubtitle) || !string.IsNullOrWhiteSpace(IntroDetails);
-			var scanStart = TrimFirstVideo ? $"-ss {StartRange.AsInputParameterString()}" : string.Empty;
+			var scanOpt = TrimFirstVideo
+				? FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, StartRange.AsInputParameterString())
+				: default;
 			var tempFilesToDelete = new List<string>();
 
 			if (shouldAddIntro && writeFiles.Count > 0)
@@ -603,16 +605,20 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 				var firstFile = writeFiles.First();
 				var introInputFile = firstFile.Path;
-				if (!string.IsNullOrWhiteSpace(scanStart))
+				if (!scanOpt.IsSkipped)
 				{
 					Logger.Log("Applying first-file start trim before intro...");
 					var trimmedFirstFile = Path.Combine(TempPathHelper.GetTempPath(), $"first_trim_{Guid.NewGuid():N}.mp4");
-					RunAndLogFFMpeg($"{scanStart} -i \"{firstFile.Path}\" -c copy \"{trimmedFirstFile}\"");
+					RunAndLogFFMpeg(FfmpegCommandLine.Build(
+						scanOpt,
+						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(firstFile.Path)),
+						FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
+						FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimmedFirstFile))));
 					if (File.Exists(trimmedFirstFile))
 					{
 						introInputFile = trimmedFirstFile;
 						tempFilesToDelete.Add(trimmedFirstFile);
-						scanStart = string.Empty;
+						scanOpt = default;
 					}
 				}
 
@@ -629,11 +635,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 					writeFiles[0] = new CombineFile { Name = Path.GetFileName(introFirstFile), Path = introFirstFile };
 					tempFilesToDelete.Add(introFirstFile);
-					scanStart = string.Empty;
+					scanOpt = default;
 				}
 			}
 
-			var trimEndPart = string.Empty;
+			var trimEndOpt = default(FfmpegOption);
 			if (TrimLastVideo)
 			{
 				Logger.Log("Applying end-duration trim...");
@@ -645,7 +651,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					var fullVideoSpan = TimeSpan.FromSeconds(totalDurationSeconds);
 					var finalDelta = fullVideoSpan - new TimeSpan(Math.Abs(durationToTrimOffFinal.Hours), Math.Abs(durationToTrimOffFinal.Minutes), Math.Abs(durationToTrimOffFinal.Seconds));
 					var endString = $"{finalDelta.Hours:00}:{finalDelta.Minutes:00}:{finalDelta.Seconds:00}";
-					trimEndPart = $"-t {endString}";
+					trimEndOpt = FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString);
 				}
 			}
 
@@ -656,8 +662,15 @@ public partial class CombineViewModel : MP4ViewModelBase
 				try
 				{
 					File.WriteAllLines(fileList, writeFiles.Select(x => $"file '{x.Path}'"));
-					var encodingParms = $"-c:v copy -c:a {SelectedAudioCodec}";
-					RunAndLogFFMpeg($"{scanStart} -f concat -safe 0 -i \"{fileList}\" {trimEndPart} {encodingParms} \"{combineOutputFile}\"");
+					RunAndLogFFMpeg(FfmpegCommandLine.Build(
+						scanOpt,
+						FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatConcatDemuxer),
+						FfmpegOption.Pair(FfmpegArguments.ConcatDemuxerSafeFlag, FfmpegArguments.ConcatDemuxerAllowAnyPath),
+						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(fileList)),
+						trimEndOpt,
+						FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
+						FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, SelectedAudioCodec),
+						FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile))));
 				}
 				catch (Exception e)
 				{
@@ -687,8 +700,14 @@ public partial class CombineViewModel : MP4ViewModelBase
 						var input = writeFiles[i].Path;
 						Logger.Log($"Remuxing part {i + 1}/{writeFiles.Count}: {Path.GetFileName(input)}");
 						var partTsFile = Path.Combine(TempPathHelper.GetTempPath(), $"combine_part_{Guid.NewGuid():N}.ts");
-						var scanStartPart = i == 0 && !string.IsNullOrWhiteSpace(scanStart) ? $"{scanStart} " : string.Empty;
-						RunAndLogFFMpeg($"-y {scanStartPart}-i \"{input}\" -c copy -bsf:v {videoBsf} -f mpegts \"{partTsFile}\"");
+						RunAndLogFFMpeg(FfmpegCommandLine.Build(
+							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							i == 0 ? scanOpt : default,
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
+							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
+							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, videoBsf),
+							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
+							FfmpegOption.Positional(FfmpegCommandLine.Quoted(partTsFile))));
 						if (!File.Exists(partTsFile))
 						{
 							continue;
@@ -701,7 +720,13 @@ public partial class CombineViewModel : MP4ViewModelBase
 						}
 
 						var nextMergedTs = Path.Combine(TempPathHelper.GetTempPath(), $"combine_merge_{Guid.NewGuid():N}.ts");
-						RunAndLogFFMpeg($"-y -i \"concat:{mergedTsFile}|{partTsFile}\" -c copy -bsf:v {videoBsf} -f mpegts \"{nextMergedTs}\"");
+						RunAndLogFFMpeg(FfmpegCommandLine.Build(
+							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{mergedTsFile}|{partTsFile}")),
+							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
+							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, videoBsf),
+							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
+							FfmpegOption.Positional(FfmpegCommandLine.Quoted(nextMergedTs))));
 						if (File.Exists(nextMergedTs))
 						{
 							FileUtils.TryDeleteFile(mergedTsFile);
@@ -718,8 +743,19 @@ public partial class CombineViewModel : MP4ViewModelBase
 					if (!string.IsNullOrWhiteSpace(mergedTsFile) && File.Exists(mergedTsFile))
 					{
 						Logger.Log("Finalizing merged TS into MP4...");
-						var aacBsf = SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase) ? "-bsf:a aac_adtstoasc" : string.Empty;
-						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c:v copy -c:a {SelectedAudioCodec} -bsf:v {videoBsf} {aacBsf} {trimEndPart} -movflags +faststart \"{combineOutputFile}\"");
+						var aacBsfOpt = SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase)
+							? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
+							: (FfmpegOption?)null;
+						RunAndLogFFMpeg(FfmpegCommandLine.Build(
+							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)),
+							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
+							FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, SelectedAudioCodec),
+							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, videoBsf),
+							aacBsfOpt,
+							trimEndOpt,
+							FfmpegOption.Pair(FfmpegArguments.Movflags, FfmpegArguments.MovflagFastStart),
+							FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile))));
 					}
 				}
 				catch (Exception e)
