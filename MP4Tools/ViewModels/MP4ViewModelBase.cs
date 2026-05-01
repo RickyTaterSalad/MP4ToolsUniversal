@@ -83,6 +83,14 @@ namespace MP4Tools
 			}
 		}
 
+		private string _inputProbeVideoCodecName = string.Empty;
+		/// <summary>ffprobe <c>codec_name</c> for the current input video (Trim overlay / intro matching).</summary>
+		public string InputProbeVideoCodecName
+		{
+			get => _inputProbeVideoCodecName;
+			set => SetProperty(ref _inputProbeVideoCodecName, value);
+		}
+
 		public IReadOnlyList<string> AvailableVideoBitDepths { get; } = ["8 bit", "10 bit"];
 		public IReadOnlyList<string> AvailableAudioCodecs { get; } = ["copy", /*"aac",*/ "libopus"];
 
@@ -184,6 +192,7 @@ namespace MP4Tools
 				if (!string.IsNullOrWhiteSpace(InputPath) && File.Exists(InputPath))
 				{
 					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(InputPath, CancellationToken.None, Logger.Log);
+					InputProbeVideoCodecName = video?.CodecName?.Trim() ?? "";
 					if (video != null)
 					{
 						var detectedBitDepth = video.BitDepth;
@@ -203,6 +212,10 @@ namespace MP4Tools
 							}
 						}
 					}
+				}
+				else
+				{
+					InputProbeVideoCodecName = "";
 				}
 			}
 			catch (Exception ex)

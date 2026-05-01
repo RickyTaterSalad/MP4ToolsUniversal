@@ -35,7 +35,7 @@ public static class EncodeProcessingSummary
 			? "Intro slide (when used): stream copy (unexpected)."
 			: $"Intro slide (when used): {SummarizeOptions(introPlan.VideoEncodeOptions)}{(introPlan.NeedsVaapiUploadFilter ? " (+ VA-API hwupload after drawtext)" : "")}";
 
-		yield return "Note: RunCaptureFFMpegAsync (intro MP4/TS steps, ffprobe) does not prepend ApplyForcedFfmpegArgs hwaccel.";
+		yield return "Note: RunCaptureFFMpegAsync applies ApplyForcedFfmpegArgs like RunAndLogFFMpegAsync; ffprobe capture steps do not.";
 		yield return "--- End encode pipeline summary ---";
 	}
 

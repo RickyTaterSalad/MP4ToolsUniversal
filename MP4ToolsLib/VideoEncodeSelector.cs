@@ -243,8 +243,8 @@ public static class VideoEncodeSelector
 			return string.IsNullOrEmpty(forced) ? SoftwareFallback() : forced;
 		}
 
-		// auto — try hardware encoders FFmpeg lists; order favors discrete NVIDIA, then Intel, then VA-API, then macOS.
-		foreach (var pick in new Func<string>[] { NvEnc, Qsv, Vaapi, Vtb })
+		// auto — FFmpeg lists NVENC even without an NVIDIA GPU; prefer VA-API first for AMD/Linux, then QSV, NVENC, macOS.
+		foreach (var pick in new Func<string>[] { Vaapi, Qsv, NvEnc, Vtb })
 		{
 			var e = pick();
 			if (!string.IsNullOrEmpty(e))

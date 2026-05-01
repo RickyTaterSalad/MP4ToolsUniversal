@@ -1074,6 +1074,21 @@ public partial class CombineViewModel : MP4ViewModelBase
 						var mergedTsVideoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(mergedTsFile, ct, Logger.Log).ConfigureAwait(false);
 						var finalizeVideoStreamCopy = vplan.UseStreamCopy
 							|| VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(encPrefs, mergedTsVideoCodec);
+						var finalizeVplan = vplan;
+						if (shouldAddIntro && !finalizeVideoStreamCopy && vplan.NeedsVaapiUploadFilter)
+						{
+							var softPrefs = new EncodingSettingsDto
+							{
+								ReencodeOutput = encPrefs.ReencodeOutput,
+								VideoCodec = encPrefs.VideoCodec,
+								AudioCodec = encPrefs.AudioCodec,
+								OutputBitDepth = encPrefs.OutputBitDepth,
+								HardwareAcceleration = "software",
+							};
+							finalizeVplan = VideoEncodeSelector.BuildPlan(softPrefs, InputVideoBitDepth, Logger.Log);
+							Logger.Log($"Finalize: intro MPEG-TS merge — using CPU encoder ({finalizeVplan.EncoderSummary}); VA-API transcode fails across concat seams.");
+						}
+
 						if (finalizeVideoStreamCopy && !vplan.UseStreamCopy)
 							Logger.Log($"Finalize: merged TS video is {mergedTsVideoCodec}; Encode tab matches — remuxing video (-c:v copy) instead of transcoding.");
 						var streamCopyAudio = finalizeVideoStreamCopy
@@ -1087,8 +1102,15 @@ public partial class CombineViewModel : MP4ViewModelBase
 						var finalizeParts = new List<FfmpegOption?>
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
-							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)),
 						};
+						if (!finalizeVideoStreamCopy && finalizeVplan.NeedsVaapiUploadFilter)
+						{
+							// Zero-copy VA-API decode→encode when hwupload vf is omitted — requires ApplyForcedFfmpegArgs to inject standalone -hwaccel vaapi (not confused with -hwaccel_output_format).
+							finalizeParts.Add(FfmpegOption.Pair("-hwaccel_output_format", "vaapi"));
+							Logger.Log("Finalize: VA-API decode→encode without hwupload filter.");
+						}
+
+						finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)));
 						if (finalizeVideoStreamCopy)
 						{
 							finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
@@ -1096,9 +1118,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 						}
 						else
 						{
-							if (vplan.NeedsVaapiUploadFilter)
-								finalizeParts.Add(VideoEncodeSelector.VaapiUploadVideoFilterOption);
-							foreach (var o in vplan.VideoEncodeOptions)
+							foreach (var o in finalizeVplan.VideoEncodeOptions)
 								finalizeParts.Add(o);
 							finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
 						}

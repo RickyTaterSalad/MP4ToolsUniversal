@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace MP4ToolsLib;
 
@@ -10,6 +11,33 @@ public static class FfmpegEncoderCatalog
 {
 	private static readonly object Gate = new();
 	private static HashSet<string> _encoderIds;
+
+	internal static void ParseEncoderListingInto(HashSet<string> dest, string text)
+	{
+		if (dest == null || string.IsNullOrEmpty(text))
+			return;
+
+		foreach (var raw in text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+		{
+			// FFmpeg lines look like " V....D h264_vaapi  …"; must not TrimStart — that removes the leading space check used previously (now fixed via flags column).
+			var line = raw.TrimEnd('\r', '\n');
+			if (line.Length < 8)
+				continue;
+
+			var trimmedLeft = line.TrimStart();
+			if (trimmedLeft.Length < 8)
+				continue;
+
+			// Capability flags column starts with V/A/S (video/audio/subtitle).
+			var fc = trimmedLeft[0];
+			if (fc is not ('V' or 'A' or 'S'))
+				continue;
+
+			var parts = Regex.Split(trimmedLeft, @"\s+", RegexOptions.None);
+			if (parts.Length >= 2 && parts[1].Length > 1)
+				dest.Add(parts[1]);
+		}
+	}
 
 	public static bool HasEncoder(string id)
 	{
@@ -61,17 +89,17 @@ public static class FfmpegEncoderCatalog
 				using var p = Process.Start(psi);
 				if (p == null)
 					return;
-				var stdout = p.StandardOutput.ReadToEnd();
-				p.WaitForExit(60000);
-				foreach (var raw in stdout.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+				var stdoutTask = p.StandardOutput.ReadToEndAsync();
+				var stderrTask = p.StandardError.ReadToEndAsync();
+				if (!p.WaitForExit(60000))
 				{
-					var line = raw.Trim();
-					if (line.Length < 8 || line[0] != ' ')
-						continue;
-					var parts = Regex.Split(line.TrimStart(), @"\s+");
-					if (parts.Length >= 2 && parts[1].Length > 1)
-						_encoderIds.Add(parts[1]);
+					try { p.Kill(entireProcessTree: true); }
+					catch { /* ignore */ }
 				}
+
+				Task.WhenAll(stdoutTask, stderrTask).GetAwaiter().GetResult();
+				ParseEncoderListingInto(_encoderIds, stdoutTask.Result);
+				ParseEncoderListingInto(_encoderIds, stderrTask.Result);
 			}
 			catch
 			{

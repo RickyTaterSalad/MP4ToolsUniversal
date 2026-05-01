@@ -362,6 +362,18 @@ public partial class TrimViewModel : MP4ViewModelBase
 				outputPaths.Add(await TrimRangeAsync(trim, outTrimmedFolder, ct).ConfigureAwait(false));
 			}
 
+			if (outputPaths.Any(static p => string.IsNullOrWhiteSpace(p) || !File.Exists(p)))
+			{
+				trimPipelineSucceeded = false;
+				Logger.Log("Trim failed: segment file(s) missing. FFmpeg steps above may show ** Exit Code ** — RunAndLog does not stop the pipeline when encode fails.");
+				ReportTrimStep("Failed: trim did not produce all segment files.");
+				ClearTimeRanges();
+				foreach (var line in EncodeProcessingSummary.BuildLines(combine ? "Trim and combine" : "Trim", EncodingSettingsRuntime.Current, InputVideoBitDepth))
+					Logger.Log(line);
+				Logger.Log(combine ? "Trim and combine complete." : "Trim complete.");
+				return;
+			}
+
 			if (!combine)
 			{
 				ClearTimeRanges();
@@ -562,13 +574,20 @@ public partial class TrimViewModel : MP4ViewModelBase
 		try
 		{
 			trimOutputPath = CreateTrimOutputPath(InputPath, outFolder, range);
-			if (File.Exists(InputPath) && !File.Exists(trimOutputPath))
+			var inputFullPath = Path.GetFullPath(InputPath);
+			if (!File.Exists(inputFullPath))
+			{
+				Logger.Log($"Trim skipped: input not found: {inputFullPath}");
+				return string.Empty;
+			}
+
+			if (!File.Exists(trimOutputPath))
 			{
 				TimeSpan endSpan = new TimeSpan(range.EndRange.Hours, range.EndRange.Minutes, range.EndRange.Seconds);
 				TimeSpan startSpan = new TimeSpan(range.StartRange.Hours, range.StartRange.Minutes, range.StartRange.Seconds);
 				var dif = endSpan - startSpan;
 				var endString = $"{dif.Hours:00}:{dif.Minutes:00}:{dif.Seconds:00}";
-				var inputFileName = System.IO.Path.GetFileName(InputPath);
+				var quotedInput = FfmpegCommandLine.Quoted(inputFullPath);
 
 				var encPrefs = EncodingSettingsRuntime.Current;
 				var videoPlan = VideoEncodeSelector.BuildPlan(encPrefs, InputVideoBitDepth, Logger.Log);
@@ -584,7 +603,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				{
 					args = FfmpegCommandLine.Build(
 						FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
-						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputFileName)),
+						FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
 						FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
 						FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
 						FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy),
@@ -592,6 +611,14 @@ public partial class TrimViewModel : MP4ViewModelBase
 				}
 				else
 				{
+					// drawtext / hwupload require decoding; cannot pair -vf with -c:v copy.
+					var effectiveVideoPlan = videoPlan;
+					if (!string.IsNullOrWhiteSpace(range.Label) && videoPlan.UseStreamCopy)
+					{
+						effectiveVideoPlan = VideoEncodeSelector.BuildIntroPlan(encPrefs, InputProbeVideoCodecName, Logger.Log);
+						Logger.Log("Segment label uses drawtext — video is re-encoded for burn-in (stream copy not compatible with filters).");
+					}
+
 					FfmpegOption vfOpt = default;
 
 					string drawInner = null;
@@ -600,7 +627,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 						drawInner = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition).Trim('"');
 					}
 
-					if (videoPlan.NeedsVaapiUploadFilter)
+					if (effectiveVideoPlan.NeedsVaapiUploadFilter)
 					{
 						vfOpt = string.IsNullOrEmpty(drawInner)
 							? VideoEncodeSelector.VaapiUploadVideoFilterOption
@@ -612,9 +639,9 @@ public partial class TrimViewModel : MP4ViewModelBase
 					}
 
 					var encodingTail = new List<FfmpegOption?>();
-					if (!videoPlan.UseStreamCopy)
+					if (!effectiveVideoPlan.UseStreamCopy)
 					{
-						foreach (var o in videoPlan.VideoEncodeOptions)
+						foreach (var o in effectiveVideoPlan.VideoEncodeOptions)
 							encodingTail.Add(o);
 					}
 					else
@@ -627,7 +654,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 					var trimParts = new List<FfmpegOption?>
 					{
 						FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
-						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputFileName)),
+						FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
 						FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
 						vfOpt,
 					};
@@ -638,6 +665,11 @@ public partial class TrimViewModel : MP4ViewModelBase
 				}
 
 				await RunAndLogFFMpegAsync(args, ct).ConfigureAwait(false);
+				if (!File.Exists(trimOutputPath))
+				{
+					Logger.Log($"Trim failed: expected output was not created: {trimOutputPath}");
+					return string.Empty;
+				}
 			}
 			else if (File.Exists(trimOutputPath))
 			{

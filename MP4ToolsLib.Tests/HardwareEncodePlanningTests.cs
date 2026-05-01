@@ -27,7 +27,7 @@ public sealed class HardwareEncodePlanningTests : IDisposable
 		var plan = VideoEncodeSelector.BuildPlan(HwHevc("auto"), "8 bit", _ => { });
 		Assert.False(plan.UseStreamCopy);
 		Assert.DoesNotContain("libx265", plan.EncoderSummary, StringComparison.OrdinalIgnoreCase);
-		Assert.Contains("_nvenc", plan.EncoderSummary, StringComparison.OrdinalIgnoreCase);
+		Assert.Contains("vaapi", plan.EncoderSummary, StringComparison.OrdinalIgnoreCase);
 	}
 
 	[Fact]

@@ -181,6 +181,24 @@ namespace MP4ToolsLib
 			};
 		}
 
+		/// <summary>True if argv contains the standalone <c>-hwaccel</c> switch (not <c>-hwaccel_output_format</c> etc.).</summary>
+		private static bool ArgsDeclareStandaloneHwaccel(string args)
+		{
+			if (string.IsNullOrEmpty(args))
+				return false;
+			const string token = "-hwaccel";
+			for (var i = 0; ; )
+			{
+				var idx = args.IndexOf(token, i, StringComparison.OrdinalIgnoreCase);
+				if (idx < 0)
+					return false;
+				var after = idx + token.Length;
+				if (after >= args.Length || char.IsWhiteSpace(args[after]))
+					return true;
+				i = after;
+			}
+		}
+
 		public string ApplyForcedFfmpegArgs(string args)
 		{
 			args = args ?? string.Empty;
@@ -194,7 +212,7 @@ namespace MP4ToolsLib
 				|| args.Contains(codecCopyVideo, StringComparison.OrdinalIgnoreCase);
 			if (!isCopyOnly)
 			{
-				if (!args.Contains("-hwaccel", StringComparison.OrdinalIgnoreCase))
+				if (!ArgsDeclareStandaloneHwaccel(args))
 				{
 					var hwaccel = ResolveHwAccelLineFromUserHints();
 					var hasVideoFilter = args.Contains($"{FfmpegArguments.VideoFilter} ", StringComparison.OrdinalIgnoreCase)
@@ -302,6 +320,7 @@ namespace MP4ToolsLib
 
 		public Task<string> RunCaptureFFMpegAsync(string args, CancellationToken ct, Action<string> Log = null)
 		{
+			args = ApplyForcedFfmpegArgs(args ?? string.Empty);
 			return RunCaptureAsync(FFPMEG_EXE, args, ct, Log);
 		}
 
