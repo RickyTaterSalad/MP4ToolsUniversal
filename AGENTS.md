@@ -52,6 +52,71 @@ The project uses .NET's built-in testing capabilities:
 
 This is a .NET 10.0 desktop application using Avalonia UI framework for cross-platform compatibility. The application uses FFMPEG for video processing through the MP4ToolsLib library.
 
+## FFmpegArgumentBuilder - Fluent Argument Construction
+
+The project includes an `FFmpegArgumentBuilder` fluent API in `MP4ToolsLib/FFmpegArguments/FFmpegArgumentBuilder.cs` for constructing FFmpeg command-line arguments programmatically. This replaces raw string interpolation with type-safe, composable building blocks.
+
+### Core Types
+
+- **`FFmpegArgumentBuilder`**: Top-level builder. Methods return the builder for chaining.
+  - `AddGlobalOption("-nostdin")` / `AddGlobalOption("-y")` — adds global flags
+  - `WithHardwareAccel("vaapi")` / `WithVaapiDevice("/dev/dri/renderD128")` — hardware acceleration
+  - `AddInput(path, config?)` / `AddOutput(path, config?)` — input/output with optional callbacks
+  - `AddConcatInput(fileListPath)` / `AddConcatProtocol("file1.ts|file2.ts")` — concat modes
+  - `AddRawArguments("...")` — raw passthrough for untyped arguments
+  - `.Build()` — produces the final argument string
+
+- **`InputGroup` / `OutputGroup` / `ConcatInputGroup` / `ConcatProtocolGroup`**: Each extends `ArgumentGroup` and provides domain-specific configuration methods:
+  - `InputGroup`: `SeekTo()`, `Duration()`, `WithFormat()`
+  - `OutputGroup`: `WithVideoCodec()`, `WithAudioCodec()`, `WithPixelFormat()`, `AsMpegTs()`, `AsMp4()`, `Shortest()`, `WithVideoPreset()`, `WithVideoTune()`, `WithMovFlags()`, `WithRateControl()`, `WithVideoProfile()`, `WithVideoBitrate()`, `WithMaxVideoBitrate()`
+  - `ConcatProtocolGroup`: `WithFormat()`
+
+- **Common methods on all groups** (via `ArgumentGroup` base class):
+  - `AddFlag(string)` — adds a bare flag (e.g., `-shortest`)
+  - `AddKeyValue(key, value)` — adds `-key value`
+  - `AddVideoFilter(string)` / `AddAudioFilter(string)` / `AddComplexFilter(string)` — filter chains
+  - `AddMap(string)` — stream mapping
+  - `AddBitstreamFilter(streamSpecifier, filter)` — e.g., `-bsf:v h264_mp4toannexb`
+
+- **Value types**: `FlagArgument`, `KeyValueArgument`, `FilterArgument`, `MapArgument`, `BitstreamFilter` (public structs)
+
+### Usage Pattern
+
+The builder uses **callback-based configuration** for inputs and outputs to avoid type resolution issues with fluent chaining across different group types:
+
+```csharp
+new FFmpegArgumentBuilder()
+    .AddGlobalOption("-nostdin")
+    .AddGlobalOption("-y")
+    .AddInput("input.mp4")
+    .AddOutput("output.mp4", o =>
+    {
+        o.WithVideoCodec("libx264");
+        o.WithPixelFormat("yuv420p");
+        o.WithAudioCodec("aac");
+        o.Shortest();
+        if (useBsf)
+            o.AddBitstreamFilter("a", "aac_adtstoasc");
+    })
+    .Build();
+```
+
+### Extension Methods
+
+`MP4ToolsLib/FFmpegArguments/FFmpegUtilsExtensions.cs` provides extension methods on `FFMpegUtils` to accept builders directly:
+
+- `RunCaptureFFMpegAsync(builder, ct, log)` — async FFmpeg execution
+- `RunAndLogFFMpeg(builder, processOutputAction, log, workingDir)` — sync execution
+- `RunAndLogFFMpeg(builder, log, workingDir)` — simplified sync
+
+These methods call `.Build()` internally and apply forced arguments (like `-nostdin`) before execution.
+
+### File Locations
+
+- `MP4ToolsLib/FFmpegArguments/FFmpegArgumentBuilder.cs` — main builder and group classes
+- `MP4ToolsLib/FFmpegArguments/FFmpegUtilsExtensions.cs` — extension methods for FFMpegUtils
+- `MP4ToolsLib/IntroVideoComposerAsync.cs` — refactored to use the builder API
+
 ## Video Bit Depth Feature
 
 The application now supports setting the output video bit depth for both Trim and Combine operations.

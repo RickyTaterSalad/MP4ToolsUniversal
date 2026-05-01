@@ -1,14 +1,13 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using MP4ToolsLib.FFmpegArguments;
 
 namespace MP4ToolsLib
 {
     public static class IntroVideoComposerAsync
     {
-        private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(20);
-
         private static string _font;
         private static string Font
         {
@@ -19,14 +18,12 @@ namespace MP4ToolsLib
                     _font = "C:/Windows/Fonts/calibri.ttf";
                     if (OperatingSystem.IsLinux())
                     {
-                        // Try multiple common font paths
                         var possibleFonts = new[]
                         {
                             "/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf",
                             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
                             "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
                         };
-
                         foreach (var fontPath in possibleFonts)
                         {
                             if (File.Exists(fontPath))
@@ -52,7 +49,7 @@ namespace MP4ToolsLib
             int detailsFontSize = 48,
             string detailsText = "",
             Action<string> log = null,
-            IProgress<double> progress = null, // 0..1
+            IProgress<double> progress = null,
             CancellationToken ct = default)
         {
             log ??= _ => { };
@@ -92,58 +89,93 @@ namespace MP4ToolsLib
                     "opus" => "libopus",
                     _ => "aac"
                 };
+
                 string GetBsfForCodec(string codec) => codec switch
                 {
                     "hevc" => "hevc_mp4toannexb",
                     "h264" or "avc" => "h264_mp4toannexb",
                     _ => string.Empty
                 };
-                /*
-                                string GetBsfForCodec(string codec) => codec switch
-                                {
-                                    "hevc" => "hevc_mp4toannexb,h265_metadata=audit_packet=1",
-                                    "h264" or "avc" => "h264_mp4toannexb,h264_metadata=audit_packet=1",
-                                    _ => string.Empty
-                                };
-                                */
+
                 string vBsf = GetBsfForCodec(vCodec);
 
                 var escapedTitle = EscapeDrawtext(titleText);
                 var escapedSubtitle = EscapeDrawtext(subtitleText);
                 var escapedDetails = EscapeDrawtext(detailsText);
-                titleFontSize = Math.Max(1, titleFontSize);
-                subtitleFontSize = Math.Max(1, subtitleFontSize);
-                detailsFontSize = Math.Max(1, detailsFontSize);
                 const int lineGap = 36;
-                var vf = $"drawtext=text='{escapedTitle}':fontfile='{Font}':fontcolor=white:fontsize={titleFontSize}:x=(w-text_w)/2:y=(h/2)-text_h-{lineGap / 2}";
+                var vf = $"drawtext=text='{escapedTitle}':fontfile='{Font}':fontcolor=white:fontsize={Math.Max(1, titleFontSize)}:x=(w-text_w)/2:y=(h/2)-text_h-{lineGap / 2}";
                 if (!string.IsNullOrWhiteSpace(escapedSubtitle))
-                {
-                    vf += $",drawtext=text='{escapedSubtitle}':fontfile='{Font}':fontcolor=white:fontsize={subtitleFontSize}:x=(w-text_w)/2:y=(h/2)+{lineGap / 2}";
-                }
+                    vf += $",drawtext=text='{escapedSubtitle}':fontfile='{Font}':fontcolor=white:fontsize={Math.Max(1, subtitleFontSize)}:x=(w-text_w)/2:y=(h/2)+{lineGap / 2}";
                 if (!string.IsNullOrWhiteSpace(escapedDetails))
-                {
-                    vf += $",drawtext=text='{escapedDetails}':fontfile='{Font}':fontcolor=white:fontsize={detailsFontSize}:x=(w-text_w)/2:y=(h/2)+{lineGap / 2}+{subtitleFontSize}+{lineGap}";
-                }
+                    vf += $",drawtext=text='{escapedDetails}':fontfile='{Font}':fontcolor=white:fontsize={Math.Max(1, detailsFontSize)}:x=(w-text_w)/2:y=(h/2)+{lineGap / 2}+{subtitleFontSize}+{lineGap}";
 
                 log("Creating intro...");
                 await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
-                    $"-nostdin -y -f lavfi -i \"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}\" " +
-                    $"-f lavfi -i \"anullsrc=r={ar}:cl={acl}:d={durationSeconds}\" " +
-                    $"-vf \"{vf}\" " +
-                    $"-c:v {vEnc} -pix_fmt {pixFmt} -r {fps} -c:a {aEnc} -ar {ar} -ac {ach} -shortest \"{introMp4}\"",
+                    new FFmpegArgumentBuilder()
+                        .AddGlobalOption("-nostdin")
+                        .AddGlobalOption("-y")
+                        .AddInput($"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}", i => i.WithFormat("lavfi"))
+                        .AddInput($"anullsrc=r={ar}:cl={acl}:d={durationSeconds}", i => i.WithFormat("lavfi"))
+                        .AddOutput(introMp4, o =>
+                        {
+                            o.AddVideoFilter(vf);
+                            o.WithVideoCodec(vEnc);
+                            o.WithPixelFormat(pixFmt);
+                            o.AddKeyValue("r", fps);
+                            o.WithAudioCodec(aEnc);
+                            o.AddKeyValue("ar", ar);
+                            o.AddKeyValue("ac", ach);
+                            o.Shortest();
+                        })
+                        .Build(),
                     ct, log);
 
                 log("Muxing TS streams...");
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync($"-nostdin -y -i \"{introMp4}\" -c copy -bsf:v {vBsf} -f mpegts \"{introTs}\"", ct, log);
+                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+                    new FFmpegArgumentBuilder()
+                        .AddGlobalOption("-nostdin")
+                        .AddGlobalOption("-y")
+                        .AddInput(introMp4)
+                        .AddOutput(introTs, o =>
+                        {
+                            o.WithVideoCodec("copy");
+                            o.AddBitstreamFilter("v", vBsf);
+                            o.AsMpegTs();
+                        })
+                        .Build(),
+                    ct, log);
                 progress?.Report(0.8);
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync($"-nostdin -y -i \"{inputPath}\" -c copy -bsf:v {vBsf} -f mpegts \"{inputTs}\"", ct, log);
+
+                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+                    new FFmpegArgumentBuilder()
+                        .AddGlobalOption("-nostdin")
+                        .AddGlobalOption("-y")
+                        .AddInput(inputPath)
+                        .AddOutput(inputTs, o =>
+                        {
+                            o.WithVideoCodec("copy");
+                            o.AddBitstreamFilter("v", vBsf);
+                            o.AsMpegTs();
+                        })
+                        .Build(),
+                    ct, log);
                 progress?.Report(0.9);
 
                 log("Concatenating...");
-                var aacBsf = aEnc.Equals("aac", StringComparison.OrdinalIgnoreCase) ? "-bsf:a aac_adtstoasc" : string.Empty;
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync($"-nostdin -y -i \"concat:{introTs}|{inputTs}\" -c copy {aacBsf} \"{outputPath}\"", ct, log);
+                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+                    new FFmpegArgumentBuilder()
+                        .AddGlobalOption("-nostdin")
+                        .AddGlobalOption("-y")
+                        .AddConcatProtocol($"{introTs}|{inputTs}")
+                        .AddOutput(outputPath, o =>
+                        {
+                            o.WithVideoCodec("copy");
+                            if (aEnc.Equals("aac", StringComparison.OrdinalIgnoreCase))
+                                o.AddBitstreamFilter("a", "aac_adtstoasc");
+                        })
+                        .Build(),
+                    ct, log);
                 progress?.Report(1.0);
-
                 log("Done.");
             }
             finally
@@ -159,15 +191,7 @@ namespace MP4ToolsLib
 
         private static void SafeDelete(string path)
         {
-            try
-            {
-                if (File.Exists(path))
-                    File.Delete(path);
-            }
-            catch
-            {
-                // Silently ignore errors during cleanup
-            }
+            try { if (File.Exists(path)) File.Delete(path); } catch { }
         }
     }
 }

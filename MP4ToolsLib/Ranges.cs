@@ -40,7 +40,7 @@ namespace MP4ToolsLib
 			}
 			return ss;
 		}
-		
+
 		public bool IsValidRange()
 		{
 			if (StartRange.Hours > EndRange.Hours)
@@ -62,43 +62,6 @@ namespace MP4ToolsLib
 				}
 			}
 			return true;
-		}
-		public static StartStopRange FromString(string startStopRange)
-		{
-			var stampString = string.Empty;
-			if (string.IsNullOrWhiteSpace(startStopRange))
-			{
-				return null;
-			}
-			var label = string.Empty;
-			var spaceIdx = startStopRange.IndexOf(" ");
-			if (spaceIdx > 0)
-			{
-				stampString = startStopRange.Substring(0, spaceIdx);
-				label = (startStopRange.Substring(spaceIdx) ?? "").Trim();
-			}
-			else
-			{
-				//just timestamp
-				stampString = startStopRange;
-			}
-			if (string.IsNullOrWhiteSpace(stampString))
-			{
-				return null;
-			}
-			stampString = stampString.Trim();
-			var splitStamp = stampString.Split("-");
-			if (splitStamp.Length != 2)
-			{
-				return null;
-			}
-			var start = TimeRange.FromString(splitStamp[0]);
-			var end = TimeRange.FromString(splitStamp[1]);
-			if (start == null || end == null)
-			{
-				return null;
-			}
-			return new StartStopRange(start, end, label);
 		}
 	}
 }

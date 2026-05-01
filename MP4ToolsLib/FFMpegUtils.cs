@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace MP4ToolsLib
 {
-
 	public class FFMpegUtils
 	{
 		private static readonly Lazy<FFMpegUtils> _instance = new Lazy<FFMpegUtils>(() => new FFMpegUtils());
@@ -247,7 +246,6 @@ namespace MP4ToolsLib
 				return (59, 59);
 			}
 		}
-
 
 
 		public async Task<string> GetFileDurationAsync(string file)

@@ -57,6 +57,7 @@ namespace MP4ToolsLib
 		{
 			return AsInputParameterString();
 		}
+
 		public TimeRange Clone()
 		{
 			return new TimeRange()
@@ -66,14 +67,7 @@ namespace MP4ToolsLib
 				Seconds = this.Seconds
 			};
 		}
-		public bool IsEqualTo(TimeRange other)
-				{
-					if (other == null)
-					{
-						return false;
-					}
-					return this.Hours == other.Hours && this.Minutes == other.Minutes && this.Seconds == other.Seconds;
-				}
+
 
 		public static TimeRange FromString(string timeRange)
 		{

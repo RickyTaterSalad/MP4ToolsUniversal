@@ -11,15 +11,10 @@ namespace MP4ToolsLib
         public string Name { get; set; } = string.Empty;
         public string Path { get; set; } = string.Empty;
 
-        public override string ToString()
-        {
-            return Name ?? string.Empty;
-        }
-
         public static IReadOnlyList<CombineFile> FromFolder(string folder, bool reverseList = false)
         {
             var fileList = new List<CombineFile>();
-            
+
             if (Directory.Exists(folder))
             {
                 try
@@ -29,7 +24,7 @@ namespace MP4ToolsLib
                         .Where(x => extensions.Contains(System.IO.Path.GetExtension(x), StringComparer.OrdinalIgnoreCase))
                         .OrderBy(f => new FileInfo(f).CreationTime)
                         .ToList();
-                    
+
                     if (reverseList)
                     {
                         mp4Files.Reverse();
@@ -52,7 +47,7 @@ namespace MP4ToolsLib
                     Debug.WriteLine($"Error processing folder {folder}: {ex.Message}");
                 }
             }
-            
+
             return fileList;
         }
     }
