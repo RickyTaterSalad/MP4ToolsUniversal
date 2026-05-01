@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
-using MP4Tools;
 using MP4ToolsLib;
+using MP4ToolsLib.FFmpegArguments;
 using MP4ToolsLib.Preset;
 using System;
 using System.Collections.Generic;
@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MP4Tools.ViewModels;
@@ -376,16 +377,28 @@ public partial class TrimViewModel : MP4ViewModelBase
 			Logger.Log("Combining trimmed files...");
 
 			var tempTsFiles = new List<string>();
-			var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(outputPaths.FirstOrDefault() ?? string.Empty);
+			var videoCodec = await FFMpegUtils.Instance.RunCaptureFFProbeAsync(
+				new FFmpegArgumentBuilder()
+					.AddInput(outputPaths.FirstOrDefault() ?? string.Empty)
+					.AddRawArguments("-v error -select_streams v:0 -show_entries stream=codec_name -of default=nk=1:nw=1"),
+				CancellationToken.None);
 			//var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb,h265_metadata=audit_packet=1" : "h264_mp4toannexb,h264_metadata=audit_packet=1";
 			var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb" : "h264_mp4toannexb";
-
 
 			foreach (var input in outputPaths)
 			{
 				Logger.Log($"Remuxing trimmed segment to TS: {Path.GetFileName(input)}");
 				var tsFile = Path.Combine(TempPathHelper.GetTempPath(), $"trim_part_{Guid.NewGuid():N}.ts");
-				RunAndLogFFMpeg($"-y -i \"{input}\" -c copy -bsf:v {videoBsf} -f mpegts \"{tsFile}\"");
+				RunAndLogFFMpeg(
+					new FFmpegArgumentBuilder()
+						.AddGlobalOption("-y")
+						.AddInput(input)
+						.AddOutput(tsFile, o =>
+						{
+							o.WithVideoCodec("copy");
+							o.AddBitstreamFilter("v", videoBsf);
+							o.AsMpegTs();
+						}));
 				if (File.Exists(tsFile))
 				{
 					tempTsFiles.Add(tsFile);
@@ -396,8 +409,17 @@ public partial class TrimViewModel : MP4ViewModelBase
 			{
 				Logger.Log("Concatenating TS segments...");
 				var concatInput = string.Join("|", tempTsFiles);
-				var aacBsf = SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase) ? "-bsf:a aac_adtstoasc" : string.Empty;
-				RunAndLogFFMpeg($"-y -i \"concat:{concatInput}\" -c copy {aacBsf} \"{finalCombinedPath}\"");
+				RunAndLogFFMpeg(
+					new FFmpegArgumentBuilder()
+						.AddGlobalOption("-y")
+						.AddConcatProtocol(concatInput)
+						.AddOutput(finalCombinedPath, o =>
+						{
+							o.WithVideoCodec("copy");
+							o.WithAudioCodec("copy");
+							if (SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase))
+								o.AddBitstreamFilter("a", "aac_adtstoasc");
+						}));
 			}
 
 			try
@@ -453,7 +475,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 				trimOutputPath = CreateTrimOutputPath(InputPath, outFolder, range);
 				if (File.Exists(InputPath) && !File.Exists(trimOutputPath))
 				{
-					var args = string.Empty;
 					TimeSpan endSpan = new TimeSpan(range.EndRange.Hours, range.EndRange.Minutes, range.EndRange.Seconds);
 					TimeSpan startSpan = new TimeSpan(range.StartRange.Hours, range.StartRange.Minutes, range.StartRange.Seconds);
 					var dif = endSpan - startSpan;
@@ -462,11 +483,19 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 					if (string.IsNullOrWhiteSpace(range.Label) && "copy".Equals(SelectedAudioCodec, StringComparison.OrdinalIgnoreCase))
 					{
-						args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} -c:v copy -c:a copy \"{trimOutputPath}\"";
+						RunAndLogFFMpeg(
+							new FFmpegArgumentBuilder()
+								.AddGlobalOption("-y")
+								.AddInput(InputPath, i => i.SeekTo(range.StartRange.AsInputParameterString()).Duration(endString))
+								.AddOutput(trimOutputPath, o =>
+								{
+									o.WithVideoCodec("copy");
+									o.WithAudioCodec("copy");
+								}));
 					}
 					else
 					{
-						var vfArg = string.Empty;
+						string vfFilter = null;
 						if (!string.IsNullOrWhiteSpace(range.Label))
 						{
 							var drawTextString = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition);
@@ -474,49 +503,73 @@ public partial class TrimViewModel : MP4ViewModelBase
 							if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
 							{
 								// Remove quotes from drawTextString and append VAAPI upload filters
-								var innerFilter = drawTextString.Trim('\"');
+								var innerFilter = drawTextString.Trim('"');
 								// drawtext outputs in same format as input; convert to nv12, upload to VAAPI
 								// hwupload needs extra_hw_frames and derive_device=vaapi to work properly
-								vfArg = $"-vf \"{innerFilter},format=nv12,hwupload=derive_device=vaapi:extra_hw_frames=64\"";
+								vfFilter = $"{innerFilter},format=nv12,hwupload=derive_device=vaapi:extra_hw_frames=64";
 							}
 							else
 							{
-								vfArg = $"-vf {drawTextString}";
+								vfFilter = drawTextString;
 							}
 						}
 						else
 						{
 							if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
 							{
-								vfArg = $"-vf format=nv12,hwupload";
+								vfFilter = "format=nv12,hwupload";
 							}
 						}
+
 						if (EncoderPresets.EncoderPreset.CV.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
 						{
 							// VAAPI uses -rc_mode for rate control: 2 = CBR, 3 = VBR, 4 = ICQ
 							// Use profile from preset (main, main10, rext)
-							//args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -rc_mode 3 -c:a {SelectedAudioCodec} \"{trimOutputPath}\"";
-							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} -c:v {EncoderPresets.EncoderPreset.CV} -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -rc_mode 3 -c:a {SelectedAudioCodec} \"{trimOutputPath}\"";
+							var builder = new FFmpegArgumentBuilder()
+								.AddGlobalOption("-y")
+								.AddInput(InputPath, i => i.SeekTo(range.StartRange.AsInputParameterString()).Duration(endString));
+
+							builder.AddOutput(trimOutputPath, o =>
+							{
+								if (!string.IsNullOrWhiteSpace(vfFilter))
+									o.AddVideoFilter(vfFilter);
+								o.WithVideoCodec(EncoderPresets.EncoderPreset.CV);
+								o.WithVideoBitrate(EncoderPresets.EncoderPreset.BV);
+								o.WithMaxVideoBitrate(EncoderPresets.EncoderPreset.MaxRate);
+								o.WithVideoProfile(EncoderPresets.EncoderPreset.ProfileV);
+								o.AddKeyValue("rc_mode", "3");
+								o.WithAudioCodec(SelectedAudioCodec);
+							});
+							RunAndLogFFMpeg(builder);
 						}
 						else
 						{
 							// Build encoder options, skipping empty values
-							var encOpts = $"-c:v {EncoderPresets.EncoderPreset.CV}";
-							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.PresetV))
-								encOpts += $" -preset:v {EncoderPresets.EncoderPreset.PresetV}";
-							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.TuneV))
-								encOpts += $" -tune:v {EncoderPresets.EncoderPreset.TuneV}";
-							if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.RCV))
-								encOpts += $" -rc:v {EncoderPresets.EncoderPreset.RCV}";
-							// Set pixel format based on bit depth
 							var pixelFormat = VideoBitDepth == "10 bit" ? "yuv420p10le" : "yuv420p";
-							encOpts += $" -pix_fmt {pixelFormat}";
-							encOpts += $" -b:v {EncoderPresets.EncoderPreset.BV} -maxrate {EncoderPresets.EncoderPreset.MaxRate} -profile:v {EncoderPresets.EncoderPreset.ProfileV} -c:a {SelectedAudioCodec}";
-							args = $"-ss {range.StartRange.AsInputParameterString()} -i \"{inputFileName}\" -t {endString} {vfArg} {encOpts} \"{trimOutputPath}\"";
+							var builder = new FFmpegArgumentBuilder()
+								.AddGlobalOption("-y")
+								.AddInput(InputPath, i => i.SeekTo(range.StartRange.AsInputParameterString()).Duration(endString));
+
+							builder.AddOutput(trimOutputPath, o =>
+							{
+								if (!string.IsNullOrWhiteSpace(vfFilter))
+									o.AddVideoFilter(vfFilter);
+								o.WithVideoCodec(EncoderPresets.EncoderPreset.CV);
+								if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.PresetV))
+									o.AddKeyValue("preset:v", EncoderPresets.EncoderPreset.PresetV);
+								if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.TuneV))
+									o.AddKeyValue("tune:v", EncoderPresets.EncoderPreset.TuneV);
+								if (!string.IsNullOrWhiteSpace(EncoderPresets.EncoderPreset.RCV))
+									o.AddKeyValue("rc:v", EncoderPresets.EncoderPreset.RCV);
+								o.WithPixelFormat(pixelFormat);
+								o.WithVideoBitrate(EncoderPresets.EncoderPreset.BV);
+								o.WithMaxVideoBitrate(EncoderPresets.EncoderPreset.MaxRate);
+								o.WithVideoProfile(EncoderPresets.EncoderPreset.ProfileV);
+								o.WithAudioCodec(SelectedAudioCodec);
+							});
+							RunAndLogFFMpeg(builder);
 						}
 					}
-
-					RunAndLogFFMpeg(args);
 				}
 				else
 				{
@@ -534,40 +587,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 		});
 		return trimOutputPath;
 	}
-	/*
-		private async Task TrimAsync()
-		{
-			if (!CanTrim || !TrimRanges.Any() || InputPath == null)
-			{
-				return;
-			}
-			var validRanges = TrimRanges.Where(IsRangeWithinInputBounds).ToList();
-			if (!validRanges.Any())
-			{
-				return;
-			}
-			Logger.Log("Starting trim only...");
-			CanTrim = false;
-			var outFolder = Path.GetDirectoryName(InputPath) ?? string.Empty;
-			var outTrimmedFolder = Path.Combine(outFolder, OutputFolderName);
-			if (!Directory.Exists(outTrimmedFolder))
-			{
-				Directory.CreateDirectory(outTrimmedFolder);
-			}
-			Logger.Log($"Output folder: {outTrimmedFolder}");
-			var outExportName = System.IO.Path.ChangeExtension(Path.GetFileName(InputPath), ".json");
-			var path = FFMpegUtils.Instance.CleanupPath(Path.Combine(outFolder, outExportName));
-			WriteTrimExport(path);
-			Logger.Log($"Exported trim state: {path}");
-			foreach (var trim in validRanges)
-			{
-				Logger.Log($"Trimming range: {trim.StartRange} - {trim.EndRange}");
-				await TrimRangeAsync(trim, outTrimmedFolder);
-			}
-			CanTrim = true;
-			ClearTimeRanges();
-			Logger.Log("Trim complete.");
-		}*/
 
 	private void WriteTrimExport(string exportFile)
 	{
@@ -717,7 +736,11 @@ public partial class TrimViewModel : MP4ViewModelBase
 		_inputDuration = TimeSpan.Zero;
 		try
 		{
-			var duration = await FFMpegUtils.Instance.GetFileDurationAsync(InputPath);
+			var duration = await FFMpegUtils.Instance.RunCaptureFFProbeAsync(
+				new FFmpegArgumentBuilder()
+					.AddInput(InputPath)
+					.AddRawArguments("-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal"),
+				CancellationToken.None);
 			if (!string.IsNullOrWhiteSpace(duration))
 			{
 				if (TimeSpan.TryParse(duration, out var parsedDuration))

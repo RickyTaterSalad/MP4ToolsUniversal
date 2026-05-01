@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using MP4Tools;
 using MP4ToolsLib;
 using System;
+using MP4ToolsLib.FFmpegArguments;
 using System.Collections.Generic;
 using System.Threading;
 using System.Collections.ObjectModel;
@@ -467,8 +468,35 @@ public partial class CombineViewModel : MP4ViewModelBase
 		return base.Clear();
 	}
 
+	protected override void OnStopCommand()
+	{
+		try
+		{
+			if (_cts != null)
+			{
+				_cts.Cancel();
+				_cts.Dispose();
+
+			}
+			_cts = null;
+		}
+
+		catch
+		{
+			//
+		}
+	}
+
+
+	private CancellationTokenSource _cts = null;
+
 	private async Task Combine()
 	{
+		if (_cts != null)
+		{
+			OnStopCommand();
+		}
+		_cts = new CancellationTokenSource();
 		var logOutputPath = !string.IsNullOrWhiteSpace(OutputPath) ? Path.ChangeExtension(OutputPath, ".log") : null;
 		var logged_ffmpeg_output = new List<string>();
 		EventHandler<string> handler = (s, msg) =>
@@ -479,7 +507,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		Logger.LogMessageReceived += handler;
 		try
 		{
-			await Task.Run(() => CombineInternal());
+			await Task.Run(() => CombineInternal(_cts.Token));
 		}
 		catch (Exception ex)
 		{
@@ -505,11 +533,20 @@ public partial class CombineViewModel : MP4ViewModelBase
 			{
 				Console.WriteLine($"Unexpected error during log file handling: {ex.Message}");
 			}
+			try
+			{
+				_cts?.Dispose();
+				_cts = null;
+			}
+			catch
+			{
+
+			}
 		}
 		Logger.LogMessageReceived -= handler;
 	}
 
-	private async Task CombineInternal()
+	private async Task CombineInternal(CancellationToken ct)
 	{
 
 		if (!CanCombine || string.IsNullOrWhiteSpace(OutputPath))
@@ -629,7 +666,18 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 					Logger.Log("Applying first-file start trim before intro...");
 					var trimmedFirstFile = Path.Combine(GetTempPath(), $"first_trim_{Guid.NewGuid():N}.mp4");
-					RunAndLogFFMpeg($"{scanStart} -i \"{firstFile.Path}\" -c copy \"{trimmedFirstFile}\"");
+					await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+						new FFmpegArgumentBuilder()
+							.AddGlobalOption("-y")
+							.AddGlobalOption("-nostdin")
+							.AddInput(firstFile.Path, input => input.SeekTo(scanStart))
+							.AddOutput(trimmedFirstFile, output =>
+								{
+									output.WithVideoCodec("copy");
+									output.WithAudioCodec("copy");
+								})
+							.Build(),
+						ct, Logger.Log);
 					if (File.Exists(trimmedFirstFile))
 					{
 						introInputFile = trimmedFirstFile;
@@ -687,7 +735,19 @@ public partial class CombineViewModel : MP4ViewModelBase
 						encodingParms = $"-map 0:v:0 -map 0:a:0? -c:v hevc_nvenc -preset p7 -cq 24 -b:v 0 -pix_fmt {pixelFormat} -c:a copy -movflags +faststart";
 					}
 					*/
-					RunAndLogFFMpeg($"{scanStart} -f concat -safe 0 -i \"{fileList}\" {trimEndPart} {encodingParms} \"{combineOutputFile}\"");
+					await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+						new FFmpegArgumentBuilder()
+							.AddGlobalOption("-nostdin")
+							.AddGlobalOption("-y")
+							.AddConcatInput(fileList)
+							.AddOutput(combineOutputFile, output =>
+								{
+									output.WithVideoCodec("copy");
+									output.WithAudioCodec(SelectedAudioCodec);
+									output.Shortest();
+								})
+							.Build(),
+						ct, Logger.Log);
 				}
 				catch (Exception e)
 				{
@@ -718,7 +778,22 @@ public partial class CombineViewModel : MP4ViewModelBase
 						Logger.Log($"Remuxing part {i + 1}/{writeFiles.Count}: {Path.GetFileName(input)}");
 						var partTsFile = Path.Combine(GetTempPath(), $"combine_part_{Guid.NewGuid():N}.ts");
 						var scanStartPart = i == 0 && !string.IsNullOrWhiteSpace(scanStart) ? $"{scanStart} " : string.Empty;
-						RunAndLogFFMpeg($"-y {scanStartPart}-i \"{input}\" -c copy -bsf:v {videoBsf} -f mpegts \"{partTsFile}\"");
+						await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+							new FFmpegArgumentBuilder()
+								.AddGlobalOption("-y")
+								.AddGlobalOption("-nostdin")
+								.AddInput(input, inputGrp =>
+									{
+										inputGrp.SeekTo(scanStartPart.Trim());
+									})
+								.AddOutput(partTsFile, output =>
+									{
+										output.WithVideoCodec("copy");
+										output.AddBitstreamFilter("v", videoBsf);
+										output.AsMpegTs();
+									})
+								.Build(),
+							ct, Logger.Log);
 						if (!File.Exists(partTsFile))
 						{
 							continue;
@@ -731,7 +806,22 @@ public partial class CombineViewModel : MP4ViewModelBase
 						}
 
 						var nextMergedTs = Path.Combine(GetTempPath(), $"combine_merge_{Guid.NewGuid():N}.ts");
-						RunAndLogFFMpeg($"-y -i \"concat:{mergedTsFile}|{partTsFile}\" -c copy -bsf:v {videoBsf} -f mpegts \"{nextMergedTs}\"");
+						await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+							new FFmpegArgumentBuilder()
+								.AddGlobalOption("-y")
+								.AddGlobalOption("-nostdin")
+								.AddInput(input, inputGrp =>
+									{
+										inputGrp.SeekTo(scanStartPart.Trim());
+									})
+								.AddOutput(partTsFile, output =>
+									{
+										output.WithVideoCodec("copy");
+										output.AddBitstreamFilter("v", videoBsf);
+										output.AsMpegTs();
+									})
+								.Build(),
+							ct, Logger.Log);
 						if (File.Exists(nextMergedTs))
 						{
 							FileUtils.TryDeleteFile(mergedTsFile);
@@ -749,7 +839,21 @@ public partial class CombineViewModel : MP4ViewModelBase
 					{
 						Logger.Log("Finalizing merged TS into MP4...");
 						var aacBsf = SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase) ? "-bsf:a aac_adtstoasc" : string.Empty;
-						RunAndLogFFMpeg($"-y -i \"{mergedTsFile}\" -c:v copy -c:a {SelectedAudioCodec} -bsf:v {videoBsf} {aacBsf} {trimEndPart} -movflags +faststart \"{combineOutputFile}\"");
+						await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
+							new FFmpegArgumentBuilder()
+								.AddGlobalOption("-y")
+								.AddGlobalOption("-nostdin")
+								.AddInput(mergedTsFile)
+								.AddOutput(combineOutputFile, output =>
+									{
+										output.WithVideoCodec("copy");
+										output.WithAudioCodec(SelectedAudioCodec);
+										output.AddBitstreamFilter("v", videoBsf);
+										output.AddBitstreamFilter("a", aacBsf.Replace("-bsf:a ", ""));
+										output.AddFlag("+faststart");
+									})
+								.Build(),
+							ct, Logger.Log);
 					}
 				}
 				catch (Exception e)

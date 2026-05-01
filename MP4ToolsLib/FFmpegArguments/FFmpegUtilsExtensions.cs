@@ -50,5 +50,18 @@ namespace MP4ToolsLib.FFmpegArguments
             var args = builder.Build();
             utils.RunAndLogFFMpeg(args, null, log, workingDirectory);
         }
+
+        /// <summary>
+        /// Runs ffprobe with arguments built from an FFmpegArgumentBuilder.
+        /// </summary>
+        public static Task<string> RunCaptureFFProbeAsync(
+            this FFMpegUtils utils,
+            FFmpegArgumentBuilder builder,
+            CancellationToken ct,
+            Action<string> log = null)
+        {
+            var args = builder.Build();
+            return utils.RunCaptureFFProbeAsync(args, ct, log);
+        }
     }
 }

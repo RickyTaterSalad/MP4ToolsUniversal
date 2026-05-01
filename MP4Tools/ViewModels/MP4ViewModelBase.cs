@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using MP4Tools.ViewModels;
 using MP4ToolsLib;
+using MP4ToolsLib.FFmpegArguments;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -93,11 +94,17 @@ namespace MP4Tools
 		// METHODS (Bottom)
 		// ====================
 
+		protected virtual void OnStopCommand()
+		{
+
+		}
+
 		internal MP4ViewModelBase()
 		{
 			StopCommand = new RelayCommand(() =>
 			{
 				FFMpegUtils.Instance.KillCurrentRunningProcess();
+				OnStopCommand();
 			});
 			ClearCommand = new RelayCommand(() => Clear());
 		}
@@ -250,6 +257,25 @@ namespace MP4Tools
 			{
 				Debug.WriteLine($"[RunAndLogFFMpeg][Error] {ex}");
 				Logger.Log($"** Error: {ex.Message} **");
+			}
+			finally
+			{
+				CanStop = false;
+			}
+		}
+		public void RunAndLogFFMpeg(FFmpegArgumentBuilder builder, string workingDirectory = "")
+		{
+			CanStop = true;
+			try
+			{
+				var workDir = !string.IsNullOrWhiteSpace(workingDirectory) ? workingDirectory : System.IO.Path.GetDirectoryName(InputPath ?? string.Empty) ?? string.Empty;
+				FFMpegUtils.Instance.RunAndLogFFMpeg(builder, HandleProcessOutput, Logger.Log, workDir);
+			}
+			catch (Exception ex)
+			{
+				Debug.WriteLine($"[RunAndLogFFMpeg][Error] {ex}");
+				Logger.Log($"** Error: {ex.Message} **");
+
 			}
 			finally
 			{

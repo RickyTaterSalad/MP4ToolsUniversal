@@ -126,7 +126,6 @@ namespace MP4ToolsLib.FFmpegArguments
             foreach (var f in _flags) AppendIfNeeded(sb, f.Build());
             foreach (var kv in _kvArgs) AppendIfNeeded(sb, kv.Build());
             foreach (var bsf in _bsfs) AppendIfNeeded(sb, bsf.Build());
-
             foreach (var map in _maps) AppendIfNeeded(sb, map.Build());
             foreach (var filter in _filters) AppendIfNeeded(sb, filter.Build());
             return sb.ToString();
