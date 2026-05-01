@@ -57,6 +57,7 @@ namespace MP4ToolsLib
             CancellationToken ct = default,
             EncodingSettingsDto encodingPrefs = null,
             Action<string> operationStep = null,
+            bool useTrimSegmentAudioCodec = false,
             FfmpegOption seekBeforeMainInput = default)
         {
             log ??= _ => { };
@@ -108,7 +109,9 @@ namespace MP4ToolsLib
                 string introAudioEnc = aEnc;
                 if (encodingPrefs != null && encodingPrefs.ReencodeOutput)
                 {
-                    var eff = VideoEncodeSelector.EffectiveAudioCodec(encodingPrefs);
+                    var eff = useTrimSegmentAudioCodec
+                        ? VideoEncodeSelector.EffectiveAudioCodecForTrim(encodingPrefs)
+                        : VideoEncodeSelector.EffectiveAudioCodec(encodingPrefs);
                     introAudioEnc = string.Equals(eff, FfmpegArguments.StreamCopy, StringComparison.OrdinalIgnoreCase)
                         ? "aac"
                         : eff;

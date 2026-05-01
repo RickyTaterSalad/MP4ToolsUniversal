@@ -38,6 +38,22 @@ public static class VideoEncodeSelector
 		};
 	}
 
+	/// <summary>Audio for Trim segment FFmpeg steps; uses <see cref="EncodingSettingsDto.TrimAudioCodec"/> (libopus when unset), not Encode-tab <see cref="EncodingSettingsDto.AudioCodec"/>.</summary>
+	public static string EffectiveAudioCodecForTrim(EncodingSettingsDto dto)
+	{
+		if (dto == null || !dto.ReencodeOutput)
+			return FfmpegArguments.StreamCopy;
+
+		var raw = string.IsNullOrWhiteSpace(dto.TrimAudioCodec) ? "libopus" : dto.TrimAudioCodec.Trim();
+		return raw.ToLowerInvariant() switch
+		{
+			"aac" => "aac",
+			"libopus" or "opus" => "libopus",
+			"copy" => FfmpegArguments.StreamCopy,
+			_ => "aac",
+		};
+	}
+
 	public static VideoEncodePlan BuildPlan(EncodingSettingsDto dto, string inputVideoBitDepthUi, Action<string> log)
 	{
 		log ??= _ => { };

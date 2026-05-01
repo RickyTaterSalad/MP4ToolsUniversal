@@ -8,8 +8,11 @@ public sealed class EncodingSettingsDto
 	/// <summary>copy | h264 | h265 (hevc)</summary>
 	public string VideoCodec { get; set; } = "copy";
 
-	/// <summary>copy | aac | libopus</summary>
+	/// <summary>copy | aac | libopus — Encode tab / Combine.</summary>
 	public string AudioCodec { get; set; } = "copy";
+
+	/// <summary>copy | aac | libopus — Trim segment transcodes only (default libopus).</summary>
+	public string TrimAudioCodec { get; set; } = "libopus";
 
 	/// <summary>auto | 8 bit | 10 bit</summary>
 	public string OutputBitDepth { get; set; } = "auto";

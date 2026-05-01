@@ -352,6 +352,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 		var tempFilesToDelete = new List<string>();
 		try
 		{
+			var segmentsFolder = EnsureTrimSegmentsFolder(outTrimmedFolder);
+			Logger.Log($"Intermediate trim segments: {segmentsFolder}");
 			List<string> outputPaths = new List<string>();
 			for (var ri = 0; ri < validRanges.Count; ri++)
 			{
@@ -359,7 +361,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				ct.ThrowIfCancellationRequested();
 				ReportTrimStep($"Trimming segment {ri + 1} of {validRanges.Count}…");
 				Logger.Log($"Trimming range: {trim.StartRange} - {trim.EndRange}");
-				outputPaths.Add(await TrimRangeAsync(trim, outTrimmedFolder, ct).ConfigureAwait(false));
+				outputPaths.Add(await TrimRangeAsync(trim, segmentsFolder, ct).ConfigureAwait(false));
 			}
 
 			if (outputPaths.Any(static p => string.IsNullOrWhiteSpace(p) || !File.Exists(p)))
@@ -368,7 +370,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				Logger.Log("Trim failed: segment file(s) missing. FFmpeg steps above may show ** Exit Code ** — RunAndLog does not stop the pipeline when encode fails.");
 				ReportTrimStep("Failed: trim did not produce all segment files.");
 				ClearTimeRanges();
-				foreach (var line in EncodeProcessingSummary.BuildLines(combine ? "Trim and combine" : "Trim", EncodingSettingsRuntime.Current, InputVideoBitDepth))
+				foreach (var line in EncodeProcessingSummary.BuildLines(combine ? "Trim and combine" : "Trim", EncodingSettingsRuntime.Current, InputVideoBitDepth, trimSegmentAudioSummary: true))
 					Logger.Log(line);
 				Logger.Log(combine ? "Trim and combine complete." : "Trim complete.");
 				return;
@@ -377,7 +379,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			if (!combine)
 			{
 				ClearTimeRanges();
-				foreach (var line in EncodeProcessingSummary.BuildLines("Trim", EncodingSettingsRuntime.Current, InputVideoBitDepth))
+				foreach (var line in EncodeProcessingSummary.BuildLines("Trim", EncodingSettingsRuntime.Current, InputVideoBitDepth, trimSegmentAudioSummary: true))
 					Logger.Log(line);
 				Logger.Log("Trim complete.");
 				ReportTrimStep("Trim finished successfully.");
@@ -414,7 +416,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 					log: Logger.Log,
 					ct: ct,
 					encodingPrefs: EncodingSettingsRuntime.Current,
-					operationStep: ReportTrimStep).ConfigureAwait(false);
+					operationStep: ReportTrimStep,
+					useTrimSegmentAudioCodec: true).ConfigureAwait(false);
 				if (File.Exists(introFirstFile))
 				{
 					outputPaths[0] = introFirstFile;
@@ -541,7 +544,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			}
 
 			ClearTimeRanges();
-			foreach (var line in EncodeProcessingSummary.BuildLines("Trim and combine", EncodingSettingsRuntime.Current, InputVideoBitDepth))
+			foreach (var line in EncodeProcessingSummary.BuildLines("Trim and combine", EncodingSettingsRuntime.Current, InputVideoBitDepth, trimSegmentAudioSummary: true))
 				Logger.Log(line);
 			Logger.Log("Trim and combine complete.");
 			if (combine && trimPipelineSucceeded)
@@ -560,6 +563,25 @@ public partial class TrimViewModel : MP4ViewModelBase
 		finally
 		{
 			CanTrim = true;
+		}
+	}
+
+	/// <summary>
+	/// Resolves {mainOutputDir}/trim, or trim1, trim2, … if those names are already taken.
+	/// </summary>
+	private static string EnsureTrimSegmentsFolder(string mainOutputDirectory)
+	{
+		const string baseSegmentName = "trim";
+		for (var i = 0; ; i++)
+		{
+			var name = i == 0 ? baseSegmentName : $"{baseSegmentName}{i}";
+			var candidate = Path.Combine(mainOutputDirectory, name);
+			if (Directory.Exists(candidate))
+				continue;
+			if (File.Exists(candidate))
+				continue;
+			Directory.CreateDirectory(candidate);
+			return candidate;
 		}
 	}
 
@@ -591,7 +613,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 				var encPrefs = EncodingSettingsRuntime.Current;
 				var videoPlan = VideoEncodeSelector.BuildPlan(encPrefs, InputVideoBitDepth, Logger.Log);
-				var audioEnc = VideoEncodeSelector.EffectiveAudioCodec(encPrefs);
+				var audioEnc = VideoEncodeSelector.EffectiveAudioCodecForTrim(encPrefs);
 
 				bool streamCopyOk = string.IsNullOrWhiteSpace(range.Label)
 					&& !encPrefs.ReencodeOutput

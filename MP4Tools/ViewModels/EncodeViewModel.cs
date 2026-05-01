@@ -186,6 +186,7 @@ public partial class EncodeViewModel : ViewModelBase
 		{
 			ApplyEncodeConstraints();
 			var full = AppSettingsStore.LoadOrDefault();
+			var prevEnc = full.Encoding;
 			full.Encoding = new EncodingSettingsDto
 			{
 				ReencodeOutput = ReencodeOutput,
@@ -193,6 +194,7 @@ public partial class EncodeViewModel : ViewModelBase
 				AudioCodec = SelectedAudioCodec ?? "copy",
 				OutputBitDepth = SelectedOutputBitDepth ?? "auto",
 				HardwareAcceleration = SelectedHardwareAcceleration ?? "auto",
+				TrimAudioCodec = string.IsNullOrWhiteSpace(prevEnc?.TrimAudioCodec) ? "libopus" : prevEnc.TrimAudioCodec,
 			};
 			AppSettingsStore.Save(full);
 			EncodingSettingsRuntime.Apply(full);
