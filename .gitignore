@@ -36,9 +36,6 @@ packages/
 *.msix
 *.msixupload
 
-# Ignore VS Code
-.vscode/
-
 # Ignore Rider
 .idea/
 *.iml

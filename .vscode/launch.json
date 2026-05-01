@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "MP4Tools (Debug)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/MP4Tools/bin/Debug/net10.0/MP4Tools.dll",
+            "cwd": "${workspaceFolder}/MP4Tools/bin/Debug/net10.0",
+            "console": "integratedTerminal",
+            "stopAtEntry": false
+        },
+        {
+            "name": "MP4Tools (Debug — workspace is MP4Tools/)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-app-from-project-folder",
+            "program": "${workspaceFolder}/bin/Debug/net10.0/MP4Tools.dll",
+            "cwd": "${workspaceFolder}/bin/Debug/net10.0",
+            "console": "integratedTerminal",
+            "stopAtEntry": false
+        },
+        {
+            "name": "MP4Tools (C# Dev Kit)",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/MP4Tools/MP4Tools.csproj"
+        }
+    ]
+}
