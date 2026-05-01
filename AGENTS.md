@@ -126,3 +126,30 @@ The UI can freeze when performing intensive operations like video processing or 
   ```
 
 **Key Principle**: Always use `Task.Run()` for CPU-bound or blocking operations that should not freeze the UI, while keeping UI updates (logging, property changes) on the UI thread.
+
+## Audio/Video Bitstream Filter Issues
+
+### aac_adtstoasc Error with Opus Audio
+
+**Error**: 
+```
+Codec 'opus' (86076) is not supported by the bitstream filter 'aac_adtstoasc'. 
+Supported codecs are: aac (86018)
+```
+
+**Cause**: The `aac_adtstoasc` bitstream filter only works with AAC audio streams, not Opus or other codecs. The code was applying this filter unconditionally to all audio when finalizing TS-to-MP4 conversion.
+
+**Fix**: Make the bitstream filter conditional based on the audio codec:
+
+- **[`CombineViewModel.cs`](/opt/Repos/MP4ToolsUniversal/MP4Tools/ViewModels/CombineViewModel.cs#L752)**:
+  ```csharp
+  // Only apply aac_adtstoasc for AAC audio
+  var aacBsf = SelectedAudioCodec.Contains("aac", StringComparison.OrdinalIgnoreCase) 
+      ? "-bsf:a aac_adtstoasc" 
+      : string.Empty;
+  ```
+
+**Key Principle**: Bitstream filters are codec-specific. Always verify the codec before applying filters:
+- `aac_adtstoasc` → only for AAC audio
+- `h264_mp4toannexb` / `hevc_mp4toannexb` → only for H.264/H.265 video
+- Don't apply any BSF when copying streams that are already in the correct format
