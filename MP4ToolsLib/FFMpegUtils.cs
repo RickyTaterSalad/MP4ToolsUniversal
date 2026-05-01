@@ -223,7 +223,7 @@ namespace MP4ToolsLib
 		}
 
 
-		public async Task<string> GetFileDurationAsync(string file, CancellationToken cancellationToken = default)
+		public async Task<string> GetFileDurationAsync(string file, CancellationToken cancellationToken = default, Action<string> log = null)
 		{
 			if (string.IsNullOrWhiteSpace(file) || !File.Exists(file))
 			{
@@ -232,7 +232,7 @@ namespace MP4ToolsLib
 			try
 			{
 				var args = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal \"{file}\"";
-				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken).ConfigureAwait(false);
+				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
 				return (output ?? string.Empty).Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
 					.FirstOrDefault()?.Trim() ?? string.Empty;
 			}
@@ -246,7 +246,7 @@ namespace MP4ToolsLib
 			}
 		}
 
-		public async Task<string> GetFirstVideoCodecNameAsync(string inputFile, CancellationToken cancellationToken = default)
+		public async Task<string> GetFirstVideoCodecNameAsync(string inputFile, CancellationToken cancellationToken = default, Action<string> log = null)
 		{
 			if (string.IsNullOrWhiteSpace(inputFile) || !File.Exists(inputFile))
 			{
@@ -255,7 +255,7 @@ namespace MP4ToolsLib
 			try
 			{
 				var args = $"-v error -select_streams v:0 -show_entries stream=codec_name -of default=nk=1:nw=1 \"{inputFile}\"";
-				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken).ConfigureAwait(false);
+				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
 				return (output ?? string.Empty).Trim();
 			}
 			catch (OperationCanceledException)
@@ -292,7 +292,11 @@ namespace MP4ToolsLib
 			};
 
 			var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
-			process.ErrorDataReceived += (_, e) => { if (e.Data != null) Log?.Invoke(e.Data); };
+			process.ErrorDataReceived += (_, e) =>
+			{
+				if (e.Data != null)
+					Log?.Invoke($"[stderr] {e.Data}");
+			};
 
 			try
 			{
@@ -300,7 +304,6 @@ namespace MP4ToolsLib
 					throw new InvalidOperationException($"Failed to start: {exe}");
 
 				process.BeginErrorReadLine();
-				process.BeginOutputReadLine();
 				RegisterTrackedMediaProcess(process);
 
 				using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -327,6 +330,15 @@ namespace MP4ToolsLib
 					var stdoutTask = process.StandardOutput.ReadToEndAsync(linkedCts.Token);
 					await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
 					var stdout = await stdoutTask.ConfigureAwait(false);
+
+					if (!string.IsNullOrWhiteSpace(stdout))
+					{
+						foreach (var line in stdout.Split(["\r\n", "\n", "\r"], StringSplitOptions.None))
+						{
+							if (!string.IsNullOrWhiteSpace(line))
+								Log($"[stdout] {line}");
+						}
+					}
 
 					if (process.ExitCode != 0)
 						throw new InvalidOperationException($"{exe} failed with exit code {process.ExitCode}");
@@ -373,7 +385,6 @@ namespace MP4ToolsLib
 				try
 				{
 					process.CancelErrorRead();
-					process.CancelOutputRead();
 				}
 				catch
 				{

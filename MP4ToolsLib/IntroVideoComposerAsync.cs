@@ -65,7 +65,7 @@ namespace MP4ToolsLib
 
             try
             {
-                var (video, audio) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(inputPath, ct);
+                var (video, audio) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(inputPath, ct, log);
 
                 string w = !string.IsNullOrWhiteSpace(video?.Width) ? video.Width : "1920";
                 string h = !string.IsNullOrWhiteSpace(video?.Height) ? video.Height : "1080";

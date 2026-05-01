@@ -384,7 +384,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				Logger.Log("Combining trimmed files...");
 
 				var tempTsFiles = new List<string>();
-				var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(outputPaths.FirstOrDefault() ?? string.Empty, ct).ConfigureAwait(false);
+				var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(outputPaths.FirstOrDefault() ?? string.Empty, ct, Logger.Log).ConfigureAwait(false);
 				var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb" : "h264_mp4toannexb";
 
 				foreach (var input in outputPaths)
@@ -738,7 +738,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		_inputDuration = TimeSpan.Zero;
 		try
 		{
-			var duration = await FFMpegUtils.Instance.GetFileDurationAsync(InputPath);
+			var duration = await FFMpegUtils.Instance.GetFileDurationAsync(InputPath, CancellationToken.None, Logger.Log);
 			if (!string.IsNullOrWhiteSpace(duration))
 			{
 				if (TimeSpan.TryParse(duration, out var parsedDuration))

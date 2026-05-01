@@ -17,8 +17,6 @@ namespace MP4Tools
 		// PROPERTIES (Top)
 		// ====================
 
-		private static int _ffmpegFrameLineCounter = 0;
-
 		public RelayCommand ClearCommand { get; private set; }
 		public RelayCommand StopCommand { get; private set; }
 
@@ -94,6 +92,8 @@ namespace MP4Tools
 
 		private CancellationTokenSource _ffmpegOperationCts;
 
+		protected CancellationToken FfmpegOperationCancellationToken => _ffmpegOperationCts?.Token ?? CancellationToken.None;
+
 	internal MP4ViewModelBase()
 		{
 			StopCommand = new RelayCommand(CancelFfmpegOperation);
@@ -165,31 +165,6 @@ namespace MP4Tools
 			return 500;//return Settings.Default.LogMaxLines > 0 ? Settings.Default.LogMaxLines : 500;
 		}
 
-		internal static bool ShouldReportFfmpegLogLine(string line)
-		{
-			if (string.IsNullOrWhiteSpace(line))
-			{
-				return false;
-			}
-
-			if (line.StartsWith("ffmpeg version", StringComparison.OrdinalIgnoreCase)) return false;
-			if (line.StartsWith("configuration:", StringComparison.OrdinalIgnoreCase)) return false;
-			if (line.Contains("Press [q]", StringComparison.OrdinalIgnoreCase)) return false;
-
-			if (line.Contains("frame=", StringComparison.OrdinalIgnoreCase))
-			{
-				var count = Interlocked.Increment(ref _ffmpegFrameLineCounter);
-				return count % 10 == 0;
-			}
-
-			if (line.Contains("time=", StringComparison.OrdinalIgnoreCase)) return false;
-
-			return line.Contains("error", StringComparison.OrdinalIgnoreCase)
-				|| line.Contains("failed", StringComparison.OrdinalIgnoreCase)
-				|| line.Contains("invalid", StringComparison.OrdinalIgnoreCase)
-				|| line.Contains("warning", StringComparison.OrdinalIgnoreCase);
-		}
-
 		private void HandleProcessOutput(Process process, string streamName, string data)
 		{
 			if (string.IsNullOrWhiteSpace(data))
@@ -198,10 +173,7 @@ namespace MP4Tools
 			}
 
 			Debug.WriteLine($"[ffmpeg][{streamName}] {data}");
-			if (ShouldReportFfmpegLogLine(data))
-			{
-				Logger.Log(data);
-			}
+			Logger.Log(string.IsNullOrEmpty(streamName) ? data : $"[{streamName}] {data}");
 		}
 
 
@@ -211,7 +183,7 @@ namespace MP4Tools
 			{
 				if (!string.IsNullOrWhiteSpace(InputPath) && File.Exists(InputPath))
 				{
-					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(InputPath, CancellationToken.None);
+					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(InputPath, CancellationToken.None, Logger.Log);
 					if (video != null)
 					{
 						var detectedBitDepth = video.BitDepth;

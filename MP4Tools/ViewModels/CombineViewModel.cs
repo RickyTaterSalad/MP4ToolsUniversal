@@ -382,7 +382,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			// Read bit depth from first file if it's a file, otherwise first file in folder
 			if (File.Exists(InputPath))
 			{
-				var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(InputPath, CancellationToken.None);
+				var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(InputPath, FfmpegOperationCancellationToken, Logger.Log);
 				if (video != null)
 				{
 					var detectedBitDepth = video.BitDepth;
@@ -409,7 +409,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				if (fileList.Count > 0)
 				{
 					var firstFile = fileList[0].Path;
-					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(firstFile, CancellationToken.None, Logger.Log);
+					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(firstFile, FfmpegOperationCancellationToken, Logger.Log);
 					if (video != null)
 					{
 						var detectedBitDepth = video.BitDepth;
@@ -573,7 +573,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				try
 				{
 					ct.ThrowIfCancellationRequested();
-					var vidDurationString = await FFMpegUtils.Instance.GetFileDurationAsync(file.Path, ct).ConfigureAwait(false);
+					var vidDurationString = await FFMpegUtils.Instance.GetFileDurationAsync(file.Path, ct, Logger.Log).ConfigureAwait(false);
 					var tr = TimeRange.FromString(vidDurationString ?? "");
 					if (tr != null)
 					{
@@ -709,7 +709,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				string mergedTsFile = null;
 				try
 				{
-					var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(writeFiles.FirstOrDefault()?.Path ?? string.Empty, ct).ConfigureAwait(false);
+					var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(writeFiles.FirstOrDefault()?.Path ?? string.Empty, ct, Logger.Log).ConfigureAwait(false);
 					//var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb,h265_metadata=audit_packet=1" : "h264_mp4toannexb,h264_metadata=audit_packet=1";
 					var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb" : "h264_mp4toannexb";
 
