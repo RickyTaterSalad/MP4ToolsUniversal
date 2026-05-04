@@ -4,16 +4,11 @@ using System.IO;
 
 namespace MP4ToolsLib
 {
-<<<<<<< HEAD
     public static class TempPathHelper
     {
-        private static readonly string _customTempPath = OperatingSystem.IsLinux() ? GetTempPathInternal() : Path.GetTempPath();
-=======
-	public static class TempPathHelper
-	{
+        private static readonly string _customTempPath = OperatingSystem.IsLinux() ? GetTempPath() : Path.GetTempPath();
 		private static string _configuredDirectory;
 		private static bool _retainTemporaryFiles;
->>>>>>> abe84afa4f3b0ceaa87a7600ead749ca11d3c70d
 
 		public static bool RetainTemporaryFiles => _retainTemporaryFiles;
 
