@@ -8,55 +8,34 @@
             "args": [
                 "build",
                 "${workspaceFolder}/MP4Tools.sln",
-                "-c",
-                "Debug",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "reveal": "silent"
-            },
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "build-app-from-project-folder",
+            "label": "publish",
             "command": "dotnet",
             "type": "process",
             "args": [
-                "build",
-                "${workspaceFolder}/MP4Tools.csproj",
-                "-c",
-                "Debug",
+                "publish",
+                "${workspaceFolder}/MP4Tools.sln",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
-            "group": "build",
-            "presentation": {
-                "reveal": "silent"
-            },
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "run MP4Tools",
+            "label": "watch",
             "command": "dotnet",
             "type": "process",
             "args": [
+                "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/MP4Tools/MP4Tools.csproj",
-                "-c",
-                "Debug"
+                "${workspaceFolder}/MP4Tools.sln"
             ],
-            "group": "none",
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
+            "problemMatcher": "$msCompile"
         }
     ]
 }

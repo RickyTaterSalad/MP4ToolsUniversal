@@ -135,21 +135,42 @@ public partial class TrimView : UserControl
 		}
 	}
 
+	/// <summary>GTK/Linux file dialogs often treat globs as case-sensitive; list lower and upper suffixes.</summary>
+	private static List<string> VideoBrowseGlobPatterns()
+	{
+		string[] bases =
+		[
+			"mp4", "mkv", "mov", "webm", "m4v", "ts", "mts", "m2ts",
+			"avi", "wmv", "flv", "mpg", "mpeg",
+		];
+		var list = new List<string>(bases.Length * 2);
+		foreach (var b in bases)
+		{
+			list.Add($"*.{b}");
+			list.Add($"*.{b.ToUpperInvariant()}");
+		}
+
+		return list;
+	}
+
 	private async void BrowseButton_OnClick(object sender, RoutedEventArgs e)
 	{
 		var topLevel = TopLevel.GetTopLevel(this);
 		var file = await topLevel!.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
 		{
-			Title = "Select File To Trim",
+			Title = "Select video file to trim",
 			AllowMultiple = false,
-			FileTypeFilter
-			= new List<FilePickerFileType>
+			FileTypeFilter = new List<FilePickerFileType>
 			{
-				new FilePickerFileType("Video Files")
+				new FilePickerFileType("Common video")
 				{
-					Patterns = new List<string> { "*.mp4" }
-				}
-		}
+					Patterns = VideoBrowseGlobPatterns(),
+				},
+				new FilePickerFileType("All files")
+				{
+					Patterns = ["*.*"],
+				},
+			},
 		});
 
 		if (file.Count > 0)

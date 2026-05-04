@@ -1,0 +1,11 @@
+<Project>
+    <PropertyGroup>
+        <!-- AvaloniaStatsTask writes under ~/.local/share/AvaloniaUI; unwritable home or CI sandboxes can fail the build. -->
+        <AvaloniaTelemetryOptOut>true</AvaloniaTelemetryOptOut>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>portable</DebugType>
+        <Optimize>false</Optimize>
+    </PropertyGroup>
+</Project>

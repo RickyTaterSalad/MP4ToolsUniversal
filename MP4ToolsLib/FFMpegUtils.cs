@@ -12,6 +12,9 @@ namespace MP4ToolsLib
 
 	public class FFMpegUtils
 	{
+		/// <summary>When true, ffmpeg/ffprobe are not executed; callers log full exe + args instead.</summary>
+		public static bool DryRunExternalCommands { get; set; }
+
 		private static readonly Lazy<FFMpegUtils> _instance = new Lazy<FFMpegUtils>(() => new FFMpegUtils());
 		public static FFMpegUtils Instance => _instance.Value;
 		private FFMpegUtils()
@@ -22,25 +25,47 @@ namespace MP4ToolsLib
 		private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(30);
 		private static string _ffprobe_exe = string.Empty;
 
-		private readonly object _processLock = new object();
+		private static readonly object TrackedProcessesLock = new object();
+		private static readonly HashSet<int> TrackedMediaProcessIds = new HashSet<int>();
 
-		private Process _currentRunningProcess = null;
-
-		public void KillCurrentRunningProcess()
+		private static void RegisterTrackedMediaProcess(Process process)
 		{
-			if (_currentRunningProcess != null)
+			if (process?.HasExited == false)
+			{
+				lock (TrackedProcessesLock)
+					TrackedMediaProcessIds.Add(process.Id);
+			}
+		}
+
+		private static void UnregisterTrackedMediaProcess(Process process)
+		{
+			if (process == null)
+				return;
+			lock (TrackedProcessesLock)
+				TrackedMediaProcessIds.Remove(process.Id);
+		}
+
+		/// <summary>Kills ffmpeg/ffprobe child processes started by this app (e.g. on shutdown).</summary>
+		public void KillAllTrackedMediaProcesses()
+		{
+			int[] snapshot;
+			lock (TrackedProcessesLock)
+			{
+				snapshot = TrackedMediaProcessIds.ToArray();
+				TrackedMediaProcessIds.Clear();
+			}
+
+			foreach (var id in snapshot)
 			{
 				try
 				{
-					if (!_currentRunningProcess.HasExited)
-					{
-						_currentRunningProcess.Kill();
-						_currentRunningProcess = null;
-					}
+					using var p = Process.GetProcessById(id);
+					if (!p.HasExited)
+						p.Kill(entireProcessTree: true);
 				}
 				catch
 				{
-
+					// already exited or inaccessible
 				}
 			}
 		}
@@ -141,56 +166,83 @@ namespace MP4ToolsLib
 			}
 		}
 
+		/// <summary>Maps Encode-tab preference to ffmpeg decode acceleration (prepended when not stream-copy).</summary>
+		public string ResolveHwAccelLineFromUserHints()
+		{
+			var m = (FfmpegUserHints.HardwareAcceleration ?? "auto").Trim().ToLowerInvariant();
+			return m switch
+			{
+				"nvenc" => "cuda",
+				"qsv" => "qsv",
+				"vaapi" => $"vaapi\n-vaapi_device {GetPreferredRenderDevice()}",
+				"videotoolbox" => "videotoolbox",
+				"software" => "auto",
+				_ => "auto",
+			};
+		}
+
+		/// <summary>True if argv contains the standalone <c>-hwaccel</c> switch (not <c>-hwaccel_output_format</c> etc.).</summary>
+		private static bool ArgsDeclareStandaloneHwaccel(string args)
+		{
+			if (string.IsNullOrEmpty(args))
+				return false;
+			const string token = "-hwaccel";
+			for (var i = 0; ; )
+			{
+				var idx = args.IndexOf(token, i, StringComparison.OrdinalIgnoreCase);
+				if (idx < 0)
+					return false;
+				var after = idx + token.Length;
+				if (after >= args.Length || char.IsWhiteSpace(args[after]))
+					return true;
+				i = after;
+			}
+		}
+
 		public string ApplyForcedFfmpegArgs(string args)
 		{
 			args = args ?? string.Empty;
-			if (!args.Contains("-nostdin", StringComparison.OrdinalIgnoreCase))
+			if (!args.Contains(FfmpegArguments.DisableInteractiveStdin, StringComparison.OrdinalIgnoreCase))
 			{
-				args = $"-nostdin {args}".Trim();
+				args = $"{FfmpegArguments.DisableInteractiveStdin} {args}".Trim();
 			}
-			var isCopyOnly = args.Contains("-c copy", StringComparison.OrdinalIgnoreCase)
-				|| args.Contains("-c:v copy", StringComparison.OrdinalIgnoreCase);
+			var codecCopyAll = $"{FfmpegArguments.SelectCodec} {FfmpegArguments.StreamCopy}";
+			var codecCopyVideo = $"{FfmpegArguments.SelectVideoCodec} {FfmpegArguments.StreamCopy}";
+			var isCopyOnly = args.Contains(codecCopyAll, StringComparison.OrdinalIgnoreCase)
+				|| args.Contains(codecCopyVideo, StringComparison.OrdinalIgnoreCase);
 			if (!isCopyOnly)
 			{
-				if (!args.Contains("-hwaccel", StringComparison.OrdinalIgnoreCase))
+				if (!ArgsDeclareStandaloneHwaccel(args))
 				{
-					var hwaccel = DetectBestHwAccel();
-					// Check if using VAAPI with video filters - if so, we should NOT use -hwaccel
-					// because the filters (like drawtext) work on CPU frames and we use hwupload
-					var hasVideoFilter = args.Contains("-vf ", StringComparison.OrdinalIgnoreCase)
+					var hwaccel = ResolveHwAccelLineFromUserHints();
+					var hasVideoFilter = args.Contains($"{FfmpegArguments.VideoFilter} ", StringComparison.OrdinalIgnoreCase)
 						|| args.Contains(" -filter:v", StringComparison.OrdinalIgnoreCase)
 						|| args.Contains(" -filter_complex", StringComparison.OrdinalIgnoreCase);
 
-					// For vaapi, we need to add -vaapi_device for VAAPI filters and encoders
-					if (hwaccel.StartsWith("vaapi"))
+					if (string.Equals(hwaccel, "auto", StringComparison.OrdinalIgnoreCase))
+					{
+						args = $"-hwaccel auto {args}".Trim();
+					}
+					else if (hwaccel.StartsWith("vaapi", StringComparison.OrdinalIgnoreCase))
 					{
 						var parts = hwaccel.Split('\n');
-						var vaapiDevice = parts.Length > 1 ? parts[1] : string.Empty; // "-vaapi_device /dev/dri/renderDxxx"
+						var vaapiDevice = parts.Length > 1 ? parts[1] : string.Empty;
 
 						if (!hasVideoFilter)
 						{
-							// No video filters - use hwaccel for decoding
 							if (!string.IsNullOrWhiteSpace(vaapiDevice))
-							{
 								args = $"{vaapiDevice} -hwaccel {parts[0]} {args}".Trim();
-							}
 							else
-							{
 								args = $"-hwaccel {hwaccel} {args}".Trim();
-							}
 						}
 						else
 						{
-							// Has video filters - don't use hwaccel, but still need -vaapi_device for hwupload and encoder
 							if (!string.IsNullOrWhiteSpace(vaapiDevice) && !args.Contains("-vaapi_device"))
-							{
 								args = $"{vaapiDevice} {args}".Trim();
-							}
 						}
 					}
 					else
 					{
-						// Non-VAAPI hwaccel
 						args = $"-hwaccel {hwaccel} {args}".Trim();
 					}
 				}
@@ -199,7 +251,7 @@ namespace MP4ToolsLib
 		}
 
 
-		public async Task<string> GetFileDurationAsync(string file)
+		public async Task<string> GetFileDurationAsync(string file, CancellationToken cancellationToken = default, Action<string> log = null)
 		{
 			if (string.IsNullOrWhiteSpace(file) || !File.Exists(file))
 			{
@@ -208,9 +260,13 @@ namespace MP4ToolsLib
 			try
 			{
 				var args = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal \"{file}\"";
-				var output = await RunCaptureAsync(FFPROBE_EXE, args, CancellationToken.None);
+				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
 				return (output ?? string.Empty).Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
 					.FirstOrDefault()?.Trim() ?? string.Empty;
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
 			}
 			catch
 			{
@@ -218,7 +274,7 @@ namespace MP4ToolsLib
 			}
 		}
 
-		public async Task<string> GetFirstVideoCodecNameAsync(string inputFile)
+		public async Task<string> GetFirstVideoCodecNameAsync(string inputFile, CancellationToken cancellationToken = default, Action<string> log = null)
 		{
 			if (string.IsNullOrWhiteSpace(inputFile) || !File.Exists(inputFile))
 			{
@@ -227,8 +283,12 @@ namespace MP4ToolsLib
 			try
 			{
 				var args = $"-v error -select_streams v:0 -show_entries stream=codec_name -of default=nk=1:nw=1 \"{inputFile}\"";
-				var output = await RunCaptureAsync(FFPROBE_EXE, args, CancellationToken.None);
+				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
 				return (output ?? string.Empty).Trim();
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
 			}
 			catch
 			{
@@ -237,8 +297,30 @@ namespace MP4ToolsLib
 
 		}
 
+		public async Task<string> GetFirstAudioCodecNameAsync(string inputFile, CancellationToken cancellationToken = default, Action<string> log = null)
+		{
+			if (string.IsNullOrWhiteSpace(inputFile) || !File.Exists(inputFile))
+				return string.Empty;
+			try
+			{
+				var args = $"-v error -select_streams a:0 -show_entries stream=codec_name -of default=nk=1:nw=1 \"{inputFile}\"";
+				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
+				return (output ?? string.Empty).Trim();
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
+			}
+			catch
+			{
+			}
+
+			return string.Empty;
+		}
+
 		public Task<string> RunCaptureFFMpegAsync(string args, CancellationToken ct, Action<string> Log = null)
 		{
+			args = ApplyForcedFfmpegArgs(args ?? string.Empty);
 			return RunCaptureAsync(FFPMEG_EXE, args, ct, Log);
 		}
 
@@ -250,6 +332,14 @@ namespace MP4ToolsLib
 		public async Task<string> RunCaptureAsync(string exe, string args, CancellationToken ct, Action<string> Log = null)
 		{
 			Log ??= _ => { };
+			if (DryRunExternalCommands)
+			{
+				Log($"[DRY RUN] exe: {exe}");
+				Log($"[DRY RUN] args: {args}");
+				Log("[DRY RUN] Capture skipped — process not started (empty stdout assumed).");
+				return string.Empty;
+			}
+
 			var psi = new ProcessStartInfo(exe, args)
 			{
 				WindowStyle = ProcessWindowStyle.Hidden,
@@ -259,49 +349,125 @@ namespace MP4ToolsLib
 				CreateNoWindow = true
 			};
 
-			using var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
-			p.ErrorDataReceived += (_, e) => { if (e.Data != null) Log?.Invoke(e.Data); };
-
-			if (!p.Start()) throw new InvalidOperationException($"Failed to start: {exe}");
-			p.BeginErrorReadLine();
-
-			using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-			timeoutCts.CancelAfter(ProcessTimeout);
+			var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+			process.ErrorDataReceived += (_, e) =>
+			{
+				if (e.Data != null)
+					Log?.Invoke($"[stderr] {e.Data}");
+			};
 
 			try
 			{
-				Debug.WriteLine($"[RunAndLogProcessEx] FileName: {psi.FileName}");
-				Debug.WriteLine($"[RunAndLogProcessEx] Arguments: {psi.Arguments}");
-				Debug.WriteLine($"[RunAndLogProcessEx] WorkingDirectory: {psi.WorkingDirectory}");
+				if (!process.Start())
+					throw new InvalidOperationException($"Failed to start: {exe}");
 
-				Log($"{psi.FileName} ({psi.WorkingDirectory}): {psi.Arguments}");
-				var stdoutTask = p.StandardOutput.ReadToEndAsync(timeoutCts.Token);
-				await p.WaitForExitAsync(timeoutCts.Token);
-				string stdout = await stdoutTask;
+				process.BeginErrorReadLine();
+				RegisterTrackedMediaProcess(process);
 
-				if (p.ExitCode != 0) throw new InvalidOperationException($"{exe} failed with exit code {p.ExitCode}");
-				return stdout;
+				using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+				linkedCts.CancelAfter(ProcessTimeout);
+
+				Debug.WriteLine($"[RunCaptureAsync] FileName: {psi.FileName}");
+				Debug.WriteLine($"[RunCaptureAsync] Arguments: {psi.Arguments}");
+
+				Log($"{psi.FileName}: {psi.Arguments}");
+
+				using (ct.Register(() =>
+				{
+					try
+					{
+						if (!process.HasExited)
+							process.Kill(entireProcessTree: true);
+					}
+					catch
+					{
+						// ignored
+					}
+				}))
+				{
+					var stdoutTask = process.StandardOutput.ReadToEndAsync(linkedCts.Token);
+					await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
+					var stdout = await stdoutTask.ConfigureAwait(false);
+
+					if (!string.IsNullOrWhiteSpace(stdout))
+					{
+						foreach (var line in stdout.Split(["\r\n", "\n", "\r"], StringSplitOptions.None))
+						{
+							if (!string.IsNullOrWhiteSpace(line))
+								Log($"[stdout] {line}");
+						}
+					}
+
+					if (process.ExitCode != 0)
+						throw new InvalidOperationException($"{exe} failed with exit code {process.ExitCode}");
+					return stdout;
+				}
 			}
-			catch (OperationCanceledException ex1) when (!ct.IsCancellationRequested)
+			catch (OperationCanceledException) when (!ct.IsCancellationRequested)
 			{
-				Log($"** Error: {ex1.Message} **");
-				try { if (!p.HasExited) p.Kill(true); } catch { }
+				Log($"** Timeout after {ProcessTimeout.TotalMinutes:0} minutes **");
+				try
+				{
+					if (!process.HasExited)
+						process.Kill(entireProcessTree: true);
+				}
+				catch
+				{
+					// ignored
+				}
+
 				throw new TimeoutException($"{exe} timed out after {ProcessTimeout.TotalMinutes:0} minutes");
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
 			}
 			catch (Exception ex)
 			{
 				Log($"** Error: {ex.Message} **");
-				try { if (!p.HasExited) p.Kill(true); } catch { }
+				try
+				{
+					if (!process.HasExited)
+						process.Kill(entireProcessTree: true);
+				}
+				catch
+				{
+					// ignored
+				}
+
 				throw;
+			}
+			finally
+			{
+				UnregisterTrackedMediaProcess(process);
+				try
+				{
+					process.CancelErrorRead();
+				}
+				catch
+				{
+					// ignored
+				}
+
+				process.Dispose();
 			}
 		}
 
-		public void RunAndLogFFMpeg(string args, Action<Process, string, string> ProcessOutputAction, Action<string> Log, string workingDirectory = "")
+		public async Task RunAndLogFFMpegAsync(string args, Action<Process, string, string> processOutputAction, Action<string> log, CancellationToken cancellationToken, string workingDirectory = "")
 		{
-			Log ??= (s => Debug.WriteLine(s));
+			log ??= (s => Debug.WriteLine(s));
 			args = ApplyForcedFfmpegArgs(args);
 
-			Log($"Prepared ffmpeg args: {args}");
+			log($"Prepared ffmpeg args: {args}");
+			if (DryRunExternalCommands)
+			{
+				log($"[DRY RUN] exe: {FFPMEG_EXE}");
+				log($"[DRY RUN] working_directory: {workingDirectory ?? string.Empty}");
+				log($"[DRY RUN] args (after ApplyForcedFfmpegArgs): {args}");
+				log("[DRY RUN] Encode skipped — process not started.");
+				return;
+			}
+
 			var psi = new ProcessStartInfo
 			{
 				FileName = FFPMEG_EXE,
@@ -311,87 +477,95 @@ namespace MP4ToolsLib
 				UseShellExecute = false,
 				RedirectStandardError = true,
 				RedirectStandardOutput = true,
-				WorkingDirectory = workingDirectory
+				WorkingDirectory = workingDirectory ?? string.Empty
 			};
 
 			DataReceivedEventHandler onErr = null;
 			DataReceivedEventHandler onOut = null;
-			using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
-			if (ProcessOutputAction != null)
+			var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+			if (processOutputAction != null)
 			{
-				onErr = (a, b) => ProcessOutputAction(process, "stderr", b?.Data);
-				onOut = (a, b) => ProcessOutputAction(process, "stdout", b?.Data);
+				onErr = (_, b) => processOutputAction(process, "stderr", b?.Data);
+				onOut = (_, b) => processOutputAction(process, "stdout", b?.Data);
 				process.ErrorDataReceived += onErr;
 				process.OutputDataReceived += onOut;
 			}
 
 			try
 			{
-				lock (_processLock)
-				{
-					if (_currentRunningProcess != null)
-					{
-						try
-						{
-							if (!_currentRunningProcess.HasExited)
-								_currentRunningProcess.Kill(true);
-						}
-						catch (Exception ex)
-						{
-							Debug.WriteLine($"[RunAndLogProcessEx][KillExistingError] {ex}");
-						}
-						finally
-						{
-							_currentRunningProcess = null;
-						}
-					}
-					_currentRunningProcess = process;
-				}
-
-				Debug.WriteLine($"[RunAndLogProcessEx] FileName: {psi.FileName}");
-				Debug.WriteLine($"[RunAndLogProcessEx] Arguments: {psi.Arguments}");
-				Debug.WriteLine($"[RunAndLogProcessEx] WorkingDirectory: {psi.WorkingDirectory}");
-
-				Log($"{psi.FileName} ({psi.WorkingDirectory}): {psi.Arguments}");
+				log($"{psi.FileName} ({psi.WorkingDirectory}): {psi.Arguments}");
 
 				if (!process.Start())
 					throw new InvalidOperationException($"Failed to start: {FFPMEG_EXE}");
 
 				process.BeginErrorReadLine();
 				process.BeginOutputReadLine();
+				RegisterTrackedMediaProcess(process);
 
-				process.WaitForExit(TimeSpan.FromHours(2));
+				using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+				linkedCts.CancelAfter(TimeSpan.FromHours(2));
+
+				using (cancellationToken.Register(() =>
+				{
+					try
+					{
+						if (!process.HasExited)
+							process.Kill(entireProcessTree: true);
+					}
+					catch
+					{
+						// ignored
+					}
+				}))
+				{
+					await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
+				}
+
 				if (process.ExitCode == 0)
-					Log("** Complete **");
+					log("** Complete **");
 				else
-					Log($"** Exit Code {process.ExitCode} **");
+					log($"** Exit Code {process.ExitCode} **");
+			}
+			catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+			{
+				log("** FFmpeg timed out after 2 hours **");
+			}
+			catch (OperationCanceledException)
+			{
+				log("** Cancelled **");
+				throw;
 			}
 			catch (Exception ex)
 			{
-				Debug.WriteLine($"[RunAndLogProcessEx][Error] {ex}");
-				Log($"** Error: {ex.Message} **");
+				Debug.WriteLine($"[RunAndLogFFMpegAsync][Error] {ex}");
+				log($"** Error: {ex.Message} **");
 			}
 			finally
 			{
 				try
 				{
 					if (onErr != null)
-					{
 						process.ErrorDataReceived -= onErr;
-					}
 					if (onOut != null)
-					{
 						process.OutputDataReceived -= onOut;
-					}
 				}
-				catch { }
-
-				lock (_processLock)
+				catch
 				{
-					if (ReferenceEquals(_currentRunningProcess, process))
-						_currentRunningProcess = null;
+					// ignored
 				}
 
+				UnregisterTrackedMediaProcess(process);
+				try
+				{
+					process.CancelErrorRead();
+					process.CancelOutputRead();
+				}
+				catch
+				{
+					// ignored
+				}
+
+				process.Dispose();
 			}
 		}
 
@@ -538,8 +712,8 @@ namespace MP4ToolsLib
 					return $"vaapi\n-vaapi_device {renderDev}";
 				}
 			}
-			// Default to cuda for NVIDIA
-			return "cuda";
+			// Non-AMD fallback — avoid NVIDIA-specific hwaccel when AMD not detected.
+			return "auto";
 		}
 
 		private bool HasAmdGpu()
