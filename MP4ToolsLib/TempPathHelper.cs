@@ -6,7 +6,7 @@ namespace MP4ToolsLib
 {
     public static class TempPathHelper
     {
-        private static readonly string _customTempPath = GetTempPathInternal();
+        private static readonly string _customTempPath = OperatingSystem.IsLinux() ? GetTempPathInternal() : Path.GetTempPath();
 
         public static string GetTempPath() => _customTempPath;
 
