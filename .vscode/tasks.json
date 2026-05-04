@@ -2,81 +2,40 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build-app",
-            "type": "shell",
-            "linux": {
-                "command": "PROJ=\"\"; if [ -f \"${workspaceFolder}/MP4Tools/MP4Tools.csproj\" ]; then PROJ=\"${workspaceFolder}/MP4Tools/MP4Tools.csproj\"; elif [ -f \"${workspaceFolder}/MP4Tools.csproj\" ]; then PROJ=\"${workspaceFolder}/MP4Tools.csproj\"; else echo \"build-app: could not find MP4Tools.csproj (open repo root or MP4Tools/).\" >&2; exit 1; fi; dotnet build \"$PROJ\" -c Debug /property:GenerateFullPaths=true '/consoleloggerparameters:NoSummary;ForceNoAlign'"
-            },
-            "osx": {
-                "command": "PROJ=\"\"; if [ -f \"${workspaceFolder}/MP4Tools/MP4Tools.csproj\" ]; then PROJ=\"${workspaceFolder}/MP4Tools/MP4Tools.csproj\"; elif [ -f \"${workspaceFolder}/MP4Tools.csproj\" ]; then PROJ=\"${workspaceFolder}/MP4Tools.csproj\"; else echo \"build-app: could not find MP4Tools.csproj (open repo root or MP4Tools/).\" >&2; exit 1; fi; dotnet build \"$PROJ\" -c Debug /property:GenerateFullPaths=true '/consoleloggerparameters:NoSummary;ForceNoAlign'"
-            },
-            "windows": {
-                "command": "powershell -NoProfile -Command \"$p = if (Test-Path -LiteralPath '${workspaceFolder}\\MP4Tools\\MP4Tools.csproj') { '${workspaceFolder}\\MP4Tools\\MP4Tools.csproj' } elseif (Test-Path -LiteralPath '${workspaceFolder}\\MP4Tools.csproj') { '${workspaceFolder}\\MP4Tools.csproj' } else { Write-Error 'build-app: could not find MP4Tools.csproj'; exit 1 }; dotnet build $p -c Debug /property:GenerateFullPaths=true '/consoleloggerparameters:NoSummary;ForceNoAlign'\""
-            },
-            "problemMatcher": "$msCompile",
-            "group": "build",
-            "presentation": {
-                "reveal": "silent",
-                "panel": "shared",
-                "showReuseMessage": false
-            }
-        },
-        {
             "label": "build",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "build",
                 "${workspaceFolder}/MP4Tools.sln",
-                "-c",
-                "Debug",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "reveal": "silent"
-            },
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "build-app-from-project-folder",
+            "label": "publish",
             "command": "dotnet",
             "type": "process",
             "args": [
-                "build",
-                "${workspaceFolder}/MP4Tools.csproj",
-                "-c",
-                "Debug",
+                "publish",
+                "${workspaceFolder}/MP4Tools.sln",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
-            "group": "build",
-            "presentation": {
-                "reveal": "silent"
-            },
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "run MP4Tools",
+            "label": "watch",
             "command": "dotnet",
             "type": "process",
             "args": [
+                "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/MP4Tools/MP4Tools.csproj",
-                "-c",
-                "Debug"
+                "${workspaceFolder}/MP4Tools.sln"
             ],
-            "group": "none",
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
+            "problemMatcher": "$msCompile"
         }
     ]
 }

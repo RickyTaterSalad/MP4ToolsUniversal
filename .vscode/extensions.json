@@ -1,8 +1,0 @@
-{
-  "recommendations": [
-    "anysphere.csharp",
-    "ms-dotnettools.csdevkit",
-    "ms-dotnettools.vscode-dotnet-runtime",
-    "avaloniateam.vscode-avalonia"
-  ]
-}
