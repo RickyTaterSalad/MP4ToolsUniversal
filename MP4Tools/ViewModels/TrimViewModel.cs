@@ -649,7 +649,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 						drawInner = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition).Trim('"');
 					}
 
-					if (effectiveVideoPlan.NeedsVaapiUploadFilter)
+					if (System.OperatingSystem.IsLinux() && effectiveVideoPlan.NeedsVaapiUploadFilter)
 					{
 						vfOpt = string.IsNullOrEmpty(drawInner)
 							? VideoEncodeSelector.VaapiUploadVideoFilterOption

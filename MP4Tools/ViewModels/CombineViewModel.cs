@@ -935,7 +935,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			var encPrefs = EncodingSettingsRuntime.Current;
 			var vplan = VideoEncodeSelector.BuildPlan(encPrefs, InputVideoBitDepth, Logger.Log);
-			var audioEff = VideoEncodeSelector.EffectiveAudioCodec(encPrefs);
+			var audioEff = FfmpegArguments.StreamCopy;//VideoEncodeSelector.EffectiveAudioCodec(encPrefs);
 			Logger.Log($"Combine video plan: {(vplan.UseStreamCopy ? "stream copy" : vplan.EncoderSummary)}; VA-API upload filter={(vplan.NeedsVaapiUploadFilter ? "yes" : "no")}");
 
 			if (!shouldAddIntro)

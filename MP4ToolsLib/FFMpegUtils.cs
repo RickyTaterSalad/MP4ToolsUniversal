@@ -210,7 +210,7 @@ namespace MP4ToolsLib
 			var codecCopyVideo = $"{FfmpegArguments.SelectVideoCodec} {FfmpegArguments.StreamCopy}";
 			var isCopyOnly = args.Contains(codecCopyAll, StringComparison.OrdinalIgnoreCase)
 				|| args.Contains(codecCopyVideo, StringComparison.OrdinalIgnoreCase);
-			if (!isCopyOnly)
+			if (!isCopyOnly && System.OperatingSystem.IsLinux())
 			{
 				if (!ArgsDeclareStandaloneHwaccel(args))
 				{
