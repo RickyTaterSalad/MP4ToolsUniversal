@@ -1131,7 +1131,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 						finalizeParts.Add(aacBsfOpt);
 						finalizeParts.Add(trimEndOpt);
-						finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.Movflags, FfmpegArguments.MovflagFastStart));
+					//	finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.Movflags, FfmpegArguments.MovflagFastStart));
 						finalizeParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile)));
 
 						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(finalizeParts), ct).ConfigureAwait(false);

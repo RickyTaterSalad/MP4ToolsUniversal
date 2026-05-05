@@ -247,7 +247,7 @@ namespace MP4ToolsLib
 					}
 				}
 			}
-			return System.OperatingSystem.IsLinux() ? args : args.Replace("vaapi","amd",StringComparison.OrdinalIgnoreCase);
+			return System.OperatingSystem.IsLinux() ? args : args.Replace("vaapi","amf",StringComparison.OrdinalIgnoreCase);
 		}
 
 
