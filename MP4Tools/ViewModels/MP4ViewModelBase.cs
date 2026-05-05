@@ -73,16 +73,6 @@ namespace MP4Tools
 			}
 		}
 
-		private string _inputVideoBitDepth = string.Empty;
-		public string InputVideoBitDepth
-		{
-			get => _inputVideoBitDepth;
-			set
-			{
-				SetProperty(ref _inputVideoBitDepth, value);
-			}
-		}
-
 		private string _inputProbeVideoCodecName = string.Empty;
 		/// <summary>ffprobe <c>codec_name</c> for the current input video (Trim overlay / intro matching).</summary>
 		public string InputProbeVideoCodecName
@@ -193,25 +183,6 @@ namespace MP4Tools
 				{
 					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(InputPath, CancellationToken.None, Logger.Log);
 					InputProbeVideoCodecName = video?.CodecName?.Trim() ?? "";
-					if (video != null)
-					{
-						var detectedBitDepth = video.BitDepth;
-						if (!string.IsNullOrWhiteSpace(detectedBitDepth))
-						{
-							if (detectedBitDepth == "10" || detectedBitDepth.Contains("10"))
-							{
-								InputVideoBitDepth = "10 bit";
-							}
-							else if (detectedBitDepth == "8" || detectedBitDepth.Contains("8"))
-							{
-								InputVideoBitDepth = "8 bit";
-							}
-							else
-							{
-								InputVideoBitDepth = "Unknown";
-							}
-						}
-					}
 				}
 				else
 				{

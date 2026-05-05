@@ -626,62 +626,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 	}
 	protected override async void OnInputPathSet()
 	{
-		if (!string.IsNullOrWhiteSpace(InputPath))
-		{
-			CanClear = true;
-			// Read bit depth from first file if it's a file, otherwise first file in folder
-			if (File.Exists(InputPath))
-			{
-				var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(InputPath, FfmpegOperationCancellationToken, Logger.Log);
-				if (video != null)
-				{
-					var detectedBitDepth = video.BitDepth;
-					if (!string.IsNullOrWhiteSpace(detectedBitDepth))
-					{
-						if (detectedBitDepth == "10" || detectedBitDepth.Contains("10"))
-						{
-							InputVideoBitDepth = "10 bit";
-						}
-						else if (detectedBitDepth == "8" || detectedBitDepth.Contains("8"))
-						{
-							InputVideoBitDepth = "8 bit";
-						}
-						else
-						{
-							InputVideoBitDepth = "Unknown";
-						}
-					}
-				}
-			}
-			else if (Directory.Exists(InputPath))
-			{
-				var fileList = CombineFile.FromFolder(InputPath);
-				if (fileList.Count > 0)
-				{
-					var firstFile = fileList[0].Path;
-					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(firstFile, FfmpegOperationCancellationToken, Logger.Log);
-					if (video != null)
-					{
-						var detectedBitDepth = video.BitDepth;
-						if (!string.IsNullOrWhiteSpace(detectedBitDepth))
-						{
-							if (detectedBitDepth == "10" || detectedBitDepth.Contains("10"))
-							{
-								InputVideoBitDepth = "10 bit";
-							}
-							else if (detectedBitDepth == "8" || detectedBitDepth.Contains("8"))
-							{
-								InputVideoBitDepth = "8 bit";
-							}
-							else
-							{
-								InputVideoBitDepth = "Unknown";
-							}
-						}
-					}
-				}
-			}
-		}
 		var fileListResult = CombineFile.FromFolder(InputPath);
 		UpdateOutputPathFromGameInfo();
 		CanCombine = fileListResult.Count > 0;
@@ -933,7 +877,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			}
 
 			var encPrefs = EncodingSettingsRuntime.Current;
-			var vplan = VideoEncodeSelector.BuildPlan(encPrefs, InputVideoBitDepth, Logger.Log);
+			var vplan = VideoEncodeSelector.BuildPlan(encPrefs, Logger.Log);
 			var audioEff = FfmpegArguments.StreamCopy;//VideoEncodeSelector.EffectiveAudioCodec(encPrefs);
 			Logger.Log($"Combine video plan: {(vplan.UseStreamCopy ? "stream copy" : vplan.EncoderSummary)}; VA-API upload filter={(vplan.NeedsVaapiUploadFilter ? "yes" : "no")}");
 
@@ -1145,7 +1089,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			}
 
 			await Dispatcher.UIThread.InvokeAsync(() => { OutputPath = FFMpegUtils.Instance.CleanupPath(combineOutputFile); });
-			foreach (var line in EncodeProcessingSummary.BuildLines("Combine", EncodingSettingsRuntime.Current, InputVideoBitDepth))
+			foreach (var line in EncodeProcessingSummary.BuildLines("Combine", EncodingSettingsRuntime.Current))
 				Logger.Log(line);
 			Logger.Log("Combine complete.");
 			if (combineSucceeded)

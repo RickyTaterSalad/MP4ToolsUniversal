@@ -6,21 +6,20 @@ namespace MP4ToolsLib;
 /// <summary>Builds a multi-line log summary of encode / hwaccel settings after Trim or Combine.</summary>
 public static class EncodeProcessingSummary
 {
-	public static IEnumerable<string> BuildLines(string operationTitle, EncodingSettingsDto dto, string inputVideoBitDepthUi, bool trimSegmentAudioSummary = false)
+	public static IEnumerable<string> BuildLines(string operationTitle, EncodingSettingsDto dto, bool trimSegmentAudioSummary = false)
 	{
 		dto ??= new EncodingSettingsDto();
 
 		yield return $"--- Encode pipeline summary ({operationTitle}) ---";
-		var trimSeg = string.IsNullOrWhiteSpace(dto.TrimAudioCodec) ? "libopus" : dto.TrimAudioCodec.Trim();
+		var audioEff = string.IsNullOrWhiteSpace(dto.TrimAudioCodec) ? "libopus" : dto.TrimAudioCodec.Trim();
 		yield return trimSegmentAudioSummary
-			? $"Encode tab: video={dto.VideoCodec ?? "copy"}, audio={dto.AudioCodec ?? "copy"}, trim_segment_audio={trimSeg}, hardware_acceleration={dto.HardwareAcceleration ?? "auto"}"
+			? $"Encode tab: video={dto.VideoCodec ?? "copy"}, audio={dto.AudioCodec ?? "copy"}, trim_segment_audio={audioEff}, hardware_acceleration={dto.HardwareAcceleration ?? "auto"}"
 			: $"Encode tab: video={dto.VideoCodec ?? "copy"}, audio={dto.AudioCodec ?? "copy"}, hardware_acceleration={dto.HardwareAcceleration ?? "auto"}";
 
 		var hwTab = string.IsNullOrWhiteSpace(dto.HardwareAcceleration) ? "auto" : dto.HardwareAcceleration.Trim();
 		var hwResolved = FFMpegUtils.Instance.ResolveHwAccelLineFromUserHints().Replace("\n", " ", StringComparison.Ordinal);
 		yield return $"FFmpeg decode injection (RunAndLogFFMpegAsync, non-stream-copy): tab \"{hwTab}\" -> \"{hwResolved}\" (-hwaccel / -vaapi_device per ApplyForcedFfmpegArgs)";
 
-		var audioEff = trimSegmentAudioSummary ? VideoEncodeSelector.EffectiveAudioCodecForTrim(dto) : VideoEncodeSelector.EffectiveAudioCodec(dto);
 		yield return trimSegmentAudioSummary
 			? $"Effective audio for trim segment transcodes: {audioEff}"
 			: $"Effective audio for transcode/mux steps: {audioEff}";
@@ -41,24 +40,5 @@ public static class EncodeProcessingSummary
 
 		yield return "Note: RunCaptureFFMpegAsync applies ApplyForcedFfmpegArgs like RunAndLogFFMpegAsync; ffprobe capture steps do not.";
 		yield return "--- End encode pipeline summary ---";
-	}
-
-	private static string SummarizeOptions(IReadOnlyList<FfmpegOption?> opts)
-	{
-		if (opts == null || opts.Count == 0)
-			return "(none)";
-
-		var parts = new List<string>();
-		foreach (var o in opts)
-		{
-			if (o is not { } x || x.IsSkipped)
-				continue;
-			if (!string.IsNullOrWhiteSpace(x.Flag))
-				parts.Add(string.IsNullOrWhiteSpace(x.Value) ? x.Flag : $"{x.Flag} {x.Value}");
-			else if (!string.IsNullOrWhiteSpace(x.Value))
-				parts.Add(x.Value);
-		}
-
-		return parts.Count == 0 ? "(none)" : string.Join(" ", parts);
 	}
 }

@@ -348,7 +348,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				Logger.Log("Trim failed: segment file(s) missing. FFmpeg steps above may show ** Exit Code ** — RunAndLog does not stop the pipeline when encode fails.");
 				ReportTrimStep("Failed: trim did not produce all segment files.");
 				ClearTimeRanges();
-				foreach (var line in EncodeProcessingSummary.BuildLines(combine ? "Trim and combine" : "Trim", EncodingSettingsRuntime.Current, InputVideoBitDepth, trimSegmentAudioSummary: true))
+				foreach (var line in EncodeProcessingSummary.BuildLines(combine ? "Trim and combine" : "Trim", EncodingSettingsRuntime.Current, trimSegmentAudioSummary: true))
 					Logger.Log(line);
 				Logger.Log(combine ? "Trim and combine complete." : "Trim complete.");
 				return;
@@ -357,7 +357,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			if (!combine)
 			{
 				ClearTimeRanges();
-				foreach (var line in EncodeProcessingSummary.BuildLines("Trim", EncodingSettingsRuntime.Current, InputVideoBitDepth, trimSegmentAudioSummary: true))
+				foreach (var line in EncodeProcessingSummary.BuildLines("Trim", EncodingSettingsRuntime.Current, true))
 					Logger.Log(line);
 				Logger.Log("Trim complete.");
 				ReportTrimStep("Trim finished successfully.");
@@ -393,13 +393,14 @@ public partial class TrimViewModel : MP4ViewModelBase
 				Logger.Log("Combining trimmed files...");
 
 				var tempTsFiles = new List<string>();
-
-				var audioCodecByPath = new Dictionary<string, string>();
-				foreach (var path in outputPaths)
-				{
-					var ac = await FFMpegUtils.Instance.GetFirstAudioCodecNameAsync(path, ct, Logger.Log).ConfigureAwait(false);
-					audioCodecByPath[path] = ac;
-				}
+				/*
+								var audioCodecByPath = new Dictionary<string, string>();
+								foreach (var path in outputPaths)
+								{
+									var ac = await FFMpegUtils.Instance.GetFirstAudioCodecNameAsync(path, ct, Logger.Log).ConfigureAwait(false);
+									audioCodecByPath[path] = ac;
+								}
+								*/
 
 				for (var ti = 0; ti < outputPaths.Count; ti++)
 				{
@@ -408,9 +409,9 @@ public partial class TrimViewModel : MP4ViewModelBase
 					ReportTrimStep($"Remuxing segment {ti + 1} of {outputPaths.Count} to MPEG-TS…");
 					Logger.Log($"Remuxing trimmed segment to TS: {Path.GetFileName(input)}");
 					var tsFile = Path.Combine(TempPathHelper.GetTempPath(), $"trim_part_{Guid.NewGuid():N}.ts");
-					var aProbe = audioCodecByPath[input];
-					if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aProbe))
-						Logger.Log($"Opus in segment — re-encoding audio to AAC for MPEG-TS (reduces concat parsing errors).");
+					//var aProbe = audioCodecByPath[input];
+					//if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aProbe))
+					//	Logger.Log($"Opus in segment — re-encoding audio to AAC for MPEG-TS (reduces concat parsing errors).");
 					var tsParts = new List<FfmpegOption?>
 					{
 						FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
@@ -418,7 +419,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 						FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
 						FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"),
 					};
-					MpegTsConcatAudio.AppendMp4ToTsAudioOptions(tsParts, aProbe);
+					//MpegTsConcatAudio.AppendMp4ToTsAudioOptions(tsParts, aProbe);
 					tsParts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
 					tsParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(tsFile)));
 					await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(tsParts), ct).ConfigureAwait(false);
@@ -433,15 +434,15 @@ public partial class TrimViewModel : MP4ViewModelBase
 					ReportTrimStep("Concatenating MPEG-TS segments…");
 					Logger.Log("Concatenating TS segments...");
 					var concatInput = string.Join("|", tempTsFiles);
-					var allAacInTs = outputPaths.All(p => MpegTsConcatAudio.IntermediateTsAudioIsAac(audioCodecByPath[p]));
-					var aacBsfOpt = allAacInTs
-						? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
-						: (FfmpegOption?)null;
+					//	var allAacInTs = outputPaths.All(p => MpegTsConcatAudio.IntermediateTsAudioIsAac(audioCodecByPath[p]));
+					//	var aacBsfOpt = allAacInTs
+					//		? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
+					//	: (FfmpegOption?)null;
 					await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
 						FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{concatInput}")),
 						FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
-						aacBsfOpt,
+						//	aacBsfOpt,
 						FfmpegOption.Positional(FfmpegCommandLine.Quoted(finalCombinedPath))), ct).ConfigureAwait(false);
 				}
 
@@ -481,7 +482,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			}
 
 			ClearTimeRanges();
-			foreach (var line in EncodeProcessingSummary.BuildLines("Trim and combine", EncodingSettingsRuntime.Current, InputVideoBitDepth, trimSegmentAudioSummary: true))
+			foreach (var line in EncodeProcessingSummary.BuildLines("Trim and combine", EncodingSettingsRuntime.Current, trimSegmentAudioSummary: true))
 				Logger.Log(line);
 			Logger.Log("Trim and combine complete.");
 			if (combine && trimPipelineSucceeded)
@@ -549,78 +550,54 @@ public partial class TrimViewModel : MP4ViewModelBase
 				var quotedInput = FfmpegCommandLine.Quoted(inputFullPath);
 
 				var encPrefs = EncodingSettingsRuntime.Current;
-				var videoPlan = VideoEncodeSelector.BuildPlan(encPrefs, InputVideoBitDepth, Logger.Log);
-				var audioEnc = VideoEncodeSelector.EffectiveAudioCodecForTrim(encPrefs);
-
-				bool streamCopyOk = string.IsNullOrWhiteSpace(range.Label)
-					&& videoPlan.UseStreamCopy
-					&& string.Equals(audioEnc, FfmpegArguments.StreamCopy, StringComparison.OrdinalIgnoreCase);
-
+				var videoPlan = VideoEncodeSelector.BuildPlan(encPrefs, Logger.Log);
 				string args;
-				if (streamCopyOk)
+				// drawtext / hwupload require decoding; cannot pair -vf with -c:v copy.
+				var effectiveVideoPlan = videoPlan;
+				if (!string.IsNullOrWhiteSpace(range.Label) && videoPlan.UseStreamCopy)
 				{
-					args = FfmpegCommandLine.Build(
-						FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
-						FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
-						FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
-						FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
-						FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy),
-						FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimOutputPath)));
+					effectiveVideoPlan = VideoEncodeSelector.BuildIntroPlan(encPrefs, Logger.Log);
+					Logger.Log("Segment label uses drawtext — video is re-encoded for burn-in (stream copy not compatible with filters).");
 				}
-				else
+
+				FfmpegOption vfOpt = default;
+
+				var videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy);
+				string drawInner = null;
+				if (!string.IsNullOrWhiteSpace(range.Label))
 				{
-					// drawtext / hwupload require decoding; cannot pair -vf with -c:v copy.
-					var effectiveVideoPlan = videoPlan;
-					if (!string.IsNullOrWhiteSpace(range.Label) && videoPlan.UseStreamCopy)
-					{
-						effectiveVideoPlan = VideoEncodeSelector.BuildIntroPlan(encPrefs, Logger.Log);
-						Logger.Log("Segment label uses drawtext — video is re-encoded for burn-in (stream copy not compatible with filters).");
-					}
+					drawInner = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition).Trim('"');
+				}
 
-					FfmpegOption vfOpt = default;
+				if (OperatingSystem.IsLinux() && effectiveVideoPlan.NeedsVaapiUploadFilter)
+				{
+					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_vaapi");
+					vfOpt = string.IsNullOrEmpty(drawInner)
+						? VideoEncodeSelector.VaapiUploadVideoFilterOption
+						: FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawInner},{VideoEncodeSelector.VaapiUploadSuffix}\"");
+				}
+				else if (!string.IsNullOrEmpty(drawInner))
+				{
+					vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition));
+				}
 
-					string drawInner = null;
-					if (!string.IsNullOrWhiteSpace(range.Label))
-					{
-						drawInner = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition).Trim('"');
-					}
+				var encodingTail = new List<FfmpegOption?>();
 
-					if (System.OperatingSystem.IsLinux() && effectiveVideoPlan.NeedsVaapiUploadFilter)
-					{
-						vfOpt = string.IsNullOrEmpty(drawInner)
-							? VideoEncodeSelector.VaapiUploadVideoFilterOption
-							: FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawInner},{VideoEncodeSelector.VaapiUploadSuffix}\"");
-					}
-					else if (!string.IsNullOrEmpty(drawInner))
-					{
-						vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition));
-					}
+				encodingTail.Add(videoCodecOpt);
 
-					var encodingTail = new List<FfmpegOption?>();
-					if (!effectiveVideoPlan.UseStreamCopy)
-					{
-						foreach (var o in effectiveVideoPlan.VideoEncodeOptions)
-							encodingTail.Add(o);
-					}
-					else
-					{
-						encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
-					}
-
-					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEnc));
-
-					var trimParts = new List<FfmpegOption?>
+				encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, "libopus"));
+				encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
+				var trimParts = new List<FfmpegOption?>
 					{
 						FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
 						FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
 						FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
 						vfOpt,
 					};
-					trimParts.AddRange(encodingTail);
-					trimParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimOutputPath)));
+				trimParts.AddRange(encodingTail);
+				trimParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimOutputPath)));
 
-					args = FfmpegCommandLine.Build(trimParts);
-				}
+				args = FfmpegCommandLine.Build(trimParts);
 
 				await RunAndLogFFMpegAsync(args, ct).ConfigureAwait(false);
 				if (!File.Exists(trimOutputPath))

@@ -145,8 +145,8 @@
 				</ListBox.ItemTemplate>
 			</ListBox>
 		</StackPanel>
-		<Label Content="Output Path" Grid.Row="4" Margin="0,5,0,0"/>
-		<StackPanel Grid.Column="0" Grid.Row="5" Grid.ColumnSpan="3" Margin="0,0,0,10" >
+		<Label Content="Output Path" Grid.Row="3" Margin="0,5,0,0"/>
+		<StackPanel Grid.Column="0" Grid.Row="4" Grid.ColumnSpan="3" Margin="0,0,0,10" >
 			<TextBox PlaceholderText="Combined Output File" Text="{Binding OutputFolder}" />
 		</StackPanel>
 		<TextBlock Grid.Row="5" Grid.ColumnSpan="3"

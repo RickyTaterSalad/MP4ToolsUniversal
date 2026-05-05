@@ -84,27 +84,10 @@ namespace MP4ToolsLib
                 string aCodec = (!string.IsNullOrWhiteSpace(audio?.CodecName) ? audio.CodecName : "aac").ToLowerInvariant();
 
 
-                string aEnc = aCodec switch
-                {
-                    "mp3" => "libmp3lame",
-                    "ac3" => "ac3",
-                    "opus" => "libopus",
-                    _ => "aac"
-                };
-
                 var useTabEncode = encodingPrefs != null && !string.Equals(encodingPrefs.VideoCodec, "copy", StringComparison.OrdinalIgnoreCase);
                 var introPlan = useTabEncode ? VideoEncodeSelector.BuildIntroPlan(encodingPrefs, log) : null;
 
-                string introAudioEnc = aEnc;
-                if (encodingPrefs != null)
-                {
-                    var eff = useTrimSegmentAudioCodec
-                        ? VideoEncodeSelector.EffectiveAudioCodecForTrim(encodingPrefs)
-                        : VideoEncodeSelector.EffectiveAudioCodec(encodingPrefs);
-                    introAudioEnc = string.Equals(eff, FfmpegArguments.StreamCopy, StringComparison.OrdinalIgnoreCase)
-                        ? "aac"
-                        : eff;
-                }
+                string introAudioEnc = useTrimSegmentAudioCodec ? "libopus" : "aac";
 
     
                 var escapedTitle = EscapeDrawtext(titleText);
@@ -138,10 +121,10 @@ namespace MP4ToolsLib
                     FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
                     FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
                     FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
-                    FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}"),
+                    FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}")),
                     FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
                     FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"anullsrc=r={ar}:cl={acl}:d={durationSeconds}")),
-                    FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{vf}\""),
+                    FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{vf}\"")
                 };
                 introMp4Parts.AddRange(introVidTail);
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.OutputVideoFrameRate, fps));
