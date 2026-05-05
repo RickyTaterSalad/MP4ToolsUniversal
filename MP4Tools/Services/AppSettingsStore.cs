@@ -12,9 +12,6 @@ public sealed class AppUserSettings
 	/// <summary>Folder for default Combine paths and Trim session folders. Empty in JSON uses <see cref="DefaultOutputPathRuntime.BuiltinFallbackDirectory"/>.</summary>
 	public string DefaultOutputDirectory { get; set; } = "";
 
-	/// <summary>Log ffmpeg/ffprobe command lines without starting processes (preview/debug).</summary>
-	public bool DryRunFfmpegCommands { get; set; }
-
 	public MP4ToolsLib.EncodingSettingsDto Encoding { get; set; } = new();
 }
 

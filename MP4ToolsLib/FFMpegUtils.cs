@@ -12,9 +12,6 @@ namespace MP4ToolsLib
 
 	public class FFMpegUtils
 	{
-		/// <summary>When true, ffmpeg/ffprobe are not executed; callers log full exe + args instead.</summary>
-		public static bool DryRunExternalCommands { get; set; }
-
 		private static readonly Lazy<FFMpegUtils> _instance = new Lazy<FFMpegUtils>(() => new FFMpegUtils());
 		public static FFMpegUtils Instance => _instance.Value;
 		private FFMpegUtils()
@@ -332,14 +329,6 @@ namespace MP4ToolsLib
 		public async Task<string> RunCaptureAsync(string exe, string args, CancellationToken ct, Action<string> Log = null)
 		{
 			Log ??= _ => { };
-			if (DryRunExternalCommands)
-			{
-				Log($"[DRY RUN] exe: {exe}");
-				Log($"[DRY RUN] args: {args}");
-				Log("[DRY RUN] Capture skipped — process not started (empty stdout assumed).");
-				return string.Empty;
-			}
-
 			var psi = new ProcessStartInfo(exe, args)
 			{
 				WindowStyle = ProcessWindowStyle.Hidden,
@@ -459,14 +448,6 @@ namespace MP4ToolsLib
 			args = ApplyForcedFfmpegArgs(args);
 
 			log($"Prepared ffmpeg args: {args}");
-			if (DryRunExternalCommands)
-			{
-				log($"[DRY RUN] exe: {FFPMEG_EXE}");
-				log($"[DRY RUN] working_directory: {workingDirectory ?? string.Empty}");
-				log($"[DRY RUN] args (after ApplyForcedFfmpegArgs): {args}");
-				log("[DRY RUN] Encode skipped — process not started.");
-				return;
-			}
 
 			var psi = new ProcessStartInfo
 			{

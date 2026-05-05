@@ -62,13 +62,6 @@
 					<TextBlock Text="Use built-in default"/>
 				</Button>
 			</Grid>
-<!--
-			<TextBlock Text="FFmpeg / ffprobe" FontWeight="SemiBold" FontSize="16"/>
-			<CheckBox Content="Dry run — log full ffmpeg and ffprobe command lines without running them"
-								IsChecked="{Binding DryRunFfmpegCommands}"/>
-			<TextBlock TextWrapping="Wrap" Opacity="0.75" FontSize="12"
-								 Text="Trim/Combine and related steps will not produce media output while dry run is on. Encoder detection is skipped, so hardware encoder choices may fall back to software in logs only."/>
--->
 			<Button Command="{Binding SaveSettingsCommand}"
 							HorizontalAlignment="Left"
 							Padding="16,8">

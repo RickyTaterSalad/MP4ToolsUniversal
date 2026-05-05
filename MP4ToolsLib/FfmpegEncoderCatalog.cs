@@ -45,14 +45,6 @@ public static class FfmpegEncoderCatalog
 		EnsureLoaded();
 		return _encoderIds.Contains(id.Trim());
 	}
-
-	/// <summary>Clears cached <c>-encoders</c> output so the next query reloads (e.g. after toggling dry run).</summary>
-	public static void InvalidateCache()
-	{
-		lock (Gate)
-			_encoderIds = null;
-	}
-
 	private static void EnsureLoaded()
 	{
 		lock (Gate)
@@ -60,19 +52,6 @@ public static class FfmpegEncoderCatalog
 			if (_encoderIds != null)
 				return;
 			_encoderIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-			if (FFMpegUtils.DryRunExternalCommands)
-			{
-				// Encoder probes are skipped; seed names so VideoEncodeSelector matches real VA-API/software paths in logged commands.
-				foreach (var id in new[]
-				         {
-					         "hevc_vaapi","hevc_amf",
-					         
-				         })
-					_encoderIds.Add(id);
-				Debug.WriteLine("[DRY RUN] ffmpeg -encoders skipped — using assumed encoder list for planning.");
-				return;
-			}
-
 			try
 			{
 				var ffmpeg = FFMpegUtils.Instance.FFPMEG_EXE;

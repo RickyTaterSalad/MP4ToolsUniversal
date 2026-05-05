@@ -13,10 +13,6 @@ public static class EncodingSettingsRuntime
 		FfmpegUserHints.HardwareAcceleration = string.IsNullOrWhiteSpace(Current.HardwareAcceleration)
 			? "auto"
 			: Current.HardwareAcceleration;
-		var nextDry = settings?.DryRunFfmpegCommands ?? false;
-		if (FFMpegUtils.DryRunExternalCommands != nextDry)
-			FfmpegEncoderCatalog.InvalidateCache();
-		FFMpegUtils.DryRunExternalCommands = nextDry;
 		DefaultOutputPathRuntime.Apply(settings ?? new AppUserSettings());
 	}
 }
