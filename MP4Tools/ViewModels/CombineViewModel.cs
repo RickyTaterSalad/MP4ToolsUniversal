@@ -868,6 +868,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				: default;
 			var tempFilesToDelete = new List<string>();
 
+			var introFirstFile = "";
 			if (shouldAddIntro && writeFiles.Count > 0)
 			{
 				ReportCombineStep("Building intro…");
@@ -894,7 +895,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					Logger.Log("Applying first-file start trim during intro merge (input seek, stream copy)…");
 				}
 
-				var introFirstFile = Path.Combine(TempPathHelper.GetTempPath(), $"first_intro_{Guid.NewGuid():N}.mp4");
+				introFirstFile = Path.Combine(TempPathHelper.GetTempPath(), $"first_intro_{Guid.NewGuid():N}.mp4");
 				await IntroVideoComposerAsync.PrependIntroAsync(
 					firstFile.Path,
 					effectiveTitle,
@@ -1066,9 +1067,14 @@ public partial class CombineViewModel : MP4ViewModelBase
 							TempPathHelper.DeleteTemporaryFileUnlessRetained(nextMergedTs);
 						}
 					}
-
+					if(!string.IsNullOrWhiteSpace(introFirstFile) && File.Exists(introFirstFile))
+					{
+						TempPathHelper.DeleteTemporaryFileUnlessRetained(introFirstFile);
+					}
 					if (!string.IsNullOrWhiteSpace(mergedTsFile) && File.Exists(mergedTsFile))
 					{
+
+						TempPathHelper.DeleteTemporaryFileUnlessRetained(mergedTsFile);
 						ReportCombineStep("Writing final MP4…");
 						Logger.Log("Finalizing merged TS into MP4...");
 						var mergedTsVideoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(mergedTsFile, ct, Logger.Log).ConfigureAwait(false);

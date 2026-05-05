@@ -17,7 +17,7 @@ namespace MP4ToolsLib
             {
                 if (_font == null)
                 {
-                    _font = "C:/Windows/Fonts/calibri.ttf";
+                    _font = "C\\:/Windows/Fonts/seguiemj.ttf";
                     if (OperatingSystem.IsLinux())
                     {
                         // Try multiple common font paths

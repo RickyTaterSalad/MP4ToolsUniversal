@@ -42,7 +42,7 @@ namespace MP4ToolsLib
 				_ => "x=10:y=10"
 			};
 			var font = OperatingSystem.IsLinux() ? 
-			"/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf" : "C:/Windows/Fonts/calibri.ttf";
+			"/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf" : "C\\:/Windows/Fonts/seguiemj.ttf";
 			return $"\"drawtext=fontfile='{font}':text='{escapedValue}':fontcolor=white:fontsize=64:box=1:boxcolor=black@0.75:boxborderw=5:{positionPart}\"";
 		}
 	}
