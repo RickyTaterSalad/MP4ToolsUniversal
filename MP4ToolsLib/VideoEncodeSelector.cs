@@ -26,6 +26,8 @@ public static class VideoEncodeSelector
 
 	public static string EffectiveAudioCodec(EncodingSettingsDto dto)
 	{
+		return "libopus";
+		/*
 		if (dto == null || !dto.ReencodeOutput)
 			return FfmpegArguments.StreamCopy;
 
@@ -36,6 +38,7 @@ public static class VideoEncodeSelector
 			"copy" => FfmpegArguments.StreamCopy,
 			_ => "aac",
 		};
+		*/
 	}
 
 	/// <summary>Audio for Trim segment FFmpeg steps; uses <see cref="EncodingSettingsDto.TrimAudioCodec"/> (libopus when unset), not Encode-tab <see cref="EncodingSettingsDto.AudioCodec"/>.</summary>
