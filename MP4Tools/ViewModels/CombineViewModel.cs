@@ -1,7 +1,6 @@
 ﻿using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MP4Tools;
 using MP4Tools.Services;
 using MP4ToolsLib;
 using System;
@@ -963,8 +962,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 					{
 						if (vplan.NeedsVaapiUploadFilter)
 							concatOpts.Add(VideoEncodeSelector.VaapiUploadVideoFilterOption);
-						foreach (var o in vplan.VideoEncodeOptions)
-							concatOpts.Add(o);
 						concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
 					}
 
@@ -1002,9 +999,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 				string mergedTsFile = null;
 				try
 				{
-					var videoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(writeFiles.FirstOrDefault()?.Path ?? string.Empty, ct, Logger.Log).ConfigureAwait(false);
-					//var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb,h265_metadata=audit_packet=1" : "h264_mp4toannexb,h264_metadata=audit_packet=1";
-					var videoBsf = string.Equals(videoCodec, "hevc", StringComparison.OrdinalIgnoreCase) ? "hevc_mp4toannexb" : "h264_mp4toannexb";
 
 					var audioCodecByPath = new Dictionary<string, string>();
 					foreach (var f in writeFiles)
@@ -1029,7 +1023,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 							i == 0 ? scanOpt : default,
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
 							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
-							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, videoBsf),
+							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"),
 						};
 						MpegTsConcatAudio.AppendMp4ToTsAudioOptions(partTsOpts, aProbe);
 						partTsOpts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
@@ -1052,7 +1046,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{mergedTsFile}|{partTsFile}")),
 							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
-							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, videoBsf),
+							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"),
 							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
 							FfmpegOption.Positional(FfmpegCommandLine.Quoted(nextMergedTs))), ct).ConfigureAwait(false);
 						if (File.Exists(nextMergedTs))
@@ -1074,27 +1068,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 					if (!string.IsNullOrWhiteSpace(mergedTsFile) && File.Exists(mergedTsFile))
 					{
 
-						TempPathHelper.DeleteTemporaryFileUnlessRetained(mergedTsFile);
 						ReportCombineStep("Writing final MP4…");
 						Logger.Log("Finalizing merged TS into MP4...");
 						var mergedTsVideoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(mergedTsFile, ct, Logger.Log).ConfigureAwait(false);
-						var finalizeVideoStreamCopy = vplan.UseStreamCopy
-							|| VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(encPrefs, mergedTsVideoCodec);
+						var finalizeVideoStreamCopy = true;
 						var finalizeVplan = vplan;
-						if (shouldAddIntro && !finalizeVideoStreamCopy && vplan.NeedsVaapiUploadFilter)
-						{
-							var softPrefs = new EncodingSettingsDto
-							{
-								ReencodeOutput = encPrefs.ReencodeOutput,
-								VideoCodec = encPrefs.VideoCodec,
-								AudioCodec = encPrefs.AudioCodec,
-								OutputBitDepth = encPrefs.OutputBitDepth,
-								HardwareAcceleration = "software",
-							};
-							finalizeVplan = VideoEncodeSelector.BuildPlan(softPrefs, InputVideoBitDepth, Logger.Log);
-							Logger.Log($"Finalize: intro MPEG-TS merge — using CPU encoder ({finalizeVplan.EncoderSummary}); VA-API transcode fails across concat seams.");
-						}
-
 						if (finalizeVideoStreamCopy && !vplan.UseStreamCopy)
 							Logger.Log($"Finalize: merged TS video is {mergedTsVideoCodec}; Encode tab matches — remuxing video (-c:v copy) instead of transcoding.");
 						var streamCopyAudio = finalizeVideoStreamCopy
@@ -1124,14 +1102,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 						}
 						else
 						{
-							foreach (var o in finalizeVplan.VideoEncodeOptions)
-								finalizeParts.Add(o);
 							finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
 						}
 
 						finalizeParts.Add(aacBsfOpt);
 						finalizeParts.Add(trimEndOpt);
-					//	finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.Movflags, FfmpegArguments.MovflagFastStart));
 						finalizeParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile)));
 
 						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(finalizeParts), ct).ConfigureAwait(false);

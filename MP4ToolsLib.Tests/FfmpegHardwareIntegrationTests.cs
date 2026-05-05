@@ -28,10 +28,8 @@ public sealed class FfmpegHardwareIntegrationTests : IDisposable
 
 	private static EncodingSettingsDto HevcHardwareAuto() => new()
 	{
-		ReencodeOutput = true,
 		VideoCodec = "h265",
 		AudioCodec = "aac",
-		OutputBitDepth = "8 bit",
 		HardwareAcceleration = "auto",
 	};
 

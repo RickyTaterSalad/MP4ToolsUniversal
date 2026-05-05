@@ -52,8 +52,6 @@ namespace MP4ToolsLib.Preset
 
 		public abstract string TuneV { get; }
 
-		// For H.264: baseline, main, high, high444p (NVENC); main, high (VAAPI)
-		// For HEVC: main, main10, rext (VAAPI)
 		public abstract string ProfileV { get; }
 	}
 }

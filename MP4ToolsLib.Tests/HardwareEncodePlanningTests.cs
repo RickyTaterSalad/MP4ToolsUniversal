@@ -1,4 +1,3 @@
-using MP4ToolsLib;
 using MP4ToolsLib.Tests.Support;
 using Xunit;
 
@@ -14,10 +13,8 @@ public sealed class HardwareEncodePlanningTests : IDisposable
 
 	private static EncodingSettingsDto HwHevc(string hw = "auto") => new()
 	{
-		ReencodeOutput = true,
 		VideoCodec = "h265",
 		AudioCodec = "aac",
-		OutputBitDepth = "8 bit",
 		HardwareAcceleration = hw,
 	};
 
@@ -59,64 +56,13 @@ public sealed class HardwareEncodePlanningTests : IDisposable
 		Assert.True(intro.NeedsVaapiUploadFilter);
 	}
 
-	[Fact]
-	public void Intro_plan_uses_probe_hevc_when_encode_tab_is_h264()
-	{
-		var dto = new EncodingSettingsDto
-		{
-			ReencodeOutput = true,
-			VideoCodec = "h264",
-			AudioCodec = "aac",
-			OutputBitDepth = "8 bit",
-			HardwareAcceleration = "software",
-		};
-		var intro = VideoEncodeSelector.BuildIntroPlan(dto, "hevc", _ => { });
-		Assert.False(intro.UseStreamCopy);
-		Assert.Contains("libx265", intro.EncoderSummary, StringComparison.OrdinalIgnoreCase);
-		Assert.False(intro.NeedsVaapiUploadFilter);
-	}
 
-	[Fact]
-	public void MatchIntroVideoCodecFromProbe_maps_common_names()
-	{
-		Assert.Equal("hevc", VideoEncodeSelector.MatchIntroVideoCodecFromProbe("hvc1"));
-		Assert.Equal("h264", VideoEncodeSelector.MatchIntroVideoCodecFromProbe("avc1"));
-		Assert.Equal("", VideoEncodeSelector.MatchIntroVideoCodecFromProbe("vp9"));
-	}
-
-	[Fact]
-	public void Ts_finalize_stream_copy_when_encode_tab_matches_merged_hevc()
-	{
-		var dto = HwHevc("software");
-		Assert.True(VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(dto, "hevc"));
-		Assert.False(VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(dto, "h264"));
-	}
-
-	[Fact]
-	public void Ts_finalize_no_stream_copy_when_encode_tab_requests_cross_codec_transcode()
-	{
-		var dto = new EncodingSettingsDto
-		{
-			ReencodeOutput = true,
-			VideoCodec = "h264",
-			HardwareAcceleration = "software",
-		};
-		Assert.False(VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(dto, "hevc"));
-	}
-
-	[Fact]
-	public void Ts_finalize_stream_copy_false_when_video_codec_is_copy()
-	{
-		var dto = new EncodingSettingsDto { ReencodeOutput = false, VideoCodec = "copy" };
-		Assert.False(VideoEncodeSelector.ShouldStreamCopyVideoWhenRemuxingMergedTs(dto, "hevc"));
-	}
 
 	[Fact]
 	public void Stream_copy_skips_encoder_tail()
 	{
 		var dto = new EncodingSettingsDto
 		{
-			ReencodeOutput = false,
 			VideoCodec = "copy",
 			HardwareAcceleration = "auto",
 		};

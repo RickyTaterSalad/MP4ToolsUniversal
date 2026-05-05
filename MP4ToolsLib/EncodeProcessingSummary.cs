@@ -13,8 +13,8 @@ public static class EncodeProcessingSummary
 		yield return $"--- Encode pipeline summary ({operationTitle}) ---";
 		var trimSeg = string.IsNullOrWhiteSpace(dto.TrimAudioCodec) ? "libopus" : dto.TrimAudioCodec.Trim();
 		yield return trimSegmentAudioSummary
-			? $"Encode tab: reencode={dto.ReencodeOutput}, video={dto.VideoCodec ?? "copy"}, audio={dto.AudioCodec ?? "copy"}, trim_segment_audio={trimSeg}, output_bit_depth={dto.OutputBitDepth ?? "auto"}, hardware_acceleration={dto.HardwareAcceleration ?? "auto"}"
-			: $"Encode tab: reencode={dto.ReencodeOutput}, video={dto.VideoCodec ?? "copy"}, audio={dto.AudioCodec ?? "copy"}, output_bit_depth={dto.OutputBitDepth ?? "auto"}, hardware_acceleration={dto.HardwareAcceleration ?? "auto"}";
+			? $"Encode tab: video={dto.VideoCodec ?? "copy"}, audio={dto.AudioCodec ?? "copy"}, trim_segment_audio={trimSeg}, hardware_acceleration={dto.HardwareAcceleration ?? "auto"}"
+			: $"Encode tab: video={dto.VideoCodec ?? "copy"}, audio={dto.AudioCodec ?? "copy"}, hardware_acceleration={dto.HardwareAcceleration ?? "auto"}";
 
 		var hwTab = string.IsNullOrWhiteSpace(dto.HardwareAcceleration) ? "auto" : dto.HardwareAcceleration.Trim();
 		var hwResolved = FFMpegUtils.Instance.ResolveHwAccelLineFromUserHints().Replace("\n", " ", StringComparison.Ordinal);
@@ -25,12 +25,11 @@ public static class EncodeProcessingSummary
 			? $"Effective audio for trim segment transcodes: {audioEff}"
 			: $"Effective audio for transcode/mux steps: {audioEff}";
 
-		var plan = VideoEncodeSelector.BuildPlan(dto, inputVideoBitDepthUi ?? string.Empty, _ => { });
+		var plan = VideoEncodeSelector.BuildPlan(dto, _ => { });
 		if (plan.UseStreamCopy)
 			yield return "Video plan: stream copy (-c:v copy) when output is not re-encoded.";
 		else
 		{
-			yield return $"Video encoder tail: {SummarizeOptions(plan.VideoEncodeOptions)}";
 			if (plan.NeedsVaapiUploadFilter)
 				yield return "VA-API encode: uses hwupload filter (format=nv12,hwupload=derive_device=vaapi,…) before encoder.";
 		}
@@ -38,7 +37,7 @@ public static class EncodeProcessingSummary
 		var introPlan = VideoEncodeSelector.BuildIntroPlan(dto, _ => { });
 		yield return introPlan.UseStreamCopy
 			? "Intro slide (when used): stream copy (unexpected)."
-			: $"Intro slide (when used): {SummarizeOptions(introPlan.VideoEncodeOptions)}{(introPlan.NeedsVaapiUploadFilter ? " (+ VA-API hwupload after drawtext)" : "")}";
+			: $"";
 
 		yield return "Note: RunCaptureFFMpegAsync applies ApplyForcedFfmpegArgs like RunAndLogFFMpegAsync; ffprobe capture steps do not.";
 		yield return "--- End encode pipeline summary ---";

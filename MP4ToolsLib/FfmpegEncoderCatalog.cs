@@ -19,7 +19,6 @@ public static class FfmpegEncoderCatalog
 
 		foreach (var raw in text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
 		{
-			// FFmpeg lines look like " V....D h264_vaapi  …"; must not TrimStart — that removes the leading space check used previously (now fixed via flags column).
 			var line = raw.TrimEnd('\r', '\n');
 			if (line.Length < 8)
 				continue;
@@ -66,8 +65,8 @@ public static class FfmpegEncoderCatalog
 				// Encoder probes are skipped; seed names so VideoEncodeSelector matches real VA-API/software paths in logged commands.
 				foreach (var id in new[]
 				         {
-					         "hevc_nvenc", "h264_nvenc", "hevc_qsv", "h264_qsv", "hevc_vaapi", "h264_vaapi",
-					         "hevc_videotoolbox", "h264_videotoolbox", "libx264", "libx265",
+					         "hevc_vaapi","hevc_amf",
+					         
 				         })
 					_encoderIds.Add(id);
 				Debug.WriteLine("[DRY RUN] ffmpeg -encoders skipped — using assumed encoder list for planning.");
@@ -103,7 +102,6 @@ public static class FfmpegEncoderCatalog
 			}
 			catch
 			{
-				// leave empty — selector falls back to libx264/libx265
 			}
 		}
 	}

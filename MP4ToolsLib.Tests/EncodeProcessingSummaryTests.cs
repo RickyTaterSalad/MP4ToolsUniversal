@@ -16,11 +16,9 @@ public sealed class EncodeProcessingSummaryTests : IDisposable
 	{
 		var dto = new EncodingSettingsDto
 		{
-			ReencodeOutput = true,
 			VideoCodec = "h265",
 			AudioCodec = "aac",
-			HardwareAcceleration = "vaapi",
-			OutputBitDepth = "8 bit",
+			HardwareAcceleration = OperatingSystem.IsLinux() ? "vaapi" : "amf"
 		};
 		var lines = EncodeProcessingSummary.BuildLines("UnitTest", dto, "8 bit").ToArray();
 		Assert.Contains(lines, l => l.Contains("hardware_acceleration=vaapi", StringComparison.OrdinalIgnoreCase));

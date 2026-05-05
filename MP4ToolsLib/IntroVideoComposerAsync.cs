@@ -76,22 +76,13 @@ namespace MP4ToolsLib
                 string h = !string.IsNullOrWhiteSpace(video?.Height) ? video.Height : "1080";
                 string fps = !string.IsNullOrWhiteSpace(video?.FrameRate) ? video.FrameRate : "30000/1001";
                 string pixFmt = !string.IsNullOrWhiteSpace(video?.PixelFormat) ? video.PixelFormat : "yuv420p";
-                string vCodec = (!string.IsNullOrWhiteSpace(video?.CodecName) ? video.CodecName : "h264").ToLowerInvariant();
-                var introCodecFamilyForTs = VideoEncodeSelector.MatchIntroVideoCodecFromProbe(vCodec);
-                if (string.IsNullOrEmpty(introCodecFamilyForTs))
-                    introCodecFamilyForTs = "h264";
+                string vCodec = (!string.IsNullOrWhiteSpace(video?.CodecName) ? video.CodecName : "h265").ToLowerInvariant();
 
                 string ar = !string.IsNullOrWhiteSpace(audio?.SampleRate) ? audio.SampleRate : "48000";
                 string ach = !string.IsNullOrWhiteSpace(audio?.Channels) ? audio.Channels : "2";
                 string acl = !string.IsNullOrWhiteSpace(audio?.ChannelLayout) ? audio.ChannelLayout : (ach == "1" ? "mono" : "stereo");
                 string aCodec = (!string.IsNullOrWhiteSpace(audio?.CodecName) ? audio.CodecName : "aac").ToLowerInvariant();
 
-                string vEnc = vCodec switch
-                {
-                    "hevc" => "libx265",
-                    "mpeg4" => "mpeg4",
-                    _ => "libx264"
-                };
 
                 string aEnc = aCodec switch
                 {
@@ -101,13 +92,11 @@ namespace MP4ToolsLib
                     _ => "aac"
                 };
 
-                var useTabEncode = encodingPrefs != null && encodingPrefs.ReencodeOutput
-                    && !string.Equals(encodingPrefs.VideoCodec, "copy", StringComparison.OrdinalIgnoreCase);
-
-                var introPlan = useTabEncode ? VideoEncodeSelector.BuildIntroPlan(encodingPrefs, vCodec, log) : null;
+                var useTabEncode = encodingPrefs != null && !string.Equals(encodingPrefs.VideoCodec, "copy", StringComparison.OrdinalIgnoreCase);
+                var introPlan = useTabEncode ? VideoEncodeSelector.BuildIntroPlan(encodingPrefs, log) : null;
 
                 string introAudioEnc = aEnc;
-                if (encodingPrefs != null && encodingPrefs.ReencodeOutput)
+                if (encodingPrefs != null)
                 {
                     var eff = useTrimSegmentAudioCodec
                         ? VideoEncodeSelector.EffectiveAudioCodecForTrim(encodingPrefs)
@@ -117,17 +106,7 @@ namespace MP4ToolsLib
                         : eff;
                 }
 
-                string GetBsfForCodec(string codec) => codec switch
-                {
-                    "hevc" => "hevc_mp4toannexb",
-                    "h264" or "avc" => "h264_mp4toannexb",
-                    _ => string.Empty
-                };
-
-                string streamCopyMuxBsf = GetBsfForCodec(vCodec);
-
-                string introMuxBsf = GetBsfForCodec(introCodecFamilyForTs);
-
+    
                 var escapedTitle = EscapeDrawtext(titleText);
                 var escapedSubtitle = EscapeDrawtext(subtitleText);
                 var escapedDetails = EscapeDrawtext(detailsText);
@@ -152,23 +131,14 @@ namespace MP4ToolsLib
                 Step("Encoding intro to MPEG-TS…");
 
                 var introVidTail = new List<FfmpegOption?>();
-                if (useTabEncode && introPlan != null && !introPlan.UseStreamCopy)
-                {
-                    foreach (var o in introPlan.VideoEncodeOptions)
-                        introVidTail.Add(o);
-                }
-                else
-                {
-                    introVidTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, vEnc));
-                    introVidTail.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, pixFmt));
-                }
+                introVidTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "libx265"));
 
                 var introMp4Parts = new List<FfmpegOption?>
                 {
                     FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
                     FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
                     FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
-                    FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}")),
+                    FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}"),
                     FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
                     FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"anullsrc=r={ar}:cl={acl}:d={durationSeconds}")),
                     FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{vf}\""),
@@ -187,8 +157,7 @@ namespace MP4ToolsLib
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioSampleRate, ar));
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioChannels, ach));
                 introMp4Parts.Add(FfmpegOption.Unary(FfmpegArguments.StopEncodingWhenShortestStreamEnds));
-                if (!string.IsNullOrWhiteSpace(introMuxBsf))
-                    introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, introMuxBsf));
+                introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"));
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
                 introMp4Parts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(introTs)));
 
@@ -208,8 +177,7 @@ namespace MP4ToolsLib
                     FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputPath)),
                     FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
                 };
-                if (!string.IsNullOrWhiteSpace(streamCopyMuxBsf))
-                    inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, streamCopyMuxBsf));
+                inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"));
                 MpegTsConcatAudio.AppendMp4ToTsAudioOptions(inputToTs, aCodec);
                 inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
                 inputToTs.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(inputTs)));

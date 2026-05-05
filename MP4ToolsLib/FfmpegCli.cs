@@ -34,8 +34,6 @@ public static class FfmpegArguments
 	public const string BitstreamFilterAacAdtsToAsc = "aac_adtstoasc";
 
 	public const string VideoFilter = "-vf";
-	public const string PixelFormat = "-pix_fmt";
-
 	public const string VideoBitrate = "-b:v";
 	public const string VideoMaxBitrate = "-maxrate";
 	public const string VideoProfile = "-profile:v";
