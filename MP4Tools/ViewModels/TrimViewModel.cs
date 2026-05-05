@@ -393,15 +393,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 				Logger.Log("Combining trimmed files...");
 
 				var tempTsFiles = new List<string>();
-				/*
-								var audioCodecByPath = new Dictionary<string, string>();
-								foreach (var path in outputPaths)
-								{
-									var ac = await FFMpegUtils.Instance.GetFirstAudioCodecNameAsync(path, ct, Logger.Log).ConfigureAwait(false);
-									audioCodecByPath[path] = ac;
-								}
-								*/
-
 				for (var ti = 0; ti < outputPaths.Count; ti++)
 				{
 					var input = outputPaths[ti];
@@ -409,9 +400,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 					ReportTrimStep($"Remuxing segment {ti + 1} of {outputPaths.Count} to MPEG-TS…");
 					Logger.Log($"Remuxing trimmed segment to TS: {Path.GetFileName(input)}");
 					var tsFile = Path.Combine(TempPathHelper.GetTempPath(), $"trim_part_{Guid.NewGuid():N}.ts");
-					//var aProbe = audioCodecByPath[input];
-					//if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aProbe))
-					//	Logger.Log($"Opus in segment — re-encoding audio to AAC for MPEG-TS (reduces concat parsing errors).");
 					var tsParts = new List<FfmpegOption?>
 					{
 						FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
@@ -434,10 +422,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 					ReportTrimStep("Concatenating MPEG-TS segments…");
 					Logger.Log("Concatenating TS segments...");
 					var concatInput = string.Join("|", tempTsFiles);
-					//	var allAacInTs = outputPaths.All(p => MpegTsConcatAudio.IntermediateTsAudioIsAac(audioCodecByPath[p]));
-					//	var aacBsfOpt = allAacInTs
-					//		? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
-					//	: (FfmpegOption?)null;
 					await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
 						FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{concatInput}")),
@@ -581,19 +565,19 @@ public partial class TrimViewModel : MP4ViewModelBase
 					vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition));
 				}
 
-				var encodingTail = new List<FfmpegOption?>();
-
-				encodingTail.Add(videoCodecOpt);
-
-				encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, "libopus"));
-				encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
+				var encodingTail = new List<FfmpegOption?>
+				{
+					videoCodecOpt,
+					FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, "libopus"),
+					FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k")
+				};
 				var trimParts = new List<FfmpegOption?>
-					{
-						FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
-						FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
-						FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
-						vfOpt,
-					};
+				{
+					FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
+					FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
+					FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
+					vfOpt,
+				};
 				trimParts.AddRange(encodingTail);
 				trimParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimOutputPath)));
 

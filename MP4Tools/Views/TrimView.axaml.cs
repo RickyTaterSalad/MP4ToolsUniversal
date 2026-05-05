@@ -2,13 +2,11 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
-using MP4Tools;
 using MP4Tools.ViewModels;
 using MP4ToolsLib;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace MP4Tools.Views;
 

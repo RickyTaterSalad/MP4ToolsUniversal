@@ -2,7 +2,6 @@
 using MP4Tools.ViewModels;
 using MP4ToolsLib;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,9 +12,6 @@ namespace MP4Tools
 
 	public partial class MP4ViewModelBase : ViewModelBase
 	{
-		// ====================
-		// PROPERTIES (Top)
-		// ====================
 
 		public RelayCommand ClearCommand { get; private set; }
 		public RelayCommand StopCommand { get; private set; }
@@ -81,25 +77,16 @@ namespace MP4Tools
 			set => SetProperty(ref _inputProbeVideoCodecName, value);
 		}
 
-		public IReadOnlyList<string> AvailableVideoBitDepths { get; } = ["8 bit", "10 bit"];
-		public IReadOnlyList<string> AvailableAudioCodecs { get; } = ["copy", /*"aac",*/ "libopus"];
-
-		// ====================
-		// METHODS (Bottom)
-		// ====================
-
 		private CancellationTokenSource _ffmpegOperationCts;
 
-		protected CancellationToken FfmpegOperationCancellationToken => _ffmpegOperationCts?.Token ?? CancellationToken.None;
-
-	internal MP4ViewModelBase()
+		internal MP4ViewModelBase()
 		{
 			StopCommand = new RelayCommand(CancelFfmpegOperation);
 			ClearCommand = new RelayCommand(() => Clear());
 		}
 
-	/// <summary>Starts a cancellable ffmpeg/ffprobe operation scope (Stop cancels the token).</summary>
-	protected CancellationToken BeginFfmpegOperation()
+		/// <summary>Starts a cancellable ffmpeg/ffprobe operation scope (Stop cancels the token).</summary>
+		protected CancellationToken BeginFfmpegOperation()
 		{
 			try
 			{
@@ -116,7 +103,7 @@ namespace MP4Tools
 			return _ffmpegOperationCts.Token;
 		}
 
-	protected void EndFfmpegOperation()
+		protected void EndFfmpegOperation()
 		{
 			CanStop = false;
 			try
@@ -129,7 +116,7 @@ namespace MP4Tools
 			}
 		}
 
-	protected void CancelFfmpegOperation()
+		protected void CancelFfmpegOperation()
 		{
 			try
 			{

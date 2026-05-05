@@ -34,15 +34,6 @@ public static class FfmpegArguments
 	public const string BitstreamFilterAacAdtsToAsc = "aac_adtstoasc";
 
 	public const string VideoFilter = "-vf";
-	public const string VideoBitrate = "-b:v";
-	public const string VideoMaxBitrate = "-maxrate";
-	public const string VideoProfile = "-profile:v";
-	public const string VideoPreset = "-preset:v";
-	public const string VideoTune = "-tune:v";
-	public const string VideoRateControl = "-rc:v";
-
-	/// <summary>VAAPI encoder rate-control mode (numeric value passed separately).</summary>
-	public const string VaapiRateControlMode = "-rc_mode";
 
 	public const string AudioSampleRate = "-ar";
 	public const string AudioChannels = "-ac";
@@ -50,9 +41,6 @@ public static class FfmpegArguments
 
 	public const string OutputVideoFrameRate = "-r";
 	public const string StopEncodingWhenShortestStreamEnds = "-shortest";
-
-	public const string Movflags = "-movflags";
-	public const string MovflagFastStart = "+faststart";
 }
 
 /// <summary>

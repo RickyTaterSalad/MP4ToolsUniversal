@@ -536,6 +536,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			}
 		}
 	}
+	
 	private void UpdateOutputPathFromGameInfo()
 	{
 		if (string.IsNullOrWhiteSpace(InputPath))
@@ -561,6 +562,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			OutputPath = FFMpegUtils.Instance.CleanupPath(Path.Combine(baseDir, "combined.mp4"));
 		}
 	}
+
 	private void UpdateSubtitleFromEventInfoAndDate()
 	{
 		if (!EventDate.HasValue && string.IsNullOrWhiteSpace(EventInfo))
@@ -587,6 +589,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 	{
 		return FileUtils.BuildGameInfoOutputFileName(EventDate, VisitorName, HomeName, VisitorScore, HomeScore);
 	}
+
 	private void UpdateIntroDetailsFromGameInfo()
 	{
 		if (!string.IsNullOrWhiteSpace(VisitorName) && !string.IsNullOrWhiteSpace(HomeName))
@@ -635,6 +638,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			InputFiles.Add(file);
 		}
 	}
+
 	protected override Task Clear()
 	{
 		CancelEdgeDurationRefresh();
@@ -878,7 +882,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			var encPrefs = EncodingSettingsRuntime.Current;
 			var vplan = VideoEncodeSelector.BuildPlan(encPrefs, Logger.Log);
-			var audioEff = FfmpegArguments.StreamCopy;//VideoEncodeSelector.EffectiveAudioCodec(encPrefs);
+			var audioEff = FfmpegArguments.StreamCopy;
 			Logger.Log($"Combine video plan: {(vplan.UseStreamCopy ? "stream copy" : vplan.EncoderSummary)}; VA-API upload filter={(vplan.NeedsVaapiUploadFilter ? "yes" : "no")}");
 
 			if (!shouldAddIntro)
@@ -1106,6 +1110,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			Logger.Log($"Combine failed: {ex.Message}");
 		}
 	}
+
 	private void UpdateIntroTitleFromGameInfo()
 	{
 		if (!string.IsNullOrWhiteSpace(VisitorName) && !string.IsNullOrWhiteSpace(HomeName))

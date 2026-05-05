@@ -126,24 +126,4 @@ public static class VideoEncodeSelector
 		}
 		return SoftwareFallback();
 	}
-
-	private static List<FfmpegOption?> BuildEncodeTail(string encoder, bool hevc, Action<string> log)
-	{
-		var list = new List<FfmpegOption?>
-		{
-			FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, encoder),
-		};
-		/*
-				if (encoder.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
-				{
-					list.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitrate, "12M"));
-					list.Add(FfmpegOption.Pair(FfmpegArguments.VideoMaxBitrate, "24M"));
-					list.Add(FfmpegOption.Pair(FfmpegArguments.VideoProfile, "main10"));
-					list.Add(FfmpegOption.Pair(FfmpegArguments.VaapiRateControlMode, "3"));
-					return list;
-				}
-				*/
-
-		return list;
-	}
 }

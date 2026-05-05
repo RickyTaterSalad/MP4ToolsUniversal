@@ -9,7 +9,7 @@ public static class EncodingSettingsRuntime
 
 	public static void Apply(AppUserSettings settings)
 	{
-		Current = settings?.Encoding ?? new EncodingSettingsDto();
+		Current = new EncodingSettingsDto();
 		FfmpegUserHints.HardwareAcceleration = string.IsNullOrWhiteSpace(Current.HardwareAcceleration)
 			? "auto"
 			: Current.HardwareAcceleration;

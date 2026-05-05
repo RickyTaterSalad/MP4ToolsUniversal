@@ -1,8 +1,6 @@
 ﻿using Avalonia;
-using Avalonia.Fonts.Inter;
 using System;
 using System.IO;
-using System.Reflection;
 using System.Runtime.Loader;
 
 namespace MP4Tools;

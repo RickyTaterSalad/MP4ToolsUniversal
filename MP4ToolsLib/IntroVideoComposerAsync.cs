@@ -8,8 +8,6 @@ namespace MP4ToolsLib
 {
     public static class IntroVideoComposerAsync
     {
-        private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(20);
-
         private static string _font;
         private static string Font
         {
