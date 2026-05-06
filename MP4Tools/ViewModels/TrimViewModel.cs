@@ -548,8 +548,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 				}
 				if (!isStreamCopy)
 				{
-					var suffix = $"format=nv12,hwupload=derive_device={encPrefs.HardwareAcceleration}:extra_hw_frames=64";
-					vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawInner},{suffix}\"");
+					var suffix = OperatingSystem.IsLinux() ? $",format=nv12,hwupload=derive_device={encPrefs.HardwareAcceleration}:extra_hw_frames=64": string.Empty;
+					vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawInner}{suffix}\"");
 				}
 				else if (!string.IsNullOrEmpty(drawInner))
 				{
@@ -565,11 +565,11 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 				if (!isStreamCopy)
 				{
-					if (isVaapi)
+					if (OperatingSystem.IsLinux())
 					{
-						trimParts.Add(FfmpegOption.Pair(FfmpegArguments.InitHardwareDevice, $"vaapi={FFMpegUtils.GetPreferredRenderDevice()}"));
+						trimParts.Add(FfmpegOption.Pair(FfmpegArguments.InitHardwareDevice, $"{encPrefs.HardwareAcceleration}={FFMpegUtils.GetPreferredRenderDevice()}"));
+						trimParts.Add(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration, encPrefs.HardwareAcceleration));
 					}
-					trimParts.Add(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration, encPrefs.HardwareAcceleration));
 				}
 				trimParts.AddRange(
 					FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
