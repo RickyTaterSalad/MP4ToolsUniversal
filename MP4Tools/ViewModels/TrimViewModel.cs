@@ -526,6 +526,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				FfmpegOption vfOpt = default;
 				var isVaapi = encPrefs.HardwareAcceleration == "vaapi";
 				var isAmf = encPrefs.HardwareAcceleration == "amf";
+				var accelerationAPI = isVaapi ? "vaapi" : (isAmf ? "d3d11va" : "");
 				var isStreamCopy = string.IsNullOrWhiteSpace(range.Label);
 				FfmpegOption videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy);
 				if (!isStreamCopy)
@@ -548,7 +549,12 @@ public partial class TrimViewModel : MP4ViewModelBase
 				}
 				if (!isStreamCopy)
 				{
-					var suffix = OperatingSystem.IsLinux() ? $",format=nv12,hwupload=derive_device={encPrefs.HardwareAcceleration}:extra_hw_frames=64": string.Empty;
+					/*ffmpeg -i input.mp4 \
+							-vf "drawtext=text='STAMP':fontcolor=white,format=nv12,hwupload" \
+							-init_hw_device vaapi=gpu:/dev/dri/renderD128 -filter_hw_device gpu \
+							-c:v h264_vaapi output.mp4
+							*/
+					var suffix = OperatingSystem.IsLinux() ? $",format=nv12,hwupload": string.Empty;
 					vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawInner}{suffix}\"");
 				}
 				else if (!string.IsNullOrEmpty(drawInner))
@@ -563,13 +569,10 @@ public partial class TrimViewModel : MP4ViewModelBase
 				};
 				var trimParts = new List<FfmpegOption?>();
 
-				if (!isStreamCopy)
+				if (!string.IsNullOrWhiteSpace(accelerationAPI))
 				{
-					if (OperatingSystem.IsLinux())
-					{
-						trimParts.Add(FfmpegOption.Pair(FfmpegArguments.InitHardwareDevice, $"{encPrefs.HardwareAcceleration}={FFMpegUtils.GetPreferredRenderDevice()}"));
-						trimParts.Add(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration, encPrefs.HardwareAcceleration));
-					}
+					trimParts.AddRange(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration,encPrefs.HardwareAcceleration));
+					
 				}
 				trimParts.AddRange(
 					FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
@@ -577,6 +580,14 @@ public partial class TrimViewModel : MP4ViewModelBase
 					FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
 					vfOpt
 				);
+				if (!isStreamCopy && !string.IsNullOrWhiteSpace(accelerationAPI))
+				{
+				    if (OperatingSystem.IsLinux())
+					{
+						trimParts.Add(FfmpegOption.Pair(FfmpegArguments.InitHardwareDevice, $"{accelerationAPI}={FFMpegUtils.GetPreferredRenderDevice()}"));
+						trimParts.Add(FfmpegOption.Pair(FfmpegArguments.FilterHardwareDevice, $"{FFMpegUtils.GetPreferredRenderDevice()}"));
+					}
+				}
 				trimParts.AddRange(encodingTail);
 				trimParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimOutputPath)));
 

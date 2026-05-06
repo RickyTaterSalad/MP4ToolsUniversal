@@ -12,6 +12,7 @@ public static class FfmpegArguments
 	public const string OverwriteOutputFile = "-y";
 	public const string Input = "-i";
 	public const string InitHardwareDevice = "-init_hw_device";
+	public const string FilterHardwareDevice = "-filter_hw_device";
 	
 	public const string HardwareAcceleration = "-hwaccel";
 
