@@ -254,7 +254,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 	private async Task TrimAndCombineAsync(bool combine = true)
 	{
 
-		if (!Directory.Exists(OutputFolder)){
+		if (!Directory.Exists(OutputFolder))
+		{
 			Directory.CreateDirectory(OutputFolder);
 		}
 		var logOutputPath = Path.Combine(OutputFolder, "log.txt");
@@ -546,13 +547,14 @@ public partial class TrimViewModel : MP4ViewModelBase
 				if (isVaapi)
 				{
 					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_vaapi");
-					
+
 				}
 				if (isAmf)
 				{
 					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_amf");
 				}
-				else{
+				else
+				{
 					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy);
 				}
 

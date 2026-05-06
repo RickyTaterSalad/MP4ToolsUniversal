@@ -536,7 +536,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			}
 		}
 	}
-	
+
 	private void UpdateOutputPathFromGameInfo()
 	{
 		if (string.IsNullOrWhiteSpace(InputPath))
@@ -905,8 +905,9 @@ public partial class CombineViewModel : MP4ViewModelBase
 					{
 						concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
 					}
-					else if (isVaapi){
-							concatOpts.Add(VideoEncodeSelector.VaapiUploadVideoFilterOption);
+					else if (isVaapi)
+					{
+						concatOpts.Add(VideoEncodeSelector.VaapiUploadVideoFilterOption);
 					}
 
 					concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
@@ -1007,7 +1008,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 							TempPathHelper.DeleteTemporaryFileUnlessRetained(nextMergedTs);
 						}
 					}
-					if(!string.IsNullOrWhiteSpace(introFirstFile) && File.Exists(introFirstFile))
+					if (!string.IsNullOrWhiteSpace(introFirstFile) && File.Exists(introFirstFile))
 					{
 						TempPathHelper.DeleteTemporaryFileUnlessRetained(introFirstFile);
 					}
@@ -1035,7 +1036,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 						};
 						if (!finalizeVideoStreamCopy && isVaapi)
 						{
-							// Zero-copy VA-API decode→encode when hwupload vf is omitted — requires ApplyForcedFfmpegArgs to inject standalone -hwaccel vaapi (not confused with -hwaccel_output_format).
 							finalizeParts.Add(FfmpegOption.Pair("-hwaccel_output_format", "vaapi"));
 							Logger.Log("Finalize: VA-API decode→encode without hwupload filter.");
 						}
@@ -1092,7 +1092,9 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			await Dispatcher.UIThread.InvokeAsync(() => { OutputPath = FFMpegUtils.Instance.CleanupPath(combineOutputFile); });
 			foreach (var line in EncodeProcessingSummary.BuildLines("Combine", EncodingSettingsRuntime.Current))
+			{
 				Logger.Log(line);
+			}
 			Logger.Log("Combine complete.");
 			if (combineSucceeded)
 				ReportCombineStep("Finished successfully.");
