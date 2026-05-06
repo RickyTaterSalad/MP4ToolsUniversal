@@ -552,19 +552,26 @@ public partial class TrimViewModel : MP4ViewModelBase
 				{
 					drawInner = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition).Trim('"');
 				}
-
-				if (OperatingSystem.IsLinux() && effectiveVideoPlan.NeedsVaapiUploadFilter)
+				if (effectiveVideoPlan.NeedsVaapiUploadFilter)
 				{
-					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_vaapi");
 					vfOpt = string.IsNullOrEmpty(drawInner)
 						? VideoEncodeSelector.VaapiUploadVideoFilterOption
 						: FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawInner},{VideoEncodeSelector.VaapiUploadSuffix}\"");
 				}
 				else if (!string.IsNullOrEmpty(drawInner))
 				{
-					vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition));
+					vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, drawInner);
 				}
-
+				if(encPrefs.HardwareAcceleration == "amf")
+				{
+					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_amf");
+					
+				}
+			   else if(encPrefs.HardwareAcceleration == "vaapi")
+				{
+					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_vaapi");
+					
+				}
 				var encodingTail = new List<FfmpegOption?>
 				{
 					videoCodecOpt,

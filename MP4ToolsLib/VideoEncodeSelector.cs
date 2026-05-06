@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace MP4ToolsLib;
 
@@ -12,6 +11,7 @@ public sealed class VideoEncodePlan
 
 	public bool NeedsVaapiUploadFilter { get; init; }
 
+
 	//public IReadOnlyList<FfmpegOption?> VideoEncodeOptions { get; init; } = Array.Empty<FfmpegOption?>();
 }
 
@@ -20,9 +20,13 @@ public static class VideoEncodeSelector
 {
 	public const string VaapiUploadSuffix = "format=nv12,hwupload=derive_device=vaapi:extra_hw_frames=64";
 
+	public const string AmfUploadSuffix = "";
+
 	/// <summary>-vf chain required before <c>hevc_vaapi</c>/<c>h264_vaapi</c> when decoding to system memory (same as Trim re-encode).</summary>
 	public static FfmpegOption VaapiUploadVideoFilterOption =>
 		FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{VaapiUploadSuffix}\"");
+	public static FfmpegOption AmfUploadVideoFilterOption =>
+		FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{AmfUploadSuffix}\"");
 
 
 	public static VideoEncodePlan BuildPlan(EncodingSettingsDto dto, Action<string> log)
@@ -42,14 +46,14 @@ public static class VideoEncodeSelector
 		bool hevc = IsHevcFamily(dto.VideoCodec);
 		string encoder = PickEncoder(hevc, NormalizeHwMode(dto.HardwareAcceleration), log);
 		bool vaapi = encoder.Contains("vaapi", StringComparison.OrdinalIgnoreCase);
+		bool amf = encoder.Contains("amf", StringComparison.OrdinalIgnoreCase);
 		//var tail = BuildEncodeTail(encoder, hevc, log);
 
 		return new VideoEncodePlan
 		{
 			UseStreamCopy = false,
 			EncoderSummary = $"{encoder} (pix pipeline per tail)",
-			NeedsVaapiUploadFilter = vaapi//,
-										  //	VideoEncodeOptions = tail,
+			NeedsVaapiUploadFilter = vaapi
 		};
 	}
 
