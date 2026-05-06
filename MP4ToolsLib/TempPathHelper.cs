@@ -6,11 +6,8 @@ namespace MP4ToolsLib
 {
     public static class TempPathHelper
     {
-        private static readonly string _customTempPath = OperatingSystem.IsLinux() ? GetTempPath() : Path.GetTempPath();
 		private static string _configuredDirectory;
 		private static bool _retainTemporaryFiles;
-
-		public static bool RetainTemporaryFiles => _retainTemporaryFiles;
 
 		public static void ApplyConfiguration(string customTempDirectory, bool retainTemporaryFiles)
 		{
@@ -39,7 +36,6 @@ namespace MP4ToolsLib
 			return Directory.Exists(candidate) ? candidate : Path.GetTempPath();
 		}
 
-		/// <summary>Returns a unique path under the temp folder; the file is not created until a caller writes it.</summary>
 		public static string GetTempFileName()
 		{
 			return Path.Combine(GetTempPath(), Guid.NewGuid().ToString("N") + ".tmp");

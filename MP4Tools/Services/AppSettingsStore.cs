@@ -9,7 +9,6 @@ public sealed class AppUserSettings
 	public string TempDirectory { get; set; } = "";
 	public bool RetainTemporaryFiles { get; set; }
 
-	/// <summary>Folder for default Combine paths and Trim session folders. Empty in JSON uses <see cref="DefaultOutputPathRuntime.BuiltinFallbackDirectory"/>.</summary>
 	public string DefaultOutputDirectory { get; set; } = "";
 }
 

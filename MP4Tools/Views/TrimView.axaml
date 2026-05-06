@@ -126,25 +126,23 @@
 				</Button.Content>
 			</Button>
 		</StackPanel>
-		<StackPanel Grid.Row="2" Grid.Column="2" Margin="10,0,0,0">
-			<ListBox MinHeight="250" MaxHeight="250" ItemsSource="{Binding TrimRanges}" SelectedItem="{Binding SelectedStartStopRange}">
-				<ListBox.ItemTemplate>
-					<DataTemplate x:DataType="mlib:StartStopRange">
-						<StackPanel Orientation="Horizontal" Margin="5"
-									Background="Transparent"
-									PointerPressed="OnListBoxItemPointerPressed"
-									DragDrop.AllowDrop="True"
-									DragDrop.DragOver="OnListBoxItemDragOver"
-									DragDrop.Drop="OnListBoxItemDrop">
-							<TextBlock Text="{Binding StartRange}" VerticalAlignment="Center"/>
-							<TextBlock Text=" - " VerticalAlignment="Center"/>
-							<TextBlock Text="{Binding EndRange}" VerticalAlignment="Center"/>
-							<TextBox PlaceholderText="Label" Text="{Binding Label}" MinWidth="180" Margin="10,0,0,0"/>
-						</StackPanel>
-					</DataTemplate>
-				</ListBox.ItemTemplate>
-			</ListBox>
-		</StackPanel>
+		<ListBox Grid.Row="2" Grid.Column="2" Margin="10,0,0,0" ItemsSource="{Binding TrimRanges}" SelectedItem="{Binding SelectedStartStopRange}">
+			<ListBox.ItemTemplate>
+				<DataTemplate x:DataType="mlib:StartStopRange">
+					<StackPanel Orientation="Horizontal" Margin="5"
+								Background="Transparent"
+								PointerPressed="OnListBoxItemPointerPressed"
+								DragDrop.AllowDrop="True"
+								DragDrop.DragOver="OnListBoxItemDragOver"
+								DragDrop.Drop="OnListBoxItemDrop">
+						<TextBlock Text="{Binding StartRange}" VerticalAlignment="Center"/>
+						<TextBlock Text=" - " VerticalAlignment="Center"/>
+						<TextBlock Text="{Binding EndRange}" VerticalAlignment="Center"/>
+						<TextBox PlaceholderText="Label" Text="{Binding Label}" MinWidth="180" Margin="10,0,0,0"/>
+					</StackPanel>
+				</DataTemplate>
+			</ListBox.ItemTemplate>
+		</ListBox>
 		<Label Content="Output Path" Grid.Row="3" Margin="0,5,0,0"/>
 		<StackPanel Grid.Column="0" Grid.Row="4" Grid.ColumnSpan="3" Margin="0,0,0,10" >
 			<TextBox PlaceholderText="Trimmed Output Folder" Text="{Binding OutputFolder}" />

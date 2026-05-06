@@ -2,7 +2,6 @@ using MP4ToolsLib;
 
 namespace MP4Tools.Services;
 
-/// <summary>In-memory encoding prefs shared by Trim, Combine, and FFmpeg hwaccel hints.</summary>
 public static class EncodingSettingsRuntime
 {
 	public static EncodingSettingsDto Current { get; private set; } = new();

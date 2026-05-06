@@ -882,8 +882,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			var encPrefs = EncodingSettingsRuntime.Current;
 			var vplan = VideoEncodeSelector.BuildPlan(encPrefs, Logger.Log);
+			var isVaapi = encPrefs?.HardwareAcceleration?.Contains("vaapi", StringComparison.OrdinalIgnoreCase) ?? false;
 			var audioEff = FfmpegArguments.StreamCopy;
-			Logger.Log($"Combine video plan: {(vplan.UseStreamCopy ? "stream copy" : vplan.EncoderSummary)}; VA-API upload filter={(vplan.NeedsVaapiUploadFilter ? "yes" : "no")}");
 
 			if (!shouldAddIntro)
 			{
@@ -904,14 +904,12 @@ public partial class CombineViewModel : MP4ViewModelBase
 					if (vplan.UseStreamCopy)
 					{
 						concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
-						concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
 					}
-					else
-					{
-						if (vplan.NeedsVaapiUploadFilter)
+					else if (isVaapi){
 							concatOpts.Add(VideoEncodeSelector.VaapiUploadVideoFilterOption);
-						concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
 					}
+
+					concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
 
 					var concatAacBsf = audioEff.Contains("aac", StringComparison.OrdinalIgnoreCase)
 						? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
@@ -1035,7 +1033,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 						};
-						if (!finalizeVideoStreamCopy && finalizeVplan.NeedsVaapiUploadFilter)
+						if (!finalizeVideoStreamCopy && isVaapi)
 						{
 							// Zero-copy VA-API decode→encode when hwupload vf is omitted — requires ApplyForcedFfmpegArgs to inject standalone -hwaccel vaapi (not confused with -hwaccel_output_format).
 							finalizeParts.Add(FfmpegOption.Pair("-hwaccel_output_format", "vaapi"));

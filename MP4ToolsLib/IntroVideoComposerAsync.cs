@@ -105,14 +105,16 @@ namespace MP4ToolsLib
                     vf += $",drawtext=text='{escapedDetails}':fontfile='{Font}':fontcolor=white:fontsize={detailsFontSize}:x=(w-text_w)/2:y=(h/2)+{lineGap / 2}+{subtitleFontSize}+{lineGap}";
                 }
 
-                if (useTabEncode && introPlan != null && !introPlan.UseStreamCopy && introPlan.NeedsVaapiUploadFilter)
+                if (useTabEncode && introPlan != null && !introPlan.UseStreamCopy && (encodingPrefs?.VideoCodec?.Contains("vaapi", StringComparison.OrdinalIgnoreCase) ?? false))
                     vf += $",{VideoEncodeSelector.VaapiUploadSuffix}";
 
                 log("Creating intro...");
                 Step("Encoding intro to MPEG-TS…");
 
-                var introVidTail = new List<FfmpegOption?>();
-                introVidTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "libx265"));
+                var introVidTail = new List<FfmpegOption?>
+                {
+                    FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "libx265")
+                };
 
                 var introMp4Parts = new List<FfmpegOption?>
                 {
@@ -132,8 +134,9 @@ namespace MP4ToolsLib
                     introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, "aac"));
                     introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
                 }
-                else
+                else{
                     introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, introAudioEnc));
+                }
 
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioSampleRate, ar));
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioChannels, ach));
@@ -142,9 +145,7 @@ namespace MP4ToolsLib
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
                 introMp4Parts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(introTs)));
 
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
-                    FfmpegCommandLine.Build(introMp4Parts),
-                    ct, log);
+                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(introMp4Parts), ct, log);
                 progress?.Report(0.8);
 
                 Step("Muxing main clip to MPEG-TS…");
@@ -157,8 +158,8 @@ namespace MP4ToolsLib
                     seekBeforeMainInput,
                     FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputPath)),
                     FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
+                    FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb")
                 };
-                inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"));
                 MpegTsConcatAudio.AppendMp4ToTsAudioOptions(inputToTs, aCodec);
                 inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
                 inputToTs.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(inputTs)));

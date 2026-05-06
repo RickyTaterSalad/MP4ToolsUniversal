@@ -26,7 +26,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 {
 	public static IReadOnlyList<int> Range { get; } = TimeRange.Range;
 
-	/// <summary>High-level trim/combine progress shown above the action buttons.</summary>
 	[ObservableProperty]
 	private string _operationStatus = string.Empty;
 
@@ -255,8 +254,9 @@ public partial class TrimViewModel : MP4ViewModelBase
 	private async Task TrimAndCombineAsync(bool combine = true)
 	{
 
-		if (!Directory.Exists(OutputFolder))
+		if (!Directory.Exists(OutputFolder)){
 			Directory.CreateDirectory(OutputFolder);
+		}
 		var logOutputPath = Path.Combine(OutputFolder, "log.txt");
 		var logged_ffmpeg_output = new List<string>();
 		EventHandler<string> handler = (s, msg) =>
@@ -315,7 +315,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			return;
 		}
 		var validRanges = TrimRanges.Where(IsRangeWithinInputBounds).ToList();
-		if (!validRanges.Any())
+		if (validRanges.Count > 0)
 		{
 			ReportTrimStep("Stopped: no valid time ranges.");
 			return;
@@ -488,9 +488,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 	}
 
-	/// <summary>
-	/// Resolves {mainOutputDir}/trim, or trim1, trim2, … if those names are already taken.
-	/// </summary>
 	private static string EnsureTrimSegmentsFolder(string mainOutputDirectory)
 	{
 		const string baseSegmentName = "trim";
@@ -535,8 +532,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 				var encPrefs = EncodingSettingsRuntime.Current;
 				var videoPlan = VideoEncodeSelector.BuildPlan(encPrefs, Logger.Log);
-				string args;
-				// drawtext / hwupload require decoding; cannot pair -vf with -c:v copy.
 				var effectiveVideoPlan = videoPlan;
 				if (!string.IsNullOrWhiteSpace(range.Label) && videoPlan.UseStreamCopy)
 				{
@@ -545,14 +540,28 @@ public partial class TrimViewModel : MP4ViewModelBase
 				}
 
 				FfmpegOption vfOpt = default;
+				var isVaapi = encPrefs.HardwareAcceleration == "vaapi";
+				var isAmf = encPrefs.HardwareAcceleration == "amf";
+				FfmpegOption videoCodecOpt;
+				if (isVaapi)
+				{
+					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_vaapi");
+					
+				}
+				if (isAmf)
+				{
+					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_amf");
+				}
+				else{
+					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy);
+				}
 
-				var videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy);
 				string drawInner = null;
 				if (!string.IsNullOrWhiteSpace(range.Label))
 				{
 					drawInner = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition).Trim('"');
 				}
-				if (effectiveVideoPlan.NeedsVaapiUploadFilter)
+				if (isVaapi)
 				{
 					vfOpt = string.IsNullOrEmpty(drawInner)
 						? VideoEncodeSelector.VaapiUploadVideoFilterOption
@@ -561,16 +570,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 				else if (!string.IsNullOrEmpty(drawInner))
 				{
 					vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, drawInner);
-				}
-				if(encPrefs.HardwareAcceleration == "amf")
-				{
-					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_amf");
-					
-				}
-			   else if(encPrefs.HardwareAcceleration == "vaapi")
-				{
-					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_vaapi");
-					
 				}
 				var encodingTail = new List<FfmpegOption?>
 				{
@@ -588,7 +587,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				trimParts.AddRange(encodingTail);
 				trimParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimOutputPath)));
 
-				args = FfmpegCommandLine.Build(trimParts);
+				var args = FfmpegCommandLine.Build(trimParts);
 
 				await RunAndLogFFMpegAsync(args, ct).ConfigureAwait(false);
 				if (!File.Exists(trimOutputPath))
@@ -618,8 +617,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 	private void WriteTrimExport(string exportFile)
 	{
 		ExportState(FFMpegUtils.Instance.CleanupPath(Path.ChangeExtension(exportFile, ".json")));
-
-
 	}
 
 	private void ClearTimeRanges()
@@ -690,22 +687,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 					{
 						foreach (var range in exportObj.StartStopRanges)
 						{
-							if (range?.IsValidRange() == true && IsRangeWithinInputBounds(range))
-							{
-								TrimRanges.Add(range);
-							}
-						}
-					}
-					if (!string.IsNullOrWhiteSpace(exportObj.OutputFolderName))
-					{
-						OutputFolderName = exportObj.OutputFolderName;
-						if (!string.IsNullOrWhiteSpace(OutputFolderName))
-						{
-							OutputFolder = Path.Combine(Path.GetDirectoryName(OutputFolderName), OutputFolderName);
-						}
-						else
-						{
-							OutputFolder = Path.Combine(DefaultOutputPathRuntime.Directory, OutputFolderName);
+							TrimRanges.Add(range);
 						}
 					}
 				}

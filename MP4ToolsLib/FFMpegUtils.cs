@@ -23,7 +23,7 @@ namespace MP4ToolsLib
 		private static string _ffprobe_exe = string.Empty;
 
 		private static readonly object TrackedProcessesLock = new object();
-		private static readonly HashSet<int> TrackedMediaProcessIds = new HashSet<int>();
+		private static readonly HashSet<int> TrackedMediaProcessIds = [];
 
 		private static void RegisterTrackedMediaProcess(Process process)
 		{
@@ -42,7 +42,6 @@ namespace MP4ToolsLib
 				TrackedMediaProcessIds.Remove(process.Id);
 		}
 
-		/// <summary>Kills ffmpeg/ffprobe child processes started by this app (e.g. on shutdown).</summary>
 		public void KillAllTrackedMediaProcesses()
 		{
 			int[] snapshot;
@@ -163,7 +162,6 @@ namespace MP4ToolsLib
 			}
 		}
 
-		/// <summary>Maps Encode-tab preference to ffmpeg decode acceleration (prepended when not stream-copy).</summary>
 		public string ResolveHwAccelLineFromUserHints()
 		{
 			var m = (FfmpegUserHints.HardwareAcceleration ?? "auto").Trim().ToLowerInvariant();
@@ -178,7 +176,6 @@ namespace MP4ToolsLib
 			};
 		}
 
-		/// <summary>True if argv contains the standalone <c>-hwaccel</c> switch (not <c>-hwaccel_output_format</c> etc.).</summary>
 		private static bool ArgsDeclareStandaloneHwaccel(string args)
 		{
 			if (string.IsNullOrEmpty(args))
@@ -244,7 +241,7 @@ namespace MP4ToolsLib
 					}
 				}
 			}
-			return System.OperatingSystem.IsLinux() ? args : args.Replace("vaapi","amf",StringComparison.OrdinalIgnoreCase);
+			return args;
 		}
 
 

@@ -34,6 +34,7 @@ namespace MP4ToolsLib
 				OnPropertyChanged(nameof(Minutes));
 			}
 		}
+
 		public int Seconds
 		{
 			get => _seconds;
@@ -55,13 +56,14 @@ namespace MP4ToolsLib
 		{
 			return AsInputParameterString();
 		}
+
 		public TimeRange Clone()
 		{
 			return new TimeRange()
 			{
-				Hours = this.Hours,
-				Minutes = this.Minutes,
-				Seconds = this.Seconds
+				Hours = Hours,
+				Minutes = Minutes,
+				Seconds = Seconds
 			};
 		}
 		

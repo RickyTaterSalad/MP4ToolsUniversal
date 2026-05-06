@@ -27,9 +27,7 @@ public static class EncodeProcessingSummary
 		var plan = VideoEncodeSelector.BuildPlan(dto, _ => { });
 		if (plan.UseStreamCopy)
 			yield return "Video plan: stream copy (-c:v copy) when output is not re-encoded.";
-		else
-		{
-			if (plan.NeedsVaapiUploadFilter)
+		else if(dto?.VideoCodec?.Contains("vaapi", StringComparison.OrdinalIgnoreCase) ?? false){
 				yield return "VA-API encode: uses hwupload filter (format=nv12,hwupload=derive_device=vaapi,…) before encoder.";
 		}
 

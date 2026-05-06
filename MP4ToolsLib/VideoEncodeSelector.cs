@@ -6,16 +6,8 @@ public sealed class VideoEncodePlan
 {
 	public bool UseStreamCopy { get; init; }
 
-	/// <summary>Diagnostic label written to log.</summary>
-	public string EncoderSummary { get; init; } = "";
-
-	public bool NeedsVaapiUploadFilter { get; init; }
-
-
-	//public IReadOnlyList<FfmpegOption?> VideoEncodeOptions { get; init; } = Array.Empty<FfmpegOption?>();
 }
 
-/// <summary>Selects video encoder names and tails from persisted encoding preferences.</summary>
 public static class VideoEncodeSelector
 {
 	public const string VaapiUploadSuffix = "format=nv12,hwupload=derive_device=vaapi:extra_hw_frames=64";
@@ -37,9 +29,7 @@ public static class VideoEncodeSelector
 		{
 			return new VideoEncodePlan
 			{
-				UseStreamCopy = true,
-				EncoderSummary = "copy",
-				//	VideoEncodeOptions = Array.Empty<FfmpegOption?>(),
+				UseStreamCopy = true
 			};
 		}
 
@@ -47,28 +37,16 @@ public static class VideoEncodeSelector
 		string encoder = PickEncoder(hevc, NormalizeHwMode(dto.HardwareAcceleration), log);
 		bool vaapi = encoder.Contains("vaapi", StringComparison.OrdinalIgnoreCase);
 		bool amf = encoder.Contains("amf", StringComparison.OrdinalIgnoreCase);
-		//var tail = BuildEncodeTail(encoder, hevc, log);
-
 		return new VideoEncodePlan
 		{
-			UseStreamCopy = false,
-			EncoderSummary = $"{encoder} (pix pipeline per tail)",
-			NeedsVaapiUploadFilter = vaapi
+			UseStreamCopy = false
 		};
 	}
 
 	public static VideoEncodePlan BuildIntroPlan(EncodingSettingsDto dto, Action<string> log)
 	{
-		log ??= _ => { };
-		var pseudo = new EncodingSettingsDto
-		{
-			HardwareAcceleration = dto?.HardwareAcceleration ?? "auto",
-			AudioCodec = dto?.AudioCodec ?? "copy",
-			VideoCodec = "h265"
-		};
 
-
-		return BuildPlan(pseudo, log);
+		return BuildPlan(dto, log);
 	}
 
 	private static bool IsCopyCodec(string v) =>
