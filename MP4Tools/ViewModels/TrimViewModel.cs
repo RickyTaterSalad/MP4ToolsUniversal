@@ -316,7 +316,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 			return;
 		}
 		var validRanges = TrimRanges.Where(IsRangeWithinInputBounds).ToList();
-		if (validRanges.Count > 0)
+		if (validRanges.Count < 0)
 		{
 			ReportTrimStep("Stopped: no valid time ranges.");
 			return;
@@ -324,9 +324,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 		var trimPipelineSucceeded = true;
 		Logger.Log("Starting trim and combine...");
-		FfmpegUserHints.HardwareAcceleration = EncodingSettingsRuntime.Current.HardwareAcceleration ?? "auto";
-		var hwDecodeMap = FFMpegUtils.Instance.ResolveHwAccelLineFromUserHints().Replace("\n", " ", StringComparison.Ordinal);
-		Logger.Log($"Hardware acceleration: Encode tab=\"{FfmpegUserHints.HardwareAcceleration}\", ffmpeg decode hint=\"{hwDecodeMap}\"");
 		CanTrim = false;
 		var tempFilesToDelete = new List<string>();
 		try
@@ -349,8 +346,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 				Logger.Log("Trim failed: segment file(s) missing. FFmpeg steps above may show ** Exit Code ** — RunAndLog does not stop the pipeline when encode fails.");
 				ReportTrimStep("Failed: trim did not produce all segment files.");
 				ClearTimeRanges();
-				foreach (var line in EncodeProcessingSummary.BuildLines(combine ? "Trim and combine" : "Trim", EncodingSettingsRuntime.Current, trimSegmentAudioSummary: true))
-					Logger.Log(line);
 				Logger.Log(combine ? "Trim and combine complete." : "Trim complete.");
 				return;
 			}
@@ -358,8 +353,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 			if (!combine)
 			{
 				ClearTimeRanges();
-				foreach (var line in EncodeProcessingSummary.BuildLines("Trim", EncodingSettingsRuntime.Current, true))
-					Logger.Log(line);
 				Logger.Log("Trim complete.");
 				ReportTrimStep("Trim finished successfully.");
 				return;
@@ -467,8 +460,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 			}
 
 			ClearTimeRanges();
-			foreach (var line in EncodeProcessingSummary.BuildLines("Trim and combine", EncodingSettingsRuntime.Current, trimSegmentAudioSummary: true))
-				Logger.Log(line);
 			Logger.Log("Trim and combine complete.");
 			if (combine && trimPipelineSucceeded)
 				ReportTrimStep("Finished successfully.");
@@ -532,30 +523,22 @@ public partial class TrimViewModel : MP4ViewModelBase
 				var quotedInput = FfmpegCommandLine.Quoted(inputFullPath);
 
 				var encPrefs = EncodingSettingsRuntime.Current;
-				var videoPlan = VideoEncodeSelector.BuildPlan(encPrefs, Logger.Log);
-				var effectiveVideoPlan = videoPlan;
-				if (!string.IsNullOrWhiteSpace(range.Label) && videoPlan.UseStreamCopy)
-				{
-					effectiveVideoPlan = VideoEncodeSelector.BuildIntroPlan(encPrefs, Logger.Log);
-					Logger.Log("Segment label uses drawtext — video is re-encoded for burn-in (stream copy not compatible with filters).");
-				}
-
 				FfmpegOption vfOpt = default;
 				var isVaapi = encPrefs.HardwareAcceleration == "vaapi";
 				var isAmf = encPrefs.HardwareAcceleration == "amf";
-				FfmpegOption videoCodecOpt;
-				if (isVaapi)
+				var isStreamCopy = string.IsNullOrWhiteSpace(range.Label);
+				FfmpegOption videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy);
+				if (!isStreamCopy)
 				{
-					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_vaapi");
+					if (isVaapi)
+					{
+						videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_vaapi");
 
-				}
-				if (isAmf)
-				{
-					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_amf");
-				}
-				else
-				{
-					videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy);
+					}
+					else if (isAmf)
+					{
+						videoCodecOpt = FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "hevc_amf");
+					}
 				}
 
 				string drawInner = null;
@@ -563,11 +546,10 @@ public partial class TrimViewModel : MP4ViewModelBase
 				{
 					drawInner = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition).Trim('"');
 				}
-				if (isVaapi)
+				if (!isStreamCopy)
 				{
-					vfOpt = string.IsNullOrEmpty(drawInner)
-						? VideoEncodeSelector.VaapiUploadVideoFilterOption
-						: FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawInner},{VideoEncodeSelector.VaapiUploadSuffix}\"");
+					var suffix = $"format=nv12,hwupload=derive_device={encPrefs.HardwareAcceleration}:extra_hw_frames=64";
+					vfOpt = FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawInner},{suffix}\"");
 				}
 				else if (!string.IsNullOrEmpty(drawInner))
 				{
@@ -579,13 +561,22 @@ public partial class TrimViewModel : MP4ViewModelBase
 					FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, "libopus"),
 					FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k")
 				};
-				var trimParts = new List<FfmpegOption?>
+				var trimParts = new List<FfmpegOption?>();
+
+				if (!isStreamCopy)
 				{
+					if (isVaapi)
+					{
+						trimParts.Add(FfmpegOption.Pair(FfmpegArguments.InitHardwareDevice, $"vaapi={FFMpegUtils.GetPreferredRenderDevice()}"));
+					}
+					trimParts.Add(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration, encPrefs.HardwareAcceleration));
+				}
+				trimParts.AddRange(
 					FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
 					FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
 					FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
-					vfOpt,
-				};
+					vfOpt
+				);
 				trimParts.AddRange(encodingTail);
 				trimParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimOutputPath)));
 

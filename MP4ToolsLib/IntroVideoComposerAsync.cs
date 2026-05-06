@@ -53,7 +53,6 @@ namespace MP4ToolsLib
             Action<string> log = null,
             IProgress<double> progress = null, // 0..1
             CancellationToken ct = default,
-            EncodingSettingsDto encodingPrefs = null,
             Action<string> operationStep = null,
             bool useTrimSegmentAudioCodec = false,
             FfmpegOption seekBeforeMainInput = default)
@@ -82,9 +81,6 @@ namespace MP4ToolsLib
                 string aCodec = (!string.IsNullOrWhiteSpace(audio?.CodecName) ? audio.CodecName : "aac").ToLowerInvariant();
 
 
-                var useTabEncode = encodingPrefs != null && !string.Equals(encodingPrefs.VideoCodec, "copy", StringComparison.OrdinalIgnoreCase);
-                var introPlan = useTabEncode ? VideoEncodeSelector.BuildIntroPlan(encodingPrefs, log) : null;
-
                 string introAudioEnc = useTrimSegmentAudioCodec ? "libopus" : "aac";
 
     
@@ -104,10 +100,6 @@ namespace MP4ToolsLib
                 {
                     vf += $",drawtext=text='{escapedDetails}':fontfile='{Font}':fontcolor=white:fontsize={detailsFontSize}:x=(w-text_w)/2:y=(h/2)+{lineGap / 2}+{subtitleFontSize}+{lineGap}";
                 }
-
-                if (useTabEncode && introPlan != null && !introPlan.UseStreamCopy && (encodingPrefs?.VideoCodec?.Contains("vaapi", StringComparison.OrdinalIgnoreCase) ?? false))
-                    vf += $",{VideoEncodeSelector.VaapiUploadSuffix}";
-
                 log("Creating intro...");
                 Step("Encoding intro to MPEG-TS…");
 

@@ -11,6 +11,9 @@ public static class FfmpegArguments
 	public const string DisableInteractiveStdin = "-nostdin";
 	public const string OverwriteOutputFile = "-y";
 	public const string Input = "-i";
+	public const string InitHardwareDevice = "-init_hw_device";
+	
+	public const string HardwareAcceleration = "-hwaccel";
 
 	public const string SeekInputTimestamp = "-ss";
 	public const string LimitOutputDuration = "-t";

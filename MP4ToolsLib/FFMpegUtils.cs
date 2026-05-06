@@ -162,84 +162,12 @@ namespace MP4ToolsLib
 			}
 		}
 
-		public string ResolveHwAccelLineFromUserHints()
-		{
-			var m = (FfmpegUserHints.HardwareAcceleration ?? "auto").Trim().ToLowerInvariant();
-			return m switch
-			{
-				"nvenc" => "cuda",
-				"qsv" => "qsv",
-				"vaapi" => $"vaapi\n-vaapi_device {GetPreferredRenderDevice()}",
-				"videotoolbox" => "videotoolbox",
-				"software" => "auto",
-				_ => "auto",
-			};
-		}
-
-		private static bool ArgsDeclareStandaloneHwaccel(string args)
-		{
-			if (string.IsNullOrEmpty(args))
-				return false;
-			const string token = "-hwaccel";
-			for (var i = 0; ; )
-			{
-				var idx = args.IndexOf(token, i, StringComparison.OrdinalIgnoreCase);
-				if (idx < 0)
-					return false;
-				var after = idx + token.Length;
-				if (after >= args.Length || char.IsWhiteSpace(args[after]))
-					return true;
-				i = after;
-			}
-		}
-
 		public string ApplyForcedFfmpegArgs(string args)
 		{
 			args = args ?? string.Empty;
 			if (!args.Contains(FfmpegArguments.DisableInteractiveStdin, StringComparison.OrdinalIgnoreCase))
 			{
 				args = $"{FfmpegArguments.DisableInteractiveStdin} {args}".Trim();
-			}
-			var codecCopyAll = $"{FfmpegArguments.SelectCodec} {FfmpegArguments.StreamCopy}";
-			var codecCopyVideo = $"{FfmpegArguments.SelectVideoCodec} {FfmpegArguments.StreamCopy}";
-			var isCopyOnly = args.Contains(codecCopyAll, StringComparison.OrdinalIgnoreCase)
-				|| args.Contains(codecCopyVideo, StringComparison.OrdinalIgnoreCase);
-			if (!isCopyOnly && System.OperatingSystem.IsLinux())
-			{
-				if (!ArgsDeclareStandaloneHwaccel(args))
-				{
-					var hwaccel = ResolveHwAccelLineFromUserHints();
-					var hasVideoFilter = args.Contains($"{FfmpegArguments.VideoFilter} ", StringComparison.OrdinalIgnoreCase)
-						|| args.Contains(" -filter:v", StringComparison.OrdinalIgnoreCase)
-						|| args.Contains(" -filter_complex", StringComparison.OrdinalIgnoreCase);
-
-					if (string.Equals(hwaccel, "auto", StringComparison.OrdinalIgnoreCase))
-					{
-						args = $"-hwaccel auto {args}".Trim();
-					}
-					else if (hwaccel.StartsWith("vaapi", StringComparison.OrdinalIgnoreCase))
-					{
-						var parts = hwaccel.Split('\n');
-						var vaapiDevice = parts.Length > 1 ? parts[1] : string.Empty;
-
-						if (!hasVideoFilter)
-						{
-							if (!string.IsNullOrWhiteSpace(vaapiDevice))
-								args = $"{vaapiDevice} -hwaccel {parts[0]} {args}".Trim();
-							else
-								args = $"-hwaccel {hwaccel} {args}".Trim();
-						}
-						else
-						{
-							if (!string.IsNullOrWhiteSpace(vaapiDevice) && !args.Contains("-vaapi_device"))
-								args = $"{vaapiDevice} {args}".Trim();
-						}
-					}
-					else
-					{
-						args = $"-hwaccel {hwaccel} {args}".Trim();
-					}
-				}
 			}
 			return args;
 		}
@@ -339,7 +267,7 @@ namespace MP4ToolsLib
 			process.ErrorDataReceived += (_, e) =>
 			{
 				if (e.Data != null)
-					Log?.Invoke($"[stderr] {e.Data}");
+					Log?.Invoke($"{e.Data}");
 			};
 
 			try
@@ -439,7 +367,7 @@ namespace MP4ToolsLib
 			}
 		}
 
-		public async Task RunAndLogFFMpegAsync(string args, Action<Process, string, string> processOutputAction, Action<string> log, CancellationToken cancellationToken, string workingDirectory = "")
+		public async Task RunAndLogFFMpegAsync(string args, Action<Process, string> processOutputAction, Action<string> log, CancellationToken cancellationToken, string workingDirectory = "")
 		{
 			log ??= (s => Debug.WriteLine(s));
 			args = ApplyForcedFfmpegArgs(args);
@@ -463,8 +391,8 @@ namespace MP4ToolsLib
 			var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
 			if (processOutputAction != null)
 			{
-				onErr = (_, b) => processOutputAction(process, "stderr", b?.Data);
-				onOut = (_, b) => processOutputAction(process, "stdout", b?.Data);
+				onErr = (_, b) => processOutputAction(process, b?.Data);
+				onOut = (_, b) => processOutputAction(process,b?.Data);
 				process.ErrorDataReceived += onErr;
 				process.OutputDataReceived += onOut;
 			}
@@ -625,7 +553,7 @@ namespace MP4ToolsLib
 			}
 		}
 
-		public string GetPreferredRenderDevice()
+		public static string GetPreferredRenderDevice()
 		{
 			try
 			{
@@ -668,6 +596,5 @@ namespace MP4ToolsLib
 			// Fallback to default renderD128 (first GPU)
 			return "/dev/dri/renderD128";
 		}
-
 	}
 }

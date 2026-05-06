@@ -727,14 +727,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			return;
 		}
-
+		var encPrefs = EncodingSettingsRuntime.Current;
 		try
 		{
 			ReportCombineStep("Initializing…");
 			Logger.Log("Starting combine...");
-			FfmpegUserHints.HardwareAcceleration = EncodingSettingsRuntime.Current.HardwareAcceleration ?? "auto";
-			var hwDecodeMap = FFMpegUtils.Instance.ResolveHwAccelLineFromUserHints().Replace("\n", " ", StringComparison.Ordinal);
-			Logger.Log($"Hardware acceleration: Encode tab=\"{FfmpegUserHints.HardwareAcceleration}\", ffmpeg decode hint=\"{hwDecodeMap}\"");
 			if (InputPath == null)
 			{
 				Logger.Log("Input path is null.");
@@ -852,7 +849,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 					detailsText: effectiveDetails,
 					log: Logger.Log,
 					ct: ct,
-					encodingPrefs: EncodingSettingsRuntime.Current,
 					operationStep: ReportCombineStep,
 					seekBeforeMainInput: seekBeforeMain).ConfigureAwait(false);
 				if (File.Exists(introFirstFile))
@@ -880,11 +876,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 				}
 			}
 
-			var encPrefs = EncodingSettingsRuntime.Current;
-			var vplan = VideoEncodeSelector.BuildPlan(encPrefs, Logger.Log);
-			var isVaapi = encPrefs?.HardwareAcceleration?.Contains("vaapi", StringComparison.OrdinalIgnoreCase) ?? false;
-			var audioEff = FfmpegArguments.StreamCopy;
-
 			if (!shouldAddIntro)
 			{
 				ReportCombineStep("Combining clips (concat)…");
@@ -901,21 +892,9 @@ public partial class CombineViewModel : MP4ViewModelBase
 						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(fileList)),
 						trimEndOpt,
 					};
-					if (vplan.UseStreamCopy)
-					{
-						concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
-					}
-					else if (isVaapi)
-					{
-						concatOpts.Add(VideoEncodeSelector.VaapiUploadVideoFilterOption);
-					}
-
-					concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
-
-					var concatAacBsf = audioEff.Contains("aac", StringComparison.OrdinalIgnoreCase)
-						? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
-						: (FfmpegOption?)null;
-					concatOpts.Add(concatAacBsf);
+					
+					concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
+					concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy));
 					concatOpts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile)));
 
 					await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(concatOpts), ct).ConfigureAwait(false);
@@ -1018,40 +997,16 @@ public partial class CombineViewModel : MP4ViewModelBase
 						ReportCombineStep("Writing final MP4…");
 						Logger.Log("Finalizing merged TS into MP4...");
 						var mergedTsVideoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(mergedTsFile, ct, Logger.Log).ConfigureAwait(false);
-						var finalizeVideoStreamCopy = true;
-						var finalizeVplan = vplan;
-						if (finalizeVideoStreamCopy && !vplan.UseStreamCopy)
-							Logger.Log($"Finalize: merged TS video is {mergedTsVideoCodec}; Encode tab matches — remuxing video (-c:v copy) instead of transcoding.");
-						var streamCopyAudio = finalizeVideoStreamCopy
-							&& string.Equals(audioEff, FfmpegArguments.StreamCopy, StringComparison.OrdinalIgnoreCase);
 						var allPartsAacInTs = writeFiles.All(w => MpegTsConcatAudio.IntermediateTsAudioIsAac(audioCodecByPath[w.Path]));
-						var needAacAdtsBsf = audioEff.Contains("aac", StringComparison.OrdinalIgnoreCase)
-							|| (streamCopyAudio && allPartsAacInTs);
-						var aacBsfOpt = needAacAdtsBsf
-							? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
-							: (FfmpegOption?)null;
 						var finalizeParts = new List<FfmpegOption?>
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 						};
-						if (!finalizeVideoStreamCopy && isVaapi)
-						{
-							finalizeParts.Add(FfmpegOption.Pair("-hwaccel_output_format", "vaapi"));
-							Logger.Log("Finalize: VA-API decode→encode without hwupload filter.");
-						}
 
 						finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)));
-						if (finalizeVideoStreamCopy)
-						{
-							finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
-							finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
-						}
-						else
-						{
-							finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, audioEff));
-						}
+						finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
+						finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy));
 
-						finalizeParts.Add(aacBsfOpt);
 						finalizeParts.Add(trimEndOpt);
 						finalizeParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile)));
 
@@ -1091,10 +1046,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 			}
 
 			await Dispatcher.UIThread.InvokeAsync(() => { OutputPath = FFMpegUtils.Instance.CleanupPath(combineOutputFile); });
-			foreach (var line in EncodeProcessingSummary.BuildLines("Combine", EncodingSettingsRuntime.Current))
-			{
-				Logger.Log(line);
-			}
 			Logger.Log("Combine complete.");
 			if (combineSucceeded)
 				ReportCombineStep("Finished successfully.");

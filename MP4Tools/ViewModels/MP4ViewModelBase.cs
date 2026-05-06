@@ -150,15 +150,15 @@ namespace MP4Tools
 			return 500;//return Settings.Default.LogMaxLines > 0 ? Settings.Default.LogMaxLines : 500;
 		}
 
-		private void HandleProcessOutput(Process process, string streamName, string data)
+		private void HandleProcessOutput(Process process, string data)
 		{
 			if (string.IsNullOrWhiteSpace(data))
 			{
 				return;
 			}
 
-			Debug.WriteLine($"[ffmpeg][{streamName}] {data}");
-			Logger.Log(string.IsNullOrEmpty(streamName) ? data : $"[{streamName}] {data}");
+			Debug.WriteLine($"[ffmpeg] {data}");
+			Logger.Log(data);
 		}
 
 
