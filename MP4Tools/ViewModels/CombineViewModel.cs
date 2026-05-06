@@ -850,7 +850,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 					log: Logger.Log,
 					ct: ct,
 					operationStep: ReportCombineStep,
-					seekBeforeMainInput: seekBeforeMain).ConfigureAwait(false);
+					seekBeforeMainInput: seekBeforeMain,
+					hwAccelForIntro: encPrefs.HardwareAcceleration).ConfigureAwait(false);
 				if (File.Exists(introFirstFile))
 				{
 					writeFiles[0] = new CombineFile { Name = Path.GetFileName(introFirstFile), Path = introFirstFile };

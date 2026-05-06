@@ -55,7 +55,9 @@ namespace MP4ToolsLib
             CancellationToken ct = default,
             Action<string> operationStep = null,
             bool useTrimSegmentAudioCodec = false,
-            FfmpegOption seekBeforeMainInput = default)
+            FfmpegOption seekBeforeMainInput = default,
+            string hwAccelForIntro = null
+            )
         {
             log ??= _ => { };
             void Step(string message) => operationStep?.Invoke(message);
@@ -83,6 +85,9 @@ namespace MP4ToolsLib
 
                 string introAudioEnc = useTrimSegmentAudioCodec ? "libopus" : "aac";
 
+				var isVaapi = "vaapi".Equals(hwAccelForIntro, StringComparison.OrdinalIgnoreCase);
+				var isAmf = "amf".Equals(hwAccelForIntro, StringComparison.OrdinalIgnoreCase);
+				var accelerationAPI = isVaapi ? "vaapi" : (isAmf ? "d3d11va" : "");
     
                 var escapedTitle = EscapeDrawtext(titleText);
                 var escapedSubtitle = EscapeDrawtext(subtitleText);
@@ -105,11 +110,18 @@ namespace MP4ToolsLib
 
                 var introVidTail = new List<FfmpegOption?>
                 {
-                    FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, "libx265")
+                    FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, vCodec)
                 };
 
-                var introMp4Parts = new List<FfmpegOption?>
-                {
+                var introMp4Parts = new List<FfmpegOption?>();
+
+
+				if (!string.IsNullOrWhiteSpace(accelerationAPI))
+				{
+					introMp4Parts.AddRange(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration,accelerationAPI));
+                }
+                introMp4Parts.AddRange(
+                
                     FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
                     FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
                     FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
@@ -117,7 +129,7 @@ namespace MP4ToolsLib
                     FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
                     FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"anullsrc=r={ar}:cl={acl}:d={durationSeconds}")),
                     FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{vf}\"")
-                };
+                );
                 introMp4Parts.AddRange(introVidTail);
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.OutputVideoFrameRate, fps));
                 if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(introAudioEnc))
@@ -128,6 +140,15 @@ namespace MP4ToolsLib
                 }
                 else{
                     introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, introAudioEnc));
+                }
+
+                if (!string.IsNullOrWhiteSpace(accelerationAPI))
+                {
+                    if (OperatingSystem.IsLinux())
+					{
+						introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.InitHardwareDevice, $"{accelerationAPI}={FFMpegUtils.GetPreferredRenderDevice()}"));
+						introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.FilterHardwareDevice, $"{FFMpegUtils.GetPreferredRenderDevice()}"));
+					}
                 }
 
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioSampleRate, ar));
