@@ -143,7 +143,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 	{
 		CombineCommand = new AsyncRelayCommand(async () => await Combine());
 		RemoveSelectedFileCommand = new RelayCommand(RemoveSelectedFile);
-		EventDate = DateTime.Today;
+		EventDate = null; //DateTime.Today;
 		_inputFiles.CollectionChanged += OnInputFilesCollectionChanged;
 		_startRange.PropertyChanged += OnStartRangeTimePartChanged;
 		_endRange.PropertyChanged += OnEndRangeTimePartChanged;
@@ -652,7 +652,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		IntroSubtitle = string.Empty;
 		IntroDetails = string.Empty;
 		IntroDurationSeconds = 10;
-		EventDate = DateTime.Today;
+		EventDate = null;//DateTime.Today;
 		VisitorName = string.Empty;
 		VisitorScore = null;
 		HomeName = string.Empty;
