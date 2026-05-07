@@ -363,6 +363,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 				ClearTimeRanges();
 				Logger.Log("Trim complete.");
 				ReportTrimStep("Trim finished successfully.");
+				if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
+					FolderOpener.OpenContainingFolderIfExists(outTrimmedFolder);
 				return;
 			}
 
@@ -505,7 +507,11 @@ public partial class TrimViewModel : MP4ViewModelBase
 			ClearTimeRanges();
 			Logger.Log("Trim and combine complete.");
 			if (combine && trimPipelineSucceeded)
+			{
 				ReportTrimStep("Finished successfully.");
+				if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
+					FolderOpener.OpenContainingFolderIfExists(outTrimmedFolder);
+			}
 		}
 		catch (OperationCanceledException)
 		{

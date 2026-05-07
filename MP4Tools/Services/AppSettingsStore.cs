@@ -10,6 +10,11 @@ public sealed class AppUserSettings
 	public bool RetainTemporaryFiles { get; set; }
 
 	public string DefaultOutputDirectory { get; set; } = "";
+
+	/// <summary>
+	/// When enabled, the app opens the output folder in the OS file manager after Combine or Trim completes successfully.
+	/// </summary>
+	public bool OpenOutputFolderOnComplete { get; set; }
 }
 
 public static class AppSettingsStore

@@ -62,6 +62,10 @@
 					<TextBlock Text="Use built-in default"/>
 				</Button>
 			</Grid>
+
+			<CheckBox Content="Open output folder when Combine/Trim completes successfully"
+								IsChecked="{Binding OpenOutputFolderOnComplete}"/>
+
 			<Button Command="{Binding SaveSettingsCommand}"
 							HorizontalAlignment="Left"
 							Padding="16,8">

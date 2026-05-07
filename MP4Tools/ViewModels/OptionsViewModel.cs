@@ -19,6 +19,7 @@ public partial class OptionsViewModel : ViewModelBase
 		TempDirectory = loaded.TempDirectory ?? "";
 		RetainTemporaryFiles = loaded.RetainTemporaryFiles;
 		DefaultOutputDirectory = loaded.DefaultOutputDirectory ?? "";
+		OpenOutputFolderOnComplete = loaded.OpenOutputFolderOnComplete;
 	}
 
 	[ObservableProperty]
@@ -29,6 +30,9 @@ public partial class OptionsViewModel : ViewModelBase
 
 	[ObservableProperty]
 	private bool _retainTemporaryFiles;
+
+	[ObservableProperty]
+	private bool _openOutputFolderOnComplete;
 
 	public string SettingsFilePathDisplay => AppSettingsStore.SettingsFilePath;
 
@@ -107,11 +111,13 @@ public partial class OptionsViewModel : ViewModelBase
 			s.TempDirectory = trimmed;
 			s.RetainTemporaryFiles = RetainTemporaryFiles;
 			s.DefaultOutputDirectory = outTrimmed;
+			s.OpenOutputFolderOnComplete = OpenOutputFolderOnComplete;
 			AppSettingsStore.Save(s);
 			TempPathHelper.ApplyConfiguration(s.TempDirectory, s.RetainTemporaryFiles);
 			EncodingSettingsRuntime.Apply(s);
 			MP4Tools.Logger.Log($"Settings saved. Temporary files folder: {TempPathHelper.GetTempPath()}");
 			MP4Tools.Logger.Log($"Default output folder: {DefaultOutputPathRuntime.Directory}");
+			MP4Tools.Logger.Log($"Open output folder on completion: {UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete}");
 		}
 		catch (Exception ex)
 		{

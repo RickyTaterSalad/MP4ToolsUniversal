@@ -9,6 +9,8 @@ public static class EncodingSettingsRuntime
 	public static void Apply(AppUserSettings settings)
 	{
 		Current = new EncodingSettingsDto();
-		DefaultOutputPathRuntime.Apply(settings ?? new AppUserSettings());
+		var resolved = settings ?? new AppUserSettings();
+		DefaultOutputPathRuntime.Apply(resolved);
+		UiBehaviorSettingsRuntime.Apply(resolved);
 	}
 }

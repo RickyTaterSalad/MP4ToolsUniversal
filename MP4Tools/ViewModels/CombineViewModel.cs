@@ -1113,7 +1113,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 			await Dispatcher.UIThread.InvokeAsync(() => { OutputPath = FFMpegUtils.Instance.CleanupPath(combineOutputFile); });
 			Logger.Log("Combine complete.");
 			if (combineSucceeded)
+			{
 				ReportCombineStep("Finished successfully.");
+				if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
+					FolderOpener.OpenContainingFolderIfExists(combineOutputFile);
+			}
 		}
 		catch (OperationCanceledException)
 		{
