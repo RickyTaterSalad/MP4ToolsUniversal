@@ -13,7 +13,7 @@
 		 DragDrop.DragOver="OnDragOver"
 		 DragDrop.Drop="OnDrop"
 	>
-	<Grid.RowDefinitions>
+		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>

@@ -20,6 +20,7 @@ public partial class OptionsViewModel : ViewModelBase
 		RetainTemporaryFiles = loaded.RetainTemporaryFiles;
 		DefaultOutputDirectory = loaded.DefaultOutputDirectory ?? "";
 		OpenOutputFolderOnComplete = loaded.OpenOutputFolderOnComplete;
+		DeleteTrimSegmentsAfterTrimAndCombine = loaded.DeleteTrimSegmentsAfterTrimAndCombine ?? true;
 	}
 
 	[ObservableProperty]
@@ -33,6 +34,9 @@ public partial class OptionsViewModel : ViewModelBase
 
 	[ObservableProperty]
 	private bool _openOutputFolderOnComplete;
+
+	[ObservableProperty]
+	private bool _deleteTrimSegmentsAfterTrimAndCombine = true;
 
 	public string SettingsFilePathDisplay => AppSettingsStore.SettingsFilePath;
 
@@ -112,12 +116,14 @@ public partial class OptionsViewModel : ViewModelBase
 			s.RetainTemporaryFiles = RetainTemporaryFiles;
 			s.DefaultOutputDirectory = outTrimmed;
 			s.OpenOutputFolderOnComplete = OpenOutputFolderOnComplete;
+			s.DeleteTrimSegmentsAfterTrimAndCombine = DeleteTrimSegmentsAfterTrimAndCombine;
 			AppSettingsStore.Save(s);
 			TempPathHelper.ApplyConfiguration(s.TempDirectory, s.RetainTemporaryFiles);
 			EncodingSettingsRuntime.Apply(s);
 			MP4Tools.Logger.Log($"Settings saved. Temporary files folder: {TempPathHelper.GetTempPath()}");
 			MP4Tools.Logger.Log($"Default output folder: {DefaultOutputPathRuntime.Directory}");
 			MP4Tools.Logger.Log($"Open output folder on completion: {UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete}");
+			MP4Tools.Logger.Log($"Delete trim segments after Trim And Combine: {UiBehaviorSettingsRuntime.DeleteTrimSegmentsAfterTrimAndCombine}");
 		}
 		catch (Exception ex)
 		{

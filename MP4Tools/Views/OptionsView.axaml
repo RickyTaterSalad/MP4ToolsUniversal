@@ -66,6 +66,10 @@
 			<CheckBox Content="Open output folder when Combine/Trim completes successfully"
 								IsChecked="{Binding OpenOutputFolderOnComplete}"/>
 
+			<CheckBox Content="Delete segment clips after successful Trim And Combine"
+								IsChecked="{Binding DeleteTrimSegmentsAfterTrimAndCombine}"
+								ToolTip.Tip="Does not apply to Trim-only runs. Save settings to apply."/>
+
 			<Button Command="{Binding SaveSettingsCommand}"
 							HorizontalAlignment="Left"
 							Padding="16,8">

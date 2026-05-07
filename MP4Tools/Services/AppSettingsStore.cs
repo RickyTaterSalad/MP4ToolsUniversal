@@ -15,6 +15,11 @@ public sealed class AppUserSettings
 	/// When enabled, the app opens the output folder in the OS file manager after Combine or Trim completes successfully.
 	/// </summary>
 	public bool OpenOutputFolderOnComplete { get; set; }
+
+	/// <summary>
+	/// When true (default), successful Trim And Combine removes the intermediate segment clips folder under the export directory.
+	/// </summary>
+	public bool? DeleteTrimSegmentsAfterTrimAndCombine { get; set; }
 }
 
 public static class AppSettingsStore

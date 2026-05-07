@@ -276,9 +276,10 @@ public partial class TrimViewModel : MP4ViewModelBase
 		Logger.LogMessageReceived += handler;
 		var ct = BeginFfmpegOperation();
 		ReportTrimStep(combine ? "Starting trim and combine…" : "Starting trim…");
+		var cleanupSegmentsAfterSuccess = combine && UiBehaviorSettingsRuntime.DeleteTrimSegmentsAfterTrimAndCombine;
 		try
 		{
-			await Task.Run(async () => await TrimAndCombineAsyncInternal(OutputFolder, combine, ct), ct).ConfigureAwait(false);
+			await Task.Run(async () => await TrimAndCombineAsyncInternal(OutputFolder, combine, cleanupSegmentsAfterSuccess, ct), ct).ConfigureAwait(false);
 		}
 		catch (OperationCanceledException)
 		{
@@ -316,7 +317,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		Logger.LogMessageReceived -= handler;
 	}
 
-	private async Task TrimAndCombineAsyncInternal(string outTrimmedFolder, bool combine, CancellationToken ct)
+	private async Task TrimAndCombineAsyncInternal(string outTrimmedFolder, bool combine, bool deleteIntermediateSegmentsFolderOnSuccess, CancellationToken ct)
 	{
 		if (!CanTrim || !TrimRanges.Any() || string.IsNullOrWhiteSpace(InputPath))
 		{
@@ -486,6 +487,21 @@ public partial class TrimViewModel : MP4ViewModelBase
 						Logger.Log($"Combine verification failed: {ex.Message}");
 						ReportTrimStep($"Failed: {ex.Message}");
 					}
+				}
+			}
+
+			if (combine && trimPipelineSucceeded && deleteIntermediateSegmentsFolderOnSuccess
+				&& !string.IsNullOrWhiteSpace(segmentsFolder)
+				&& Directory.Exists(segmentsFolder))
+			{
+				try
+				{
+					Directory.Delete(segmentsFolder, recursive: true);
+					Logger.Log($"Deleted intermediate segments folder: {segmentsFolder}");
+				}
+				catch (Exception ex)
+				{
+					Logger.Log($"Could not delete intermediate segments folder ({segmentsFolder}): {ex.Message}");
 				}
 			}
 
