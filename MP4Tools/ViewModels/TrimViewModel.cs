@@ -571,7 +571,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 				if (!string.IsNullOrWhiteSpace(accelerationAPI))
 				{
-					trimParts.AddRange(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration,encPrefs.HardwareAcceleration));
+					trimParts.AddRange(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration, accelerationAPI));
 					
 				}
 				trimParts.AddRange(
