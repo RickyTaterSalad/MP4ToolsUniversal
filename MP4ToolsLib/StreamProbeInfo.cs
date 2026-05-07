@@ -11,5 +11,4 @@ public sealed class StreamProbeInfo
 	public string SampleRate { get; set; } = string.Empty;
 	public string Channels { get; set; } = string.Empty;
 	public string ChannelLayout { get; set; } = string.Empty;
-	public string BitDepth { get; set; }
 }

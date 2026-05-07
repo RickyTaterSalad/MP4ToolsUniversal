@@ -26,8 +26,12 @@ public partial class TrimViewModel : MP4ViewModelBase
 {
 	public static IReadOnlyList<int> Range { get; } = TimeRange.Range;
 
-	[ObservableProperty]
 	private string _operationStatus = string.Empty;
+	public string OperationStatus
+	{
+		get => _operationStatus;
+		set => SetProperty(ref _operationStatus, value);
+	}
 
 	private TimeSpan _inputDuration = TimeSpan.Zero;
 
@@ -155,6 +159,10 @@ public partial class TrimViewModel : MP4ViewModelBase
 		set
 		{
 			SetProperty(ref _outputFolderName, value);
+			// OutputFolder is lazily cached based on OutputFolderName.
+			// If the name changes, invalidate the cache so subsequent operations write to the intended folder.
+			_outputFolder = string.Empty;
+			OnPropertyChanged(nameof(OutputFolder));
 		}
 	}
 
@@ -310,13 +318,13 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 	private async Task TrimAndCombineAsyncInternal(string outTrimmedFolder, bool combine, CancellationToken ct)
 	{
-		if (!CanTrim || !TrimRanges.Any() || InputPath == null)
+		if (!CanTrim || !TrimRanges.Any() || string.IsNullOrWhiteSpace(InputPath))
 		{
 			ReportTrimStep("Stopped: nothing to process.");
 			return;
 		}
 		var validRanges = TrimRanges.Where(IsRangeWithinInputBounds).ToList();
-		if (validRanges.Count < 0)
+		if (validRanges.Count == 0)
 		{
 			ReportTrimStep("Stopped: no valid time ranges.");
 			return;
@@ -411,6 +419,12 @@ public partial class TrimViewModel : MP4ViewModelBase
 					}
 				}
 
+				if (tempTsFiles.Count < 2)
+				{
+					trimPipelineSucceeded = false;
+					Logger.Log("Combine failed: expected 2+ MPEG-TS parts but did not create them.");
+					ReportTrimStep("Failed: combine step did not create intermediate parts.");
+				}
 				if (tempTsFiles.Count > 1)
 				{
 					ReportTrimStep("Concatenating MPEG-TS segments…");
@@ -442,6 +456,35 @@ public partial class TrimViewModel : MP4ViewModelBase
 				Logger.Log("Completed combining trimmed files.");
 				Logger.Log("Final Output:");
 				Logger.Log(finalCombinedPath);
+			}
+
+			if (combine && trimPipelineSucceeded)
+			{
+				if (!File.Exists(finalCombinedPath))
+				{
+					trimPipelineSucceeded = false;
+					Logger.Log($"Combine failed: final output was not created: {finalCombinedPath}");
+					ReportTrimStep("Failed: final output was not created.");
+				}
+				else
+				{
+					try
+					{
+						var fi = new FileInfo(finalCombinedPath);
+						if (fi.Length <= 0)
+						{
+							trimPipelineSucceeded = false;
+							Logger.Log($"Combine failed: final output is empty: {finalCombinedPath}");
+							ReportTrimStep("Failed: final output is empty.");
+						}
+					}
+					catch (Exception ex)
+					{
+						trimPipelineSucceeded = false;
+						Logger.Log($"Combine verification failed: {ex.Message}");
+						ReportTrimStep($"Failed: {ex.Message}");
+					}
+				}
 			}
 
 			try
@@ -519,7 +562,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 				TimeSpan endSpan = new TimeSpan(range.EndRange.Hours, range.EndRange.Minutes, range.EndRange.Seconds);
 				TimeSpan startSpan = new TimeSpan(range.StartRange.Hours, range.StartRange.Minutes, range.StartRange.Seconds);
 				var dif = endSpan - startSpan;
-				var endString = $"{dif.Hours:00}:{dif.Minutes:00}:{dif.Seconds:00}";
+				var totalHours = Math.Max(0, (int)dif.TotalHours);
+				var endString = $"{totalHours:00}:{dif.Minutes:00}:{dif.Seconds:00}";
 				var quotedInput = FfmpegCommandLine.Quoted(inputFullPath);
 
 				var encPrefs = EncodingSettingsRuntime.Current;

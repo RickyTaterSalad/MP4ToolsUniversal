@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Diagnostics;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -118,17 +118,38 @@ public partial class CombineViewModel : MP4ViewModelBase
 		get => _inputFiles;
 		set
 		{
-			SetProperty(ref _inputFiles, value);
-			if (value != null && value.Count > 1)
-			{
-				CanCombine = true;
-			}
+			if (ReferenceEquals(_inputFiles, value))
+				return;
+
+			if (_inputFiles != null)
+				_inputFiles.CollectionChanged -= OnInputFilesCollectionChanged;
+
+			SetProperty(ref _inputFiles, value ?? new ObservableCollection<CombineFile>());
+			_inputFiles.CollectionChanged += OnInputFilesCollectionChanged;
+
+			CanCombine = _inputFiles.Count > 1;
 			OnPropertyChanged(nameof(HasSelectedInputFile));
 		}
 	}
 
 	public AsyncRelayCommand CombineCommand { get; private set; }
 	public RelayCommand RemoveSelectedFileCommand { get; private set; }
+
+	private void NotifyCommandsCanExecuteChanged()
+	{
+		if (Dispatcher.UIThread.CheckAccess())
+		{
+			CombineCommand?.NotifyCanExecuteChanged();
+			RemoveSelectedFileCommand?.NotifyCanExecuteChanged();
+			return;
+		}
+
+		Dispatcher.UIThread.Post(() =>
+		{
+			CombineCommand?.NotifyCanExecuteChanged();
+			RemoveSelectedFileCommand?.NotifyCanExecuteChanged();
+		});
+	}
 
 	private void ReportCombineStep(string message)
 	{
@@ -141,12 +162,34 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 	public CombineViewModel()
 	{
-		CombineCommand = new AsyncRelayCommand(async () => await Combine());
-		RemoveSelectedFileCommand = new RelayCommand(RemoveSelectedFile);
+		CombineCommand = new AsyncRelayCommand(Combine, () => CanCombine);
+		RemoveSelectedFileCommand = new RelayCommand(RemoveSelectedFile, () => HasSelectedInputFile);
 		EventDate = null; //DateTime.Today;
 		_inputFiles.CollectionChanged += OnInputFilesCollectionChanged;
 		_startRange.PropertyChanged += OnStartRangeTimePartChanged;
 		_endRange.PropertyChanged += OnEndRangeTimePartChanged;
+
+		PropertyChanged += (_, e) =>
+		{
+			if (e.PropertyName is nameof(OutputPath))
+			{
+				// OutputPath participates in CanCombine, but CanCombine won't auto-raise for dependent changes.
+				if (Dispatcher.UIThread.CheckAccess())
+					OnPropertyChanged(nameof(CanCombine));
+				else
+					Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(CanCombine)));
+
+				NotifyCommandsCanExecuteChanged();
+			}
+			else if (e.PropertyName is nameof(CanCombine))
+			{
+				NotifyCommandsCanExecuteChanged();
+			}
+			else if (e.PropertyName is nameof(SelectedInputFile) or nameof(HasSelectedInputFile))
+			{
+				NotifyCommandsCanExecuteChanged();
+			}
+		};
 	}
 
 	private void RemoveSelectedFile()
@@ -155,7 +198,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			InputFiles.Remove(SelectedInputFile);
 			SelectedInputFile = null;
-			CanCombine = InputFiles.Count > 0;
+			CanCombine = InputFiles.Count > 1;
 		}
 	}
 
@@ -439,7 +482,16 @@ public partial class CombineViewModel : MP4ViewModelBase
 		get => !string.IsNullOrWhiteSpace(OutputPath) && _canCombine;
 		set
 		{
-			SetProperty(ref _canCombine, value);
+			if (!SetProperty(ref _canCombine, value))
+				return;
+
+			// CanCombine affects enablement; this must be observed/triggered on the UI thread in Avalonia.
+			if (Dispatcher.UIThread.CheckAccess())
+				OnPropertyChanged(nameof(CanCombine));
+			else
+				Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(CanCombine)));
+
+			NotifyCommandsCanExecuteChanged();
 			if (!_canCombine && CanClear)
 			{
 				CanClear = false;
@@ -631,7 +683,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 	{
 		var fileListResult = CombineFile.FromFolder(InputPath);
 		UpdateOutputPathFromGameInfo();
-		CanCombine = fileListResult.Count > 0;
+		CanCombine = fileListResult.Count > 1;
 		InputFiles.Clear();
 		foreach (var file in fileListResult)
 		{
@@ -669,11 +721,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 			return;
 
 		var logOutputPath = !string.IsNullOrWhiteSpace(OutputPath) ? Path.ChangeExtension(OutputPath, ".log") : null;
-		var logged_ffmpeg_output = new List<string>();
+		var loggedFfmpegOutput = new ConcurrentQueue<string>();
 		EventHandler<string> handler = (s, msg) =>
 		{
 			if (!string.IsNullOrWhiteSpace(msg))
-				logged_ffmpeg_output.Add(msg);
+				loggedFfmpegOutput.Enqueue(msg);
 		};
 		Logger.LogMessageReceived += handler;
 		var ct = BeginFfmpegOperation();
@@ -681,7 +733,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		ReportCombineStep("Starting combine…");
 		try
 		{
-			await Task.Run(async () => await CombineInternal(ct), ct).ConfigureAwait(false);
+			await CombineInternal(ct).ConfigureAwait(false);
 		}
 		catch (OperationCanceledException)
 		{
@@ -695,13 +747,15 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 		finally
 		{
+			Logger.LogMessageReceived -= handler;
+
 			try
 			{
-				if (logged_ffmpeg_output.Count > 0 && !string.IsNullOrWhiteSpace(logOutputPath) && Path.GetDirectoryName(logOutputPath) != null && Directory.Exists(Path.GetDirectoryName(logOutputPath)))
+				if (!loggedFfmpegOutput.IsEmpty && !string.IsNullOrWhiteSpace(logOutputPath) && Path.GetDirectoryName(logOutputPath) != null && Directory.Exists(Path.GetDirectoryName(logOutputPath)))
 				{
 					try
 					{
-						File.WriteAllLines(logOutputPath, logged_ffmpeg_output);
+						File.WriteAllLines(logOutputPath, loggedFfmpegOutput.ToArray());
 					}
 					catch (Exception ex)
 					{
@@ -717,7 +771,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 			CanCombine = true;
 			EndFfmpegOperation();
 		}
-		Logger.LogMessageReceived -= handler;
 	}
 
 	private async Task CombineInternal(CancellationToken ct)
@@ -798,9 +851,9 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 					throw;
 				}
-				catch
+				catch (Exception ex)
 				{
-					Debugger.Break();
+					Logger.Log($"Failed to read duration for '{file?.Path}': {ex.Message}");
 				}
 			}
 			totalDurationSeconds = (int)dblTotalDuration;
@@ -867,12 +920,20 @@ public partial class CombineViewModel : MP4ViewModelBase
 				Logger.Log("Applying end-duration trim...");
 				if (videoDurations.TryGetValue(writeFiles.LastOrDefault()?.Path ?? string.Empty, out var lastVideoTimeSpan))
 				{
-					var finalVideoDuration = new TimeSpan(lastVideoTimeSpan.Hours, lastVideoTimeSpan.Minutes, lastVideoTimeSpan.Seconds);
-					var endSpan = new TimeSpan(EndRange.Hours, EndRange.Minutes, EndRange.Seconds);
-					var durationToTrimOffFinal = finalVideoDuration - endSpan;
-					var fullVideoSpan = TimeSpan.FromSeconds(totalDurationSeconds);
-					var finalDelta = fullVideoSpan - new TimeSpan(Math.Abs(durationToTrimOffFinal.Hours), Math.Abs(durationToTrimOffFinal.Minutes), Math.Abs(durationToTrimOffFinal.Seconds));
-					var endString = $"{finalDelta.Hours:00}:{finalDelta.Minutes:00}:{finalDelta.Seconds:00}";
+					var finalVideoDuration = TimeSpan.FromSeconds(lastVideoTimeSpan.TotalSeconds);
+					var keepFromEnd = TimeSpan.FromSeconds(EndRange.TotalSeconds);
+
+					// EndRange represents "keep last X" (bounded by UI). If X exceeds the clip, don't trim.
+					var trimOffFinal = finalVideoDuration - keepFromEnd;
+					if (trimOffFinal < TimeSpan.Zero)
+						trimOffFinal = TimeSpan.Zero;
+
+					var fullVideoSpan = TimeSpan.FromSeconds(dblTotalDuration);
+					var limit = fullVideoSpan - trimOffFinal;
+					if (limit < TimeSpan.Zero)
+						limit = TimeSpan.Zero;
+
+					var endString = $"{(int)limit.TotalHours:00}:{limit.Minutes:00}:{limit.Seconds:00}";
 					trimEndOpt = FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString);
 				}
 			}
@@ -884,7 +945,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 				var fileList = TempPathHelper.GetTempFileName();
 				try
 				{
-					File.WriteAllLines(fileList, writeFiles.Select(x => $"file '{x.Path}'"));
+						static string EscapeConcatDemuxerPath(string p) =>
+							(p ?? string.Empty).Replace("'", "'\\''");
+
+						File.WriteAllLines(fileList, writeFiles.Select(x => $"file '{EscapeConcatDemuxerPath(x.Path)}'"));
 					var concatOpts = new List<FfmpegOption?>
 					{
 						scanOpt,

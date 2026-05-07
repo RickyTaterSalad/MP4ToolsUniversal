@@ -71,20 +71,16 @@ namespace MP4ToolsLib
 			{
 				if (File.Exists(path))
 				{
-					var i = 1;
 					var filenameNoExt = Path.GetFileNameWithoutExtension(path);
 					var ext = Path.GetExtension(path);
 					var dir = Path.GetDirectoryName(path) ?? string.Empty;
 					if (!string.IsNullOrWhiteSpace(dir))
 					{
-						path = Path.Combine(dir, $"{filenameNoExt}_{i}{ext}");
-						while (File.Exists(path))
+						for (var i = 1; i <= 500; i++)
 						{
-							if (i == 500)
-							{
-								break;
-							}
-							path = Path.Combine(dir, $"{filenameNoExt}_{i++}{ext}");
+							var candidate = Path.Combine(dir, $"{filenameNoExt}_{i}{ext}");
+							if (!File.Exists(candidate))
+								return candidate;
 						}
 					}
 				}
@@ -94,6 +90,15 @@ namespace MP4ToolsLib
 				//
 			}
 			return path;
+		}
+
+		private static string QuoteArgument(string value)
+		{
+			if (value == null) return "\"\"";
+			// Minimal, cross-platform escaping for ProcessStartInfo string-args.
+			// FFmpeg/ffprobe accept \" inside a quoted argument on both Windows and *nix shells.
+			var escaped = value.Replace("\"", "\\\"");
+			return $"\"{escaped}\"";
 		}
 
 
@@ -181,7 +186,7 @@ namespace MP4ToolsLib
 			}
 			try
 			{
-				var args = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal \"{file}\"";
+				var args = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal {QuoteArgument(file)}";
 				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
 				return (output ?? string.Empty).Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
 					.FirstOrDefault()?.Trim() ?? string.Empty;
@@ -204,7 +209,7 @@ namespace MP4ToolsLib
 			}
 			try
 			{
-				var args = $"-v error -select_streams v:0 -show_entries stream=codec_name -of default=nk=1:nw=1 \"{inputFile}\"";
+				var args = $"-v error -select_streams v:0 -show_entries stream=codec_name -of default=nk=1:nw=1 {QuoteArgument(inputFile)}";
 				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
 				return (output ?? string.Empty).Trim();
 			}
@@ -225,7 +230,7 @@ namespace MP4ToolsLib
 				return string.Empty;
 			try
 			{
-				var args = $"-v error -select_streams a:0 -show_entries stream=codec_name -of default=nk=1:nw=1 \"{inputFile}\"";
+				var args = $"-v error -select_streams a:0 -show_entries stream=codec_name -of default=nk=1:nw=1 {QuoteArgument(inputFile)}";
 				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
 				return (output ?? string.Empty).Trim();
 			}
@@ -392,7 +397,7 @@ namespace MP4ToolsLib
 			if (processOutputAction != null)
 			{
 				onErr = (_, b) => processOutputAction(process, b?.Data);
-				onOut = (_, b) => processOutputAction(process,b?.Data);
+				onOut = (_, b) => processOutputAction(process, b?.Data);
 				process.ErrorDataReceived += onErr;
 				process.OutputDataReceived += onOut;
 			}
@@ -497,7 +502,7 @@ namespace MP4ToolsLib
 		{
 			Log ??= _ => { };
 			string args = "-v error -show_entries stream=index,codec_type,width,height,r_frame_rate,pix_fmt,codec_name,sample_rate,channels,channel_layout,bit_depth -of json " +
-				$"\"{input}\"";
+				$"{QuoteArgument(input)}";
 			string stdout = await FFMpegUtils.Instance.RunCaptureFFProbeAsync(args, ct, Log);
 			if (string.IsNullOrWhiteSpace(stdout))
 			{
@@ -527,7 +532,6 @@ namespace MP4ToolsLib
 						SampleRate = GetProbedRawString(s, "sample_rate"),
 						Channels = GetProbedRawString(s, "channels"),
 						ChannelLayout = GetProbedString(s, "channel_layout"),
-						BitDepth = GetProbedString(s, "bit_depth")
 					};
 
 					if (video == null && info.CodecType.Equals("video", StringComparison.OrdinalIgnoreCase))
@@ -563,7 +567,7 @@ namespace MP4ToolsLib
 				if (Directory.Exists(drmPath))
 				{
 					// Look for renderD* devices
-					var renderDevices = Directory.GetFiles(drmPath, "renderD*");
+					var renderDevices = Directory.GetDirectories(drmPath, "renderD*");
 					foreach (var renderDev in renderDevices)
 					{
 						// Get the device symlink to find PCI address
