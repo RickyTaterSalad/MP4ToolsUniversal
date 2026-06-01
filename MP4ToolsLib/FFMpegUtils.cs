@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -243,6 +245,93 @@ namespace MP4ToolsLib
 			}
 
 			return string.Empty;
+		}
+
+		private static readonly Regex FfmpegVideoResolutionRegex = new(
+			@"Stream\s+#\d+:\d+.*?\bVideo:\s*.*?\b(\d{2,5})x(\d{2,5})\b",
+			RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+		/// <summary>Reads the first video stream dimensions from ffmpeg probe output (stderr).</summary>
+		public async Task<(int width, int height)?> GetVideoResolutionViaFfmpegAsync(
+			string inputFile,
+			CancellationToken cancellationToken = default,
+			Action<string> log = null)
+		{
+			if (string.IsNullOrWhiteSpace(inputFile) || !File.Exists(inputFile))
+				return null;
+
+			log ??= _ => { };
+			var args = $"-hide_banner -i {QuoteArgument(inputFile)}";
+			var stderr = new StringBuilder();
+			var psi = new ProcessStartInfo(FFPMEG_EXE, args)
+			{
+				WindowStyle = ProcessWindowStyle.Hidden,
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				CreateNoWindow = true
+			};
+
+			var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+			process.ErrorDataReceived += (_, e) =>
+			{
+				if (e.Data == null)
+					return;
+				stderr.AppendLine(e.Data);
+				log(e.Data);
+			};
+
+			try
+			{
+				if (!process.Start())
+					return null;
+
+				process.BeginErrorReadLine();
+				RegisterTrackedMediaProcess(process);
+
+				using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+				linkedCts.CancelAfter(ProcessTimeout);
+
+				log($"{psi.FileName}: {psi.Arguments}");
+
+				var stdoutTask = process.StandardOutput.ReadToEndAsync(linkedCts.Token);
+				await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
+				await stdoutTask.ConfigureAwait(false);
+
+				var output = stderr.ToString();
+				var match = FfmpegVideoResolutionRegex.Match(output);
+				if (!match.Success)
+					return null;
+
+				if (!int.TryParse(match.Groups[1].Value, out var width) ||
+				    !int.TryParse(match.Groups[2].Value, out var height))
+					return null;
+
+				return (width, height);
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
+			}
+			catch (Exception ex)
+			{
+				log($"** Error reading video resolution: {ex.Message} **");
+				return null;
+			}
+			finally
+			{
+				UnregisterTrackedMediaProcess(process);
+				try
+				{
+					process.CancelErrorRead();
+				}
+				catch
+				{
+					// ignored
+				}
+
+				process.Dispose();
+			}
 		}
 
 		public Task<string> RunCaptureFFMpegAsync(string args, CancellationToken ct, Action<string> Log = null)

@@ -49,6 +49,7 @@ namespace MP4ToolsLib
             int titleFontSize = 128,
             int subtitleFontSize = 64,
             int detailsFontSize = 48,
+            double sub4KFontScale = IntroVideoFontScaling.DefaultSub4KFontScale,
             string detailsText = "",
             Action<string> log = null,
             IProgress<double> progress = null, // 0..1
@@ -92,10 +93,21 @@ namespace MP4ToolsLib
                 var escapedTitle = EscapeDrawtext(titleText);
                 var escapedSubtitle = EscapeDrawtext(subtitleText);
                 var escapedDetails = EscapeDrawtext(detailsText);
-                titleFontSize = Math.Max(1, titleFontSize);
-                subtitleFontSize = Math.Max(1, subtitleFontSize);
-                detailsFontSize = Math.Max(1, detailsFontSize);
-                const int lineGap = 36;
+
+                var resolution = await FFMpegUtils.Instance.GetVideoResolutionViaFfmpegAsync(inputPath, ct, log);
+                var fontScale = IntroVideoFontScaling.GetFontScale(
+                    resolution?.width ?? 0,
+                    resolution?.height ?? 0,
+                    sub4KFontScale);
+                if (resolution.HasValue)
+                    log($"Input resolution {resolution.Value.width}x{resolution.Value.height}; intro font scale {fontScale:P0}");
+                else
+                    log($"Could not read input resolution via ffmpeg; intro font scale {fontScale:P0}");
+
+                titleFontSize = IntroVideoFontScaling.ScaleFontSize(titleFontSize, fontScale);
+                subtitleFontSize = IntroVideoFontScaling.ScaleFontSize(subtitleFontSize, fontScale);
+                detailsFontSize = IntroVideoFontScaling.ScaleFontSize(detailsFontSize, fontScale);
+                var lineGap = IntroVideoFontScaling.ScaleLineGap(fontScale);
                 var vf = $"drawtext=text='{escapedTitle}':fontfile='{Font}':fontcolor=white:fontsize={titleFontSize}:x=(w-text_w)/2:y=(h/2)-text_h-{lineGap / 2}";
                 if (!string.IsNullOrWhiteSpace(escapedSubtitle))
                 {
