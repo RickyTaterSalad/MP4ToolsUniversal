@@ -74,8 +74,6 @@ namespace MP4ToolsLib
                 string w = !string.IsNullOrWhiteSpace(video?.Width) ? video.Width : "1920";
                 string h = !string.IsNullOrWhiteSpace(video?.Height) ? video.Height : "1080";
                 string fps = !string.IsNullOrWhiteSpace(video?.FrameRate) ? video.FrameRate : "30000/1001";
-                string pixFmt = !string.IsNullOrWhiteSpace(video?.PixelFormat) ? video.PixelFormat : "yuv420p";
-                string vCodec = (!string.IsNullOrWhiteSpace(video?.CodecName) ? video.CodecName : "h265").ToLowerInvariant();
 
                 string ar = !string.IsNullOrWhiteSpace(audio?.SampleRate) ? audio.SampleRate : "48000";
                 string ach = !string.IsNullOrWhiteSpace(audio?.Channels) ? audio.Channels : "2";
@@ -85,10 +83,6 @@ namespace MP4ToolsLib
 
                 string introAudioEnc = useTrimSegmentAudioCodec ? "libopus" : "aac";
 
-				var isVaapi = "vaapi".Equals(hwAccelForIntro, StringComparison.OrdinalIgnoreCase);
-				var isAmf = "amf".Equals(hwAccelForIntro, StringComparison.OrdinalIgnoreCase);
-				var accelerationAPI = isVaapi ? "vaapi" : (isAmf ? "d3d11va" : "");
-    
                 var escapedTitle = EscapeDrawtext(titleText);
                 var escapedSubtitle = EscapeDrawtext(subtitleText);
                 var escapedDetails = EscapeDrawtext(detailsText);
@@ -115,23 +109,18 @@ namespace MP4ToolsLib
                 {
                     vf += $",drawtext=text='{escapedDetails}':fontfile='{Font}':fontcolor=white:fontsize={detailsFontSize}:x=(w-text_w)/2:y=(h/2)+{lineGap / 2}+{subtitleFontSize}+{lineGap}";
                 }
+                var hwUploadSuffix = DaVinciOutputEncoding.GetHwUploadVideoFilterSuffix(hwAccelForIntro);
+                if (!string.IsNullOrEmpty(hwUploadSuffix))
+                    vf += hwUploadSuffix;
                 log("Creating intro...");
                 Step("Encoding intro to MPEG-TS…");
 
-                var introVidTail = new List<FfmpegOption?>
-                {
-                    FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, vCodec)
-                };
+                var introVidTail = new List<FfmpegOption?>();
+                DaVinciOutputEncoding.AppendVideoEncodeOptions(introVidTail, hwAccelForIntro);
 
                 var introMp4Parts = new List<FfmpegOption?>();
-
-
-				if (!string.IsNullOrWhiteSpace(accelerationAPI))
-				{
-					introMp4Parts.AddRange(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration,accelerationAPI));
-                }
+                DaVinciOutputEncoding.AppendPreInputHwOptions(introMp4Parts, hwAccelForIntro);
                 introMp4Parts.AddRange(
-                
                     FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
                     FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
                     FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
@@ -152,14 +141,7 @@ namespace MP4ToolsLib
                     introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, introAudioEnc));
                 }
 
-                if (!string.IsNullOrWhiteSpace(accelerationAPI))
-                {
-                    if (OperatingSystem.IsLinux())
-					{
-						introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.InitHardwareDevice, $"{accelerationAPI}={FFMpegUtils.GetPreferredRenderDevice()}"));
-						introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.FilterHardwareDevice, $"{FFMpegUtils.GetPreferredRenderDevice()}"));
-					}
-                }
+                DaVinciOutputEncoding.AppendPostInputHwOptions(introMp4Parts, hwAccelForIntro);
 
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioSampleRate, ar));
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioChannels, ach));
@@ -180,10 +162,15 @@ namespace MP4ToolsLib
                     FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
                     seekBeforeMainInput,
                     FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputPath)),
-                    FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
-                    FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb")
                 };
+                DaVinciOutputEncoding.AppendPreInputHwOptions(inputToTs, hwAccelForIntro);
+                var mainVfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawTextFilter: null, hwAccelForIntro);
+                if (!mainVfOpt.IsSkipped)
+                    inputToTs.Add(mainVfOpt);
+                DaVinciOutputEncoding.AppendPostInputHwOptions(inputToTs, hwAccelForIntro);
+                DaVinciOutputEncoding.AppendVideoEncodeOptions(inputToTs, hwAccelForIntro);
                 MpegTsConcatAudio.AppendMp4ToTsAudioOptions(inputToTs, aCodec);
+                inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"));
                 inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
                 inputToTs.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(inputTs)));
                 await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(inputToTs), ct, log);

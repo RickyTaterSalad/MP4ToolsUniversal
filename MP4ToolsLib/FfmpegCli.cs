@@ -45,6 +45,12 @@ public static class FfmpegArguments
 
 	public const string OutputVideoFrameRate = "-r";
 	public const string StopEncodingWhenShortestStreamEnds = "-shortest";
+
+	public const string ConstantRateFactor = "-crf";
+	public const string PixelFormat = "-pix_fmt";
+	public const string ColorPrimaries = "-color_primaries";
+	public const string ColorTransfer = "-color_trc";
+	public const string ColorSpace = "-colorspace";
 }
 
 /// <summary>

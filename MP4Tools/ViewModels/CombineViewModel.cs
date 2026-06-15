@@ -946,7 +946,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			if (!shouldAddIntro)
 			{
 				ReportCombineStep("Combining clips (concat)…");
-				Logger.Log("Combining with concat demuxer (no intro)...");
+				Logger.Log("Combining with concat demuxer (re-encode for Resolve compatibility)...");
 				var fileList = TempPathHelper.GetTempFileName();
 				try
 				{
@@ -962,9 +962,15 @@ public partial class CombineViewModel : MP4ViewModelBase
 						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(fileList)),
 						trimEndOpt,
 					};
-					
-					concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
-					concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy));
+					var hwAccel = encPrefs.HardwareAcceleration;
+					DaVinciOutputEncoding.AppendPreInputHwOptions(concatOpts, hwAccel);
+					var vfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawTextFilter: null, hwAccel);
+					if (!vfOpt.IsSkipped)
+						concatOpts.Add(vfOpt);
+					DaVinciOutputEncoding.AppendPostInputHwOptions(concatOpts, hwAccel);
+					DaVinciOutputEncoding.AppendVideoEncodeOptions(concatOpts, hwAccel);
+					concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, encPrefs.TrimAudioCodec));
+					concatOpts.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
 					concatOpts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile)));
 
 					await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(concatOpts), ct).ConfigureAwait(false);
@@ -1065,19 +1071,22 @@ public partial class CombineViewModel : MP4ViewModelBase
 					{
 
 						ReportCombineStep("Writing final MP4…");
-						Logger.Log("Finalizing merged TS into MP4...");
-						var mergedTsVideoCodec = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(mergedTsFile, ct, Logger.Log).ConfigureAwait(false);
-						var allPartsAacInTs = writeFiles.All(w => MpegTsConcatAudio.IntermediateTsAudioIsAac(audioCodecByPath[w.Path]));
+						Logger.Log("Finalizing merged TS into MP4 (re-encode for Resolve compatibility)...");
+						var hwAccel = encPrefs.HardwareAcceleration;
 						var finalizeParts = new List<FfmpegOption?>
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)),
+							trimEndOpt,
 						};
-
-						finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)));
-						finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
-						finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy));
-
-						finalizeParts.Add(trimEndOpt);
+						DaVinciOutputEncoding.AppendPreInputHwOptions(finalizeParts, hwAccel);
+						var vfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawTextFilter: null, hwAccel);
+						if (!vfOpt.IsSkipped)
+							finalizeParts.Add(vfOpt);
+						DaVinciOutputEncoding.AppendPostInputHwOptions(finalizeParts, hwAccel);
+						DaVinciOutputEncoding.AppendVideoEncodeOptions(finalizeParts, hwAccel);
+						finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, encPrefs.TrimAudioCodec));
+						finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
 						finalizeParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile)));
 
 						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(finalizeParts), ct).ConfigureAwait(false);
