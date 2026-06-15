@@ -68,7 +68,7 @@
 
 			<CheckBox Content="Delete segment clips after successful Trim And Combine"
 								IsChecked="{Binding DeleteTrimSegmentsAfterTrimAndCombine}"
-								ToolTip.Tip="Does not apply to Trim-only runs. Save settings to apply."/>
+								ToolTip.Tip="Does not apply to Trim-only runs."/>
 
 			<Button Command="{Binding SaveSettingsCommand}"
 							HorizontalAlignment="Left"
@@ -84,7 +84,7 @@
 			<TextBlock TextWrapping="Wrap"
 								 Opacity="0.65"
 								 FontSize="11"
-								 Text="Settings are loaded when the application starts. Click Save to apply changes for this session and future launches."/>
+								 Text="Click Save to write settings to disk and apply them immediately (output paths, temp folder, and behavior flags update without restarting)."/>
 		</StackPanel>
 	</ScrollViewer>
 </UserControl>

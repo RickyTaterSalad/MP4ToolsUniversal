@@ -49,7 +49,6 @@ namespace MP4ToolsLib
             int titleFontSize = 128,
             int subtitleFontSize = 64,
             int detailsFontSize = 48,
-            double sub4KFontScale = IntroVideoFontScaling.DefaultSub4KFontScale,
             string detailsText = "",
             Action<string> log = null,
             IProgress<double> progress = null, // 0..1
@@ -97,8 +96,7 @@ namespace MP4ToolsLib
                 var resolution = await FFMpegUtils.Instance.GetVideoResolutionViaFfmpegAsync(inputPath, ct, log);
                 var fontScale = IntroVideoFontScaling.GetFontScale(
                     resolution?.width ?? 0,
-                    resolution?.height ?? 0,
-                    sub4KFontScale);
+                    resolution?.height ?? 0);
                 if (resolution.HasValue)
                     log($"Input resolution {resolution.Value.width}x{resolution.Value.height}; intro font scale {fontScale:P0}");
                 else

@@ -32,12 +32,10 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var startupSettings = AppSettingsStore.LoadOrDefault();
-            TempPathHelper.ApplyConfiguration(startupSettings.TempDirectory, startupSettings.RetainTemporaryFiles);
-            EncodingSettingsRuntime.Apply(startupSettings);
+            var startupSettings = AppSettingsStore.LoadAndApply();
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(),
+                DataContext = new MainWindowViewModel(startupSettings),
             };
             desktop.MainWindow.Closing += (_, _) =>
             {

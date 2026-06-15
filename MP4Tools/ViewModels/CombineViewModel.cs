@@ -589,6 +589,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 	}
 
+	protected override void OnSettingsApplied()
+	{
+		UpdateOutputPathFromGameInfo();
+	}
+
 	private void UpdateOutputPathFromGameInfo()
 	{
 		if (string.IsNullOrWhiteSpace(InputPath))

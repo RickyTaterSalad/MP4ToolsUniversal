@@ -183,6 +183,12 @@ public partial class TrimViewModel : MP4ViewModelBase
 	public RelayCommand ResetTimeRangeCommand { get; private set; }
 
 
+	protected override void OnSettingsApplied()
+	{
+		_outputFolder = string.Empty;
+		OnPropertyChanged(nameof(OutputFolder));
+	}
+
 	public TrimViewModel()
 	{
 		_selectedStartStopRange = null;

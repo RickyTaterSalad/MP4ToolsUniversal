@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.Input;
+using MP4Tools.Services;
 using MP4Tools.ViewModels;
 using MP4ToolsLib;
 using System;
@@ -83,6 +84,13 @@ namespace MP4Tools
 		{
 			StopCommand = new RelayCommand(CancelFfmpegOperation);
 			ClearCommand = new RelayCommand(() => Clear());
+			AppSettingsStore.SettingsChanged += OnAppSettingsChanged;
+		}
+
+		private void OnAppSettingsChanged(object sender, EventArgs e) => OnSettingsApplied();
+
+		protected virtual void OnSettingsApplied()
+		{
 		}
 
 		/// <summary>Starts a cancellable ffmpeg/ffprobe operation scope (Stop cancels the token).</summary>

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using MP4ToolsLib;
 
 namespace MP4Tools.Services;
 
@@ -26,10 +27,14 @@ public static class AppSettingsStore
 {
 	private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
+	public static event EventHandler SettingsChanged;
+
+	public static AppUserSettings Current { get; private set; } = new();
+
 	public static string SettingsFilePath =>
 		Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MP4Tools", "settings.json");
 
-	public static AppUserSettings LoadOrDefault()
+	public static AppUserSettings LoadFromDisk()
 	{
 		try
 		{
@@ -50,11 +55,32 @@ public static class AppSettingsStore
 		return new AppUserSettings();
 	}
 
+	public static AppUserSettings LoadAndApply()
+	{
+		var settings = LoadFromDisk();
+		Apply(settings);
+		return settings;
+	}
+
+	public static void Apply(AppUserSettings settings)
+	{
+		Current = settings ?? new AppUserSettings();
+		TempPathHelper.ApplyConfiguration(Current.TempDirectory, Current.RetainTemporaryFiles);
+		EncodingSettingsRuntime.Apply(Current);
+		SettingsChanged?.Invoke(null, EventArgs.Empty);
+	}
+
 	public static void Save(AppUserSettings settings)
 	{
 		var dir = Path.GetDirectoryName(SettingsFilePath);
 		if (!string.IsNullOrEmpty(dir))
 			Directory.CreateDirectory(dir);
 		File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(settings ?? new AppUserSettings(), JsonOptions));
+	}
+
+	public static void SaveAndApply(AppUserSettings settings)
+	{
+		Save(settings);
+		Apply(settings);
 	}
 }

@@ -13,9 +13,17 @@ namespace MP4Tools.ViewModels;
 
 public partial class OptionsViewModel : ViewModelBase
 {
-	public OptionsViewModel()
+	public OptionsViewModel(AppUserSettings settings)
 	{
-		var loaded = AppSettingsStore.LoadOrDefault();
+		ApplyFrom(settings);
+		AppSettingsStore.SettingsChanged += OnSettingsChanged;
+	}
+
+	private void OnSettingsChanged(object sender, EventArgs e) => ApplyFrom(AppSettingsStore.Current);
+
+	private void ApplyFrom(AppUserSettings loaded)
+	{
+		loaded ??= new AppUserSettings();
 		TempDirectory = loaded.TempDirectory ?? "";
 		RetainTemporaryFiles = loaded.RetainTemporaryFiles;
 		DefaultOutputDirectory = loaded.DefaultOutputDirectory ?? "";
@@ -111,15 +119,15 @@ public partial class OptionsViewModel : ViewModelBase
 			if (!string.IsNullOrEmpty(outTrimmed))
 				Directory.CreateDirectory(outTrimmed);
 
-			var s = AppSettingsStore.LoadOrDefault();
-			s.TempDirectory = trimmed;
-			s.RetainTemporaryFiles = RetainTemporaryFiles;
-			s.DefaultOutputDirectory = outTrimmed;
-			s.OpenOutputFolderOnComplete = OpenOutputFolderOnComplete;
-			s.DeleteTrimSegmentsAfterTrimAndCombine = DeleteTrimSegmentsAfterTrimAndCombine;
-			AppSettingsStore.Save(s);
-			TempPathHelper.ApplyConfiguration(s.TempDirectory, s.RetainTemporaryFiles);
-			EncodingSettingsRuntime.Apply(s);
+			var s = new AppUserSettings
+			{
+				TempDirectory = trimmed,
+				RetainTemporaryFiles = RetainTemporaryFiles,
+				DefaultOutputDirectory = outTrimmed,
+				OpenOutputFolderOnComplete = OpenOutputFolderOnComplete,
+				DeleteTrimSegmentsAfterTrimAndCombine = DeleteTrimSegmentsAfterTrimAndCombine,
+			};
+			AppSettingsStore.SaveAndApply(s);
 			MP4Tools.Logger.Log($"Settings saved. Temporary files folder: {TempPathHelper.GetTempPath()}");
 			MP4Tools.Logger.Log($"Default output folder: {DefaultOutputPathRuntime.Directory}");
 			MP4Tools.Logger.Log($"Open output folder on completion: {UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete}");
