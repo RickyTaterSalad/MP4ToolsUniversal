@@ -29,6 +29,7 @@ public partial class OptionsViewModel : ViewModelBase
 		DefaultOutputDirectory = loaded.DefaultOutputDirectory ?? "";
 		OpenOutputFolderOnComplete = loaded.OpenOutputFolderOnComplete;
 		DeleteTrimSegmentsAfterTrimAndCombine = loaded.DeleteTrimSegmentsAfterTrimAndCombine ?? true;
+		UseResolveSafeEncoding = loaded.UseResolveSafeEncoding;
 	}
 
 	[ObservableProperty]
@@ -45,6 +46,9 @@ public partial class OptionsViewModel : ViewModelBase
 
 	[ObservableProperty]
 	private bool _deleteTrimSegmentsAfterTrimAndCombine = true;
+
+	[ObservableProperty]
+	private bool _useResolveSafeEncoding = true;
 
 	public string SettingsFilePathDisplay => AppSettingsStore.SettingsFilePath;
 
@@ -126,12 +130,14 @@ public partial class OptionsViewModel : ViewModelBase
 				DefaultOutputDirectory = outTrimmed,
 				OpenOutputFolderOnComplete = OpenOutputFolderOnComplete,
 				DeleteTrimSegmentsAfterTrimAndCombine = DeleteTrimSegmentsAfterTrimAndCombine,
+				UseResolveSafeEncoding = UseResolveSafeEncoding,
 			};
 			AppSettingsStore.SaveAndApply(s);
 			MP4Tools.Logger.Log($"Settings saved. Temporary files folder: {TempPathHelper.GetTempPath()}");
 			MP4Tools.Logger.Log($"Default output folder: {DefaultOutputPathRuntime.Directory}");
 			MP4Tools.Logger.Log($"Open output folder on completion: {UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete}");
 			MP4Tools.Logger.Log($"Delete trim segments after Trim And Combine: {UiBehaviorSettingsRuntime.DeleteTrimSegmentsAfterTrimAndCombine}");
+			MP4Tools.Logger.Log($"Resolve-safe encoding: {EncodingSettingsRuntime.Current.UseResolveSafeEncoding}");
 		}
 		catch (Exception ex)
 		{

@@ -21,6 +21,11 @@ public sealed class AppUserSettings
 	/// When true (default), successful Trim And Combine removes the intermediate segment clips folder under the export directory.
 	/// </summary>
 	public bool? DeleteTrimSegmentsAfterTrimAndCombine { get; set; }
+
+	/// <summary>
+	/// When true (default), trim/combine re-encode to Resolve-safe HEVC MP4. When false, use fast stream-copy (may break DaVinci Resolve).
+	/// </summary>
+	public bool UseResolveSafeEncoding { get; set; } = true;
 }
 
 public static class AppSettingsStore

@@ -8,7 +8,10 @@ public static class EncodingSettingsRuntime
 
 	public static void Apply(AppUserSettings settings)
 	{
-		Current = new EncodingSettingsDto();
+		Current = new EncodingSettingsDto
+		{
+			UseResolveSafeEncoding = settings?.UseResolveSafeEncoding ?? true,
+		};
 		var resolved = settings ?? new AppUserSettings();
 		DefaultOutputPathRuntime.Apply(resolved);
 		UiBehaviorSettingsRuntime.Apply(resolved);

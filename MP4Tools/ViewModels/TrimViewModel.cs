@@ -401,31 +401,89 @@ public partial class TrimViewModel : MP4ViewModelBase
 			else if (outputPaths.Count > 1)
 			{
 				ReportTrimStep("Combining trimmed segments…");
-				Logger.Log("Combining trimmed files (concat demuxer, stream copy — segments already re-encoded)...");
-
-				var fileList = TempPathHelper.GetTempFileName();
-				try
+				var resolveSafe = EncodingSettingsRuntime.Current.UseResolveSafeEncoding;
+				if (resolveSafe)
 				{
-					static string EscapeConcatDemuxerPath(string p) =>
-						(p ?? string.Empty).Replace("'", "'\\''");
-
-					File.WriteAllLines(fileList, outputPaths.Select(x => $"file '{EscapeConcatDemuxerPath(x)}'"));
-					var concatOpts = new List<FfmpegOption?>
+					Logger.Log("Combining trimmed files (concat demuxer, stream copy — segments already re-encoded)...");
+					var fileList = TempPathHelper.GetTempFileName();
+					try
 					{
-						FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
-						FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatConcatDemuxer),
-						FfmpegOption.Pair(FfmpegArguments.ConcatDemuxerSafeFlag, FfmpegArguments.ConcatDemuxerAllowAnyPath),
-						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(fileList)),
-						FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
-						FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy),
-						FfmpegOption.Positional(FfmpegCommandLine.Quoted(finalCombinedPath)),
-					};
+						static string EscapeConcatDemuxerPath(string p) =>
+							(p ?? string.Empty).Replace("'", "'\\''");
 
-					await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(concatOpts), ct).ConfigureAwait(false);
+						File.WriteAllLines(fileList, outputPaths.Select(x => $"file '{EscapeConcatDemuxerPath(x)}'"));
+						var concatOpts = new List<FfmpegOption?>
+						{
+							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatConcatDemuxer),
+							FfmpegOption.Pair(FfmpegArguments.ConcatDemuxerSafeFlag, FfmpegArguments.ConcatDemuxerAllowAnyPath),
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(fileList)),
+							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
+							FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy),
+							FfmpegOption.Positional(FfmpegCommandLine.Quoted(finalCombinedPath)),
+						};
+
+						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(concatOpts), ct).ConfigureAwait(false);
+					}
+					finally
+					{
+						TempPathHelper.DeleteTemporaryFileUnlessRetained(fileList);
+					}
 				}
-				finally
+				else
 				{
-					TempPathHelper.DeleteTemporaryFileUnlessRetained(fileList);
+					Logger.Log("Combining trimmed files (MPEG-TS stream copy)...");
+					var tempTsFiles = new List<string>();
+					for (var ti = 0; ti < outputPaths.Count; ti++)
+					{
+						var input = outputPaths[ti];
+						ct.ThrowIfCancellationRequested();
+						ReportTrimStep($"Remuxing segment {ti + 1} of {outputPaths.Count} to MPEG-TS…");
+						Logger.Log($"Remuxing trimmed segment to TS: {Path.GetFileName(input)}");
+						var tsFile = Path.Combine(TempPathHelper.GetTempPath(), $"trim_part_{Guid.NewGuid():N}.ts");
+						var tsParts = new List<FfmpegOption?>
+						{
+							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
+							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
+							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"),
+							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
+							FfmpegOption.Positional(FfmpegCommandLine.Quoted(tsFile)),
+						};
+						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(tsParts), ct).ConfigureAwait(false);
+						if (File.Exists(tsFile))
+							tempTsFiles.Add(tsFile);
+					}
+
+					if (tempTsFiles.Count < 2)
+					{
+						trimPipelineSucceeded = false;
+						Logger.Log("Combine failed: expected 2+ MPEG-TS parts but did not create them.");
+						ReportTrimStep("Failed: combine step did not create intermediate parts.");
+					}
+					if (tempTsFiles.Count > 1)
+					{
+						ReportTrimStep("Concatenating MPEG-TS segments…");
+						var concatInput = string.Join("|", tempTsFiles);
+						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
+							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{concatInput}")),
+							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
+							FfmpegOption.Positional(FfmpegCommandLine.Quoted(finalCombinedPath))), ct).ConfigureAwait(false);
+					}
+
+					try
+					{
+						foreach (var tempFile in tempTsFiles)
+						{
+							if (File.Exists(tempFile))
+								TempPathHelper.DeleteTemporaryFileUnlessRetained(tempFile);
+						}
+					}
+					catch (Exception e)
+					{
+						Logger.Log($"Error deleting temporary TS files: {e.Message}");
+					}
 				}
 
 				Logger.Log("Completed combining trimmed files.");
@@ -562,29 +620,50 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 				var encPrefs = EncodingSettingsRuntime.Current;
 				var hwAccel = encPrefs.HardwareAcceleration;
+				var resolveSafe = encPrefs.UseResolveSafeEncoding;
 
 				string drawInner = null;
 				if (!string.IsNullOrWhiteSpace(range.Label))
 				{
 					drawInner = DrawTextUtils.CreateVideoOverlayText(range.Label, range.SelectedDrawTextPosition).Trim('"');
 				}
-				var vfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawInner, hwAccel);
-
-				var encodingTail = new List<FfmpegOption?>();
-				DaVinciOutputEncoding.AppendVideoEncodeOptions(encodingTail, hwAccel);
-				encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, encPrefs.TrimAudioCodec));
-				encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
 
 				var trimParts = new List<FfmpegOption?>();
-				DaVinciOutputEncoding.AppendPreInputHwOptions(trimParts, hwAccel);
-				trimParts.AddRange(
-					FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
-					FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
-					FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
-					vfOpt
-				);
-				DaVinciOutputEncoding.AppendPostInputHwOptions(trimParts, hwAccel);
+				var encodingTail = new List<FfmpegOption?>();
+
+				if (resolveSafe)
+				{
+					var vfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawInner, hwAccel);
+					DaVinciOutputEncoding.AppendVideoEncodeOptions(encodingTail, hwAccel);
+					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, encPrefs.TrimAudioCodec));
+					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
+
+					DaVinciOutputEncoding.AppendPreInputHwOptions(trimParts, hwAccel);
+					trimParts.AddRange(
+						FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
+						FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
+						FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
+						vfOpt
+					);
+					DaVinciOutputEncoding.AppendPostInputHwOptions(trimParts, hwAccel);
+				}
+				else
+				{
+					Logger.Log("Using fast stream-copy trim (Resolve-safe encoding disabled).");
+					LegacyFastEncoding.AppendTrimOptions(
+						trimParts,
+						encodingTail,
+						hwAccel,
+						encPrefs.TrimAudioCodec,
+						range.StartRange.AsInputParameterString(),
+						quotedInput,
+						endString,
+						drawInner);
+				}
+
 				trimParts.AddRange(encodingTail);
+				if (resolveSafe)
+					DaVinciOutputEncoding.AppendMp4OutputOptions(trimParts);
 				trimParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(trimOutputPath)));
 
 				var args = FfmpegCommandLine.Build(trimParts);

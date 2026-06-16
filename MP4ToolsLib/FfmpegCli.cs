@@ -15,6 +15,7 @@ public static class FfmpegArguments
 	public const string FilterHardwareDevice = "-filter_hw_device";
 	
 	public const string HardwareAcceleration = "-hwaccel";
+	public const string HardwareAccelerationOutputFormat = "-hwaccel_output_format";
 
 	public const string SeekInputTimestamp = "-ss";
 	public const string LimitOutputDuration = "-t";
@@ -47,10 +48,15 @@ public static class FfmpegArguments
 	public const string StopEncodingWhenShortestStreamEnds = "-shortest";
 
 	public const string ConstantRateFactor = "-crf";
+	public const string RateControlMode = "-rc_mode";
+	public const string QuantizationParameter = "-qp";
+	public const string VideoProfile = "-profile:v";
+	public const string AsyncDepth = "-async_depth";
 	public const string PixelFormat = "-pix_fmt";
 	public const string ColorPrimaries = "-color_primaries";
 	public const string ColorTransfer = "-color_trc";
 	public const string ColorSpace = "-colorspace";
+	public const string MuxerFlags = "-movflags";
 }
 
 /// <summary>

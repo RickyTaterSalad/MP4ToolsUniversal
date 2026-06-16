@@ -70,6 +70,11 @@
 								IsChecked="{Binding DeleteTrimSegmentsAfterTrimAndCombine}"
 								ToolTip.Tip="Does not apply to Trim-only runs."/>
 
+			<TextBlock Text="Encoding" FontWeight="SemiBold" FontSize="16"/>
+			<CheckBox Content="Resolve-safe encoding (re-encode for DaVinci Resolve)"
+								IsChecked="{Binding UseResolveSafeEncoding}"
+								ToolTip.Tip="When enabled, trim re-encodes video to clean 8-bit HEVC MP4. Combine always uses stream copy. When disabled, trim uses fast stream-copy (may crash or misalign in Resolve)."/>
+
 			<Button Command="{Binding SaveSettingsCommand}"
 							HorizontalAlignment="Left"
 							Padding="16,8">

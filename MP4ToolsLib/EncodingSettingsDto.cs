@@ -8,4 +8,6 @@ public sealed class EncodingSettingsDto
 	public string TrimAudioCodec { get; } = "libopus";
 
 	public string HardwareAcceleration{ get; } = System.OperatingSystem.IsLinux() ? "vaapi" : "amf";
+
+	public bool UseResolveSafeEncoding { get; init; } = true;
 }
