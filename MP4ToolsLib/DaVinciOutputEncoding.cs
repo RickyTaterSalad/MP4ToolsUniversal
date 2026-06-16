@@ -14,8 +14,8 @@ public static class DaVinciOutputEncoding
 	public const string VaapiFilterDeviceName = "va";
 
 	public const string VaapiRateControlMode = "CQP";
-	public const int VaapiQp = 24;
-	public const int VaapiAsyncDepth = 4;
+	public const int VaapiQp = 28;
+	public const int VaapiAsyncDepth = 16;
 
 	public static bool UsesHardwareAcceleration(string hwAccel) =>
 		hwAccel is "vaapi" or "amf";
