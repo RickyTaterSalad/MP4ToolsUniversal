@@ -633,8 +633,12 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 				if (resolveSafe)
 				{
-					var vfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawInner, hwAccel);
-					DaVinciOutputEncoding.AppendVideoEncodeOptions(encodingTail, hwAccel);
+					var encodeTenBit = IsInput10Bit;
+					if (encodeTenBit)
+						Logger.Log($"Resolve-safe trim: preserving 10-bit HEVC ({VideoBitDepth}).");
+
+					var vfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawInner, hwAccel, encodeTenBit: encodeTenBit);
+					DaVinciOutputEncoding.AppendVideoEncodeOptions(encodingTail, hwAccel, encodeTenBit);
 					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, encPrefs.TrimAudioCodec));
 					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
 

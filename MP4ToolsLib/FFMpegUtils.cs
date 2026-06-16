@@ -617,6 +617,7 @@ namespace MP4ToolsLib
 						Height = GetProbedRawString(s, "height"),
 						FrameRate = GetProbedString(s, "r_frame_rate"),
 						PixelFormat = GetProbedString(s, "pix_fmt"),
+						BitDepth = GetProbedRawString(s, "bit_depth"),
 						CodecName = GetProbedString(s, "codec_name"),
 						SampleRate = GetProbedRawString(s, "sample_rate"),
 						Channels = GetProbedRawString(s, "channels"),

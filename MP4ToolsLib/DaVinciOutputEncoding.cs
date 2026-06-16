@@ -11,6 +11,10 @@ public static class DaVinciOutputEncoding
 {
 	public const int SoftwareCrf = 18;
 	public const string PixelFormat8Bit = "yuv420p";
+	public const string PixelFormat10Bit = "yuv420p10le";
+	public const string VaapiUploadFormat8Bit = "nv12";
+	public const string VaapiUploadFormat10Bit = "p010le";
+	public const string HevcProfileMain10 = "main10";
 	public const string VaapiFilterDeviceName = "va";
 
 	public const string VaapiRateControlMode = "CQP";
@@ -68,19 +72,24 @@ public static class DaVinciOutputEncoding
 		parts.Add(FfmpegOption.Pair(FfmpegArguments.MuxerFlags, "write_colr"));
 	}
 
-	public static string GetSoftwareToVaapiUploadFilterSuffix(string hwAccel) =>
+	public static string GetVaapiHwUploadFilterChain(bool encodeTenBit) =>
+		$"format={(encodeTenBit ? VaapiUploadFormat10Bit : VaapiUploadFormat8Bit)},hwupload";
+
+	public static string GetSoftwareToVaapiUploadFilterSuffix(string hwAccel, bool encodeTenBit = false) =>
 		UsesVaapi(hwAccel) && OperatingSystem.IsLinux()
-			? ",format=nv12,hwupload"
+			? $",{GetVaapiHwUploadFilterChain(encodeTenBit)}"
 			: string.Empty;
 
-	public static void AppendVideoEncodeOptions(ICollection<FfmpegOption?> parts, string hwAccel)
+	public static void AppendVideoEncodeOptions(ICollection<FfmpegOption?> parts, string hwAccel, bool encodeTenBit = false)
 	{
 		var encoder = GetHevcVideoEncoder(hwAccel);
 		parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, encoder));
 		if (encoder == "libx265")
 		{
 			parts.Add(FfmpegOption.Pair(FfmpegArguments.ConstantRateFactor, SoftwareCrf.ToString()));
-			parts.Add(FfmpegOption.Pair(FfmpegArguments.PixelFormat, PixelFormat8Bit));
+			parts.Add(FfmpegOption.Pair(
+				FfmpegArguments.PixelFormat,
+				encodeTenBit ? PixelFormat10Bit : PixelFormat8Bit));
 			AppendColorMetadata(parts);
 		}
 		else if (encoder == "hevc_vaapi")
@@ -88,8 +97,9 @@ public static class DaVinciOutputEncoding
 			parts.Add(FfmpegOption.Pair(FfmpegArguments.RateControlMode, VaapiRateControlMode));
 			parts.Add(FfmpegOption.Pair(FfmpegArguments.QuantizationParameter, VaapiQp.ToString()));
 			parts.Add(FfmpegOption.Pair(FfmpegArguments.AsyncDepth, VaapiAsyncDepth.ToString()));
-			// No -profile:v or -color_primaries here (breaks or is unnecessary on VAAPI surfaces).
-			// NV12 hwupload yields Main 8-bit; colr comes from +write_colr on MP4 muxer.
+			if (encodeTenBit)
+				parts.Add(FfmpegOption.Pair(FfmpegArguments.VideoProfile, HevcProfileMain10));
+			// No -color_primaries on VAAPI surfaces; colr comes from +write_colr on MP4 muxer.
 		}
 		else
 		{
@@ -105,11 +115,15 @@ public static class DaVinciOutputEncoding
 	}
 
 	/// <param name="softwareFrameInput">True for lavfi/CPU frames (intro); false for file input.</param>
-	public static FfmpegOption BuildVideoFilterOption(string drawTextFilter, string hwAccel, bool softwareFrameInput = false)
+	public static FfmpegOption BuildVideoFilterOption(
+		string drawTextFilter,
+		string hwAccel,
+		bool softwareFrameInput = false,
+		bool encodeTenBit = false)
 	{
 		if (softwareFrameInput)
 		{
-			var uploadSuffix = GetSoftwareToVaapiUploadFilterSuffix(hwAccel);
+			var uploadSuffix = GetSoftwareToVaapiUploadFilterSuffix(hwAccel, encodeTenBit);
 			if (!string.IsNullOrEmpty(drawTextFilter))
 				return FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawTextFilter}{uploadSuffix}\"");
 			if (!string.IsNullOrEmpty(uploadSuffix))
@@ -119,14 +133,11 @@ public static class DaVinciOutputEncoding
 
 		if (UsesVaapi(hwAccel) && OperatingSystem.IsLinux())
 		{
+			var upload = GetVaapiHwUploadFilterChain(encodeTenBit);
 			if (!string.IsNullOrEmpty(drawTextFilter))
-			{
-				return FfmpegOption.Pair(
-					FfmpegArguments.VideoFilter,
-					$"\"{drawTextFilter},format=nv12,hwupload\"");
-			}
+				return FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawTextFilter},{upload}\"");
 
-			return FfmpegOption.Pair(FfmpegArguments.VideoFilter, "\"format=nv12,hwupload\"");
+			return FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{upload}\"");
 		}
 
 		if (string.IsNullOrEmpty(drawTextFilter))

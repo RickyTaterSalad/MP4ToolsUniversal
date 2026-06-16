@@ -111,8 +111,9 @@ namespace MP4ToolsLib
                 {
                     vf += $",drawtext=text='{escapedDetails}':fontfile='{Font}':fontcolor=white:fontsize={detailsFontSize}:x=(w-text_w)/2:y=(h/2)+{lineGap / 2}+{subtitleFontSize}+{lineGap}";
                 }
+                var encodeTenBit = resolveSafeEncoding && VideoBitDepthHelper.IsTenBitVideo(video);
                 var hwUploadSuffix = resolveSafeEncoding
-                    ? DaVinciOutputEncoding.GetSoftwareToVaapiUploadFilterSuffix(hwAccelForIntro)
+                    ? DaVinciOutputEncoding.GetSoftwareToVaapiUploadFilterSuffix(hwAccelForIntro, encodeTenBit)
                     : (DaVinciOutputEncoding.UsesVaapi(hwAccelForIntro) && OperatingSystem.IsLinux() ? ",format=nv12,hwupload" : string.Empty);
                 if (!string.IsNullOrEmpty(hwUploadSuffix))
                     vf += hwUploadSuffix;
@@ -121,7 +122,7 @@ namespace MP4ToolsLib
 
                 var introVidTail = new List<FfmpegOption?>();
                 if (resolveSafeEncoding)
-                    DaVinciOutputEncoding.AppendVideoEncodeOptions(introVidTail, hwAccelForIntro);
+                    DaVinciOutputEncoding.AppendVideoEncodeOptions(introVidTail, hwAccelForIntro, encodeTenBit);
                 else
                     introVidTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, vCodec));
 
@@ -182,11 +183,11 @@ namespace MP4ToolsLib
                 if (resolveSafeEncoding)
                 {
                     DaVinciOutputEncoding.AppendPreInputHwOptions(inputToTs, hwAccelForIntro);
-                    var mainVfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawTextFilter: null, hwAccelForIntro);
+                    var mainVfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawTextFilter: null, hwAccelForIntro, encodeTenBit: encodeTenBit);
                     if (!mainVfOpt.IsSkipped)
                         inputToTs.Add(mainVfOpt);
                     DaVinciOutputEncoding.AppendPostInputHwOptions(inputToTs, hwAccelForIntro);
-                    DaVinciOutputEncoding.AppendVideoEncodeOptions(inputToTs, hwAccelForIntro);
+                    DaVinciOutputEncoding.AppendVideoEncodeOptions(inputToTs, hwAccelForIntro, encodeTenBit);
                 }
                 else
                 {

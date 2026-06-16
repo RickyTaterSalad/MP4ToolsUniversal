@@ -60,14 +60,18 @@ namespace MP4Tools
 		}
 
 
-		private string _videoBitDepth = "10 bit";
+		private string _videoBitDepth = string.Empty;
 		public string VideoBitDepth
 		{
 			get => _videoBitDepth;
-			set
-			{
-				SetProperty(ref _videoBitDepth, value);
-			}
+			set => SetProperty(ref _videoBitDepth, value);
+		}
+
+		private bool _isInput10Bit;
+		public bool IsInput10Bit
+		{
+			get => _isInput10Bit;
+			private set => SetProperty(ref _isInput10Bit, value);
 		}
 
 		private string _inputProbeVideoCodecName = string.Empty;
@@ -178,10 +182,14 @@ namespace MP4Tools
 				{
 					var (video, _) = await FFMpegUtils.Instance.ProbeMediaInfoAsync(InputPath, CancellationToken.None, Logger.Log);
 					InputProbeVideoCodecName = video?.CodecName?.Trim() ?? "";
+					IsInput10Bit = VideoBitDepthHelper.IsTenBitVideo(video);
+					VideoBitDepth = VideoBitDepthHelper.FormatDisplay(video);
 				}
 				else
 				{
 					InputProbeVideoCodecName = "";
+					IsInput10Bit = false;
+					VideoBitDepth = string.Empty;
 				}
 			}
 			catch (Exception ex)
