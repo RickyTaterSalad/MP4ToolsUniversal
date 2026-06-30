@@ -124,10 +124,16 @@ namespace MP4ToolsLib
                 if (resolveSafeEncoding)
                     DaVinciOutputEncoding.AppendVideoEncodeOptions(introVidTail, hwAccelForIntro, encodeTenBit);
                 else
-                    introVidTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, vCodec));
+                {
+                    // hwupload produces VAAPI/AMF surfaces; source codec name (e.g. "hevc") maps to libx265 and fails.
+                    var introCodec = DaVinciOutputEncoding.UsesHardwareAcceleration(hwAccelForIntro)
+                        ? DaVinciOutputEncoding.GetHevcVideoEncoder(hwAccelForIntro)
+                        : vCodec;
+                    introVidTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, introCodec));
+                }
 
                 var introMp4Parts = new List<FfmpegOption?>();
-                if (resolveSafeEncoding)
+                if (resolveSafeEncoding || (DaVinciOutputEncoding.UsesVaapi(hwAccelForIntro) && OperatingSystem.IsLinux()))
                     DaVinciOutputEncoding.AppendPreInputHwOptions(introMp4Parts, hwAccelForIntro);
                 else if (DaVinciOutputEncoding.UsesHardwareAcceleration(hwAccelForIntro))
                     introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration, DaVinciOutputEncoding.GetHardwareAccelApi(hwAccelForIntro)));
@@ -154,11 +160,6 @@ namespace MP4ToolsLib
 
                 if (resolveSafeEncoding)
                     DaVinciOutputEncoding.AppendPostInputHwOptions(introMp4Parts, hwAccelForIntro);
-                else if (DaVinciOutputEncoding.UsesVaapi(hwAccelForIntro) && OperatingSystem.IsLinux())
-                {
-                    introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.InitHardwareDevice, $"vaapi={FFMpegUtils.GetPreferredRenderDevice()}"));
-                    introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.FilterHardwareDevice, FFMpegUtils.GetPreferredRenderDevice()));
-                }
 
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioSampleRate, ar));
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioChannels, ach));
