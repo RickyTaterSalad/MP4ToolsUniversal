@@ -633,15 +633,18 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 				if (resolveSafe)
 				{
-					var encodeTenBit = IsInput10Bit;
-					if (encodeTenBit)
-						Logger.Log($"Resolve-safe trim: preserving 10-bit HEVC ({VideoBitDepth}).");
+					// HandBrake "4K Re-encode High Quality": always x265 Main10 (ffmpeg cannot load HB presets).
+					const bool encodeTenBit = true;
+					Logger.Log(IsInput10Bit
+						? $"Resolve-safe trim: 10-bit Main10 HEVC ({VideoBitDepth}), CRF {DaVinciOutputEncoding.SoftwareCrf}, preset {DaVinciOutputEncoding.SoftwareEncoderPreset}."
+						: $"Resolve-safe trim: encoding to 10-bit Main10 HEVC (source {VideoBitDepth}), CRF {DaVinciOutputEncoding.SoftwareCrf}, preset {DaVinciOutputEncoding.SoftwareEncoderPreset}.");
 
 					var vfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawInner, hwAccel, encodeTenBit: encodeTenBit);
 					DaVinciOutputEncoding.AppendVideoEncodeOptions(encodingTail, hwAccel, encodeTenBit);
 					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, encPrefs.TrimAudioCodec));
+					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.AudioChannels, "2"));
 					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
-
+					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.Vbr, "on"));
 					DaVinciOutputEncoding.AppendPreInputHwOptions(trimParts, hwAccel);
 					trimParts.AddRange(
 						FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),

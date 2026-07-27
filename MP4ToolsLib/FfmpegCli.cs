@@ -13,7 +13,7 @@ public static class FfmpegArguments
 	public const string Input = "-i";
 	public const string InitHardwareDevice = "-init_hw_device";
 	public const string FilterHardwareDevice = "-filter_hw_device";
-	
+
 	public const string HardwareAcceleration = "-hwaccel";
 	public const string HardwareAccelerationOutputFormat = "-hwaccel_output_format";
 
@@ -44,12 +44,21 @@ public static class FfmpegArguments
 	public const string AudioChannels = "-ac";
 	public const string AudioBitrate = "-b:a";
 
+	public const string VideoBitrate = "-b:v";
+
+	public const string Vbr = "-vbr";
+
 	public const string OutputVideoFrameRate = "-r";
 	public const string StopEncodingWhenShortestStreamEnds = "-shortest";
 
 	public const string ConstantRateFactor = "-crf";
+	public const string EncoderPreset = "-preset";
+	public const string X265Params = "-x265-params";
 	public const string RateControlMode = "-rc_mode";
 	public const string QuantizationParameter = "-qp";
+
+	public const string GlobalQuality = "-global_quality";
+
 	public const string VideoProfile = "-profile:v";
 	public const string AsyncDepth = "-async_depth";
 	public const string PixelFormat = "-pix_fmt";
