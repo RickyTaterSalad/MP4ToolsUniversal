@@ -35,6 +35,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 	[ObservableProperty]
 	private string _outputPath;
 
+	/// <summary>Local path or http(s) URL to a recording JSON whose elapsed times should be aligned with Start Video Skip.</summary>
+	[ObservableProperty]
+	private string _recordingJsonPath;
+
 	/// <summary>High-level combine progress shown above the action buttons.</summary>
 	[ObservableProperty]
 	private string _operationStatus = string.Empty;
@@ -701,6 +705,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		CancelEdgeDurationRefresh();
 		OperationStatus = string.Empty;
 		OutputPath = string.Empty;
+		RecordingJsonPath = string.Empty;
 		EventInfo = string.Empty;
 		TrimFirstVideo = TrimLastVideo = false;
 		StartRange.Minutes = 0;
@@ -989,17 +994,16 @@ public partial class CombineViewModel : MP4ViewModelBase
 			}
 			else
 			{
-				ReportCombineStep("Merging clips (MPEG-TS pass)…");
+					ReportCombineStep("Merging clips (MPEG-TS pass)…");
 				Logger.Log("Combining with incremental TS merge (intro enabled)...");
 				string mergedTsFile = null;
 				try
 				{
-
-					var audioCodecByPath = new Dictionary<string, string>();
+					var videoCodecByPath = new Dictionary<string, string>();
 					foreach (var f in writeFiles)
 					{
-						var ac = await FFMpegUtils.Instance.GetFirstAudioCodecNameAsync(f.Path, ct, Logger.Log).ConfigureAwait(false);
-						audioCodecByPath[f.Path] = ac;
+						var vc = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(f.Path, ct, Logger.Log).ConfigureAwait(false);
+						videoCodecByPath[f.Path] = vc;
 					}
 
 					for (int i = 0; i < writeFiles.Count; i++)
@@ -1009,18 +1013,16 @@ public partial class CombineViewModel : MP4ViewModelBase
 						ReportCombineStep($"Remuxing clip {i + 1} of {writeFiles.Count} to MPEG-TS…");
 						Logger.Log($"Remuxing part {i + 1}/{writeFiles.Count}: {Path.GetFileName(input)}");
 						var partTsFile = Path.Combine(TempPathHelper.GetTempPath(), $"combine_part_{Guid.NewGuid():N}.ts");
-						var aProbe = audioCodecByPath[input];
-						if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aProbe))
-							Logger.Log("Opus in part — re-encoding audio to AAC for MPEG-TS (reduces concat parsing errors).");
+						videoCodecByPath.TryGetValue(input, out var vProbe);
 						var partTsOpts = new List<FfmpegOption?>
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							i == 0 ? scanOpt : default,
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
 							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
-							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"),
+							FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy),
+							MpegTsVideoBitstream.GetMp4ToAnnexBOption(vProbe),
 						};
-						MpegTsConcatAudio.AppendMp4ToTsAudioOptions(partTsOpts, aProbe);
 						partTsOpts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
 						partTsOpts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(partTsFile)));
 						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(partTsOpts), ct).ConfigureAwait(false);
@@ -1041,7 +1043,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{mergedTsFile}|{partTsFile}")),
 							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
-							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"),
 							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
 							FfmpegOption.Positional(FfmpegCommandLine.Quoted(nextMergedTs))), ct).ConfigureAwait(false);
 						if (File.Exists(nextMergedTs))
@@ -1113,6 +1114,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			Logger.Log("Combine complete.");
 			if (combineSucceeded)
 			{
+				await WriteOffsetRecordingJsonIfNeededAsync(combineOutputFile, ct).ConfigureAwait(false);
 				ReportCombineStep("Finished successfully.");
 				if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
 					FolderOpener.OpenContainingFolderIfExists(combineOutputFile);
@@ -1127,6 +1129,48 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			ReportCombineStep($"Failed: {ex.Message}");
 			Logger.Log($"Combine failed: {ex.Message}");
+		}
+	}
+
+	private async Task WriteOffsetRecordingJsonIfNeededAsync(string combineOutputFile, CancellationToken ct)
+	{
+		var jsonSource = RecordingJsonPath?.Trim();
+		if (string.IsNullOrWhiteSpace(jsonSource))
+			return;
+
+		try
+		{
+			ReportCombineStep("Writing offset recording JSON…");
+			var offsetSeconds = TrimFirstVideo ? StartRange.TotalSeconds : 0;
+			var jsonDestPath = Path.ChangeExtension(combineOutputFile, ".json");
+			var txtDestPath = Path.ChangeExtension(combineOutputFile, ".txt");
+			var offsetRoot = await RecordingJsonElapsedOffset.WriteOffsetCopyAsync(
+				jsonSource,
+				jsonDestPath,
+				offsetSeconds,
+				ct,
+				Logger.Log).ConfigureAwait(false);
+
+			ReportCombineStep("Writing YouTube description…");
+			await RecordingJsonElapsedOffset.WriteYoutubeDescriptionAsync(
+				offsetRoot,
+				txtDestPath,
+				EventDate,
+				EventInfo,
+				VisitorName,
+				VisitorScore,
+				HomeName,
+				HomeScore,
+				ct,
+				Logger.Log).ConfigureAwait(false);
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"Failed to write recording JSON / YouTube description: {ex.Message}");
 		}
 	}
 

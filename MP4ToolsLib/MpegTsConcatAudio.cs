@@ -25,12 +25,10 @@ public static class MpegTsConcatAudio
 			parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy));
 	}
 
-	/// <summary>After MP4→TS, audio is AAC if source was AAC (copy) or Opus (transcoded to AAC).</summary>
+	/// <summary>True when the audio in the MPEG-TS intermediate is AAC (native AAC or Opus transcoded to AAC).</summary>
 	public static bool IntermediateTsAudioIsAac(string ffmpegCodecOrEncoderLabel)
 	{
 		var x = ffmpegCodecOrEncoderLabel?.Trim().ToLowerInvariant() ?? "";
-		if (x.Contains("opus"))
-			return true;
-		return x is "aac" or "mp4a";
+		return x is "aac" or "mp4a" || x.Contains("aac");
 	}
 }

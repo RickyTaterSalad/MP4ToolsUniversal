@@ -434,6 +434,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 				{
 					Logger.Log("Combining trimmed files (MPEG-TS stream copy)...");
 					var tempTsFiles = new List<string>();
+					var tsVideoBsf = MpegTsVideoBitstream.GetMp4ToAnnexBOption(
+						resolveSafe ? "hevc" : InputProbeVideoCodecName);
 					for (var ti = 0; ti < outputPaths.Count; ti++)
 					{
 						var input = outputPaths[ti];
@@ -446,7 +448,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
 							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
-							FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"),
+							tsVideoBsf,
 							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
 							FfmpegOption.Positional(FfmpegCommandLine.Quoted(tsFile)),
 						};

@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using MP4Tools.ViewModels;
 using MP4ToolsLib;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -101,4 +102,30 @@ public partial class CombineView : UserControl
             ((MP4ViewModelBase)DataContext!).SetFileCommand.Execute(folder[0].Path.LocalPath);
         }
     }
+
+	private async void BrowseJsonButton_OnClick(object sender, RoutedEventArgs e)
+	{
+		var topLevel = TopLevel.GetTopLevel(this);
+		var files = await topLevel!.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+		{
+			Title = "Select Recording JSON",
+			AllowMultiple = false,
+			FileTypeFilter = new List<FilePickerFileType>
+			{
+				new FilePickerFileType("JSON Files")
+				{
+					Patterns = new List<string> { "*.json" }
+				},
+				new FilePickerFileType("All files")
+				{
+					Patterns = new List<string> { "*.*" }
+				}
+			}
+		});
+
+		if (files.Count > 0 && DataContext is CombineViewModel vm)
+		{
+			vm.RecordingJsonPath = files[0].Path.LocalPath;
+		}
+	}
 }

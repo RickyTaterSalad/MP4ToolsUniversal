@@ -82,8 +82,10 @@ namespace MP4ToolsLib
                 string acl = !string.IsNullOrWhiteSpace(audio?.ChannelLayout) ? audio.ChannelLayout : (ach == "1" ? "mono" : "stereo");
                 string aCodec = (!string.IsNullOrWhiteSpace(audio?.CodecName) ? audio.CodecName : "aac").ToLowerInvariant();
 
-
-                string introAudioEnc = useTrimSegmentAudioCodec ? "libopus" : "aac";
+                // Trim re-encodes audio (libopus). Combine matches source so the main clip can stay -c:a copy.
+                string introAudioEnc = useTrimSegmentAudioCodec
+                    ? "libopus"
+                    : (aCodec.Contains("opus") ? "libopus" : "aac");
 
                 var escapedTitle = EscapeDrawtext(titleText);
                 var escapedSubtitle = EscapeDrawtext(subtitleText);
@@ -148,14 +150,18 @@ namespace MP4ToolsLib
                 );
                 introMp4Parts.AddRange(introVidTail);
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.OutputVideoFrameRate, fps));
-                if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(introAudioEnc))
+                // Only force AAC for Opus when building trim-style intermediates; combine keeps the matched encoder.
+                if (useTrimSegmentAudioCodec && MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(introAudioEnc))
                 {
                     log("Intro audio is Opus: using AAC in MPEG-TS intermediate (avoids opus packet header errors when concatenating).");
                     introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, "aac"));
                     introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
                 }
-                else{
+                else
+                {
                     introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, introAudioEnc));
+                    if (!string.Equals(introAudioEnc, FfmpegArguments.StreamCopy, StringComparison.OrdinalIgnoreCase))
+                        introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitrate, "192k"));
                 }
 
                 if (resolveSafeEncoding)
@@ -164,7 +170,11 @@ namespace MP4ToolsLib
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioSampleRate, ar));
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.AudioChannels, ach));
                 introMp4Parts.Add(FfmpegOption.Unary(FfmpegArguments.StopEncodingWhenShortestStreamEnds));
-                introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"));
+                // Intro is HEVC when Resolve-safe / HW accel; otherwise matches source codec (e.g. AV1).
+                var introEncodedCodec = resolveSafeEncoding || DaVinciOutputEncoding.UsesHardwareAcceleration(hwAccelForIntro)
+                    ? "hevc"
+                    : vCodec;
+                introMp4Parts.Add(MpegTsVideoBitstream.GetMp4ToAnnexBOption(introEncodedCodec));
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
                 introMp4Parts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(introTs)));
 
@@ -172,8 +182,6 @@ namespace MP4ToolsLib
                 progress?.Report(0.8);
 
                 Step("Muxing main clip to MPEG-TS…");
-                if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aCodec))
-                    log("Main clip audio is Opus: using AAC in MPEG-TS intermediate (avoids opus packet header errors when concatenating).");
                 var inputToTs = new List<FfmpegOption?>
                 {
                     FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
@@ -193,11 +201,24 @@ namespace MP4ToolsLib
                 else
                 {
                     inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy));
-                    inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"));
+                    inputToTs.Add(MpegTsVideoBitstream.GetMp4ToAnnexBOption(vCodec));
                 }
-                MpegTsConcatAudio.AppendMp4ToTsAudioOptions(inputToTs, aCodec);
+
+                // Combine: always copy main audio. Trim: may re-encode Opus→AAC for MPEG-TS.
+                if (useTrimSegmentAudioCodec)
+                {
+                    if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aCodec))
+                        log("Main clip audio is Opus: using AAC in MPEG-TS intermediate (avoids opus packet header errors when concatenating).");
+                    MpegTsConcatAudio.AppendMp4ToTsAudioOptions(inputToTs, aCodec);
+                }
+                else
+                {
+                    log("Combine intro merge: copying main clip audio.");
+                    inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy));
+                }
+
                 if (resolveSafeEncoding)
-                    inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.VideoBitstreamFilter, "hevc_mp4toannexb"));
+                    inputToTs.Add(MpegTsVideoBitstream.GetMp4ToAnnexBOption("hevc"));
                 inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
                 inputToTs.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(inputTs)));
                 await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(inputToTs), ct, log);
@@ -205,8 +226,14 @@ namespace MP4ToolsLib
 
                 log("Concatenating...");
                 Step("Joining intro and main clip…");
-                var needAacAdtsBsf = MpegTsConcatAudio.IntermediateTsAudioIsAac(introAudioEnc)
-                    && MpegTsConcatAudio.IntermediateTsAudioIsAac(aCodec);
+                var introAudioInTs = useTrimSegmentAudioCodec && MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(introAudioEnc)
+                    ? "aac"
+                    : introAudioEnc;
+                var mainAudioInTs = useTrimSegmentAudioCodec && MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aCodec)
+                    ? "aac"
+                    : aCodec;
+                var needAacAdtsBsf = MpegTsConcatAudio.IntermediateTsAudioIsAac(introAudioInTs)
+                    && MpegTsConcatAudio.IntermediateTsAudioIsAac(mainAudioInTs);
                 var aacBsfOpt = needAacAdtsBsf
                     ? FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc)
                     : (FfmpegOption?)null;

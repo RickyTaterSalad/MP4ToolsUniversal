@@ -15,7 +15,6 @@
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
@@ -31,15 +30,13 @@
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="auto"/>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="auto"/>
 			</Grid.ColumnDefinitions>
-			<Grid.RowDefinitions>
-				<RowDefinition Height="auto"/>
-				<RowDefinition Height="auto"/>
-			</Grid.RowDefinitions>
-			<StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
-				<TextBox PlaceholderText="Source Video Folder" Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"/>
-			</StackPanel>
-			<Button Grid.Column="1" Grid.Row="1" Click="BrowseButton_OnClick" Padding="4">
+			<TextBox Grid.Column="0" Margin="0,0,10,0"
+					 PlaceholderText="Source Video Folder"
+					 Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"/>
+			<Button Grid.Column="1" Click="BrowseButton_OnClick" Padding="4" Margin="0,0,15,0">
 				<Button.Content>
 					<StackPanel Orientation="Horizontal">
 						<materialIcons:MaterialIcon Kind="Folder"/>
@@ -47,8 +44,19 @@
 					</StackPanel>
 				</Button.Content>
 			</Button>
+			<TextBox Grid.Column="2" Margin="0,0,10,0"
+					 PlaceholderText="Recording JSON (file path or URL)"
+					 Text="{Binding RecordingJsonPath, UpdateSourceTrigger=PropertyChanged}"/>
+			<Button Grid.Column="3" Click="BrowseJsonButton_OnClick" Padding="4">
+				<Button.Content>
+					<StackPanel Orientation="Horizontal">
+						<materialIcons:MaterialIcon Kind="FileCode"/>
+						<TextBlock Text="Browse" Margin="5,0,5,0" />
+					</StackPanel>
+				</Button.Content>
+			</Button>
 		</Grid>
-		<StackPanel Grid.Row="2">
+		<StackPanel Grid.Row="1">
 			<StackPanel Margin="0,0,0,20" VerticalAlignment="Top">
 				<StackPanel Orientation="Horizontal" Margin="0,10,0,0">
 					<StackPanel Orientation="Horizontal" Margin="10,0,30,0">
@@ -108,13 +116,13 @@
 				</Border>
 			</StackPanel>
 		</StackPanel>
-		<StackPanel Grid.Row="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,5">
+		<StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,5">
 			<Button Command="{Binding RemoveSelectedFileCommand}" Padding="5" ToolTip.Tip="Remove Selected File">
 				<materialIcons:MaterialIcon Kind="Remove"/>
 			</Button>
 			<Label Content="Input Files" VerticalAlignment="Center"/>
 		</StackPanel>
-		<ListBox Grid.Row="4" Grid.ColumnSpan="3" MinHeight="150" ItemsSource="{Binding InputFiles}" SelectedItem="{Binding SelectedInputFile}">
+		<ListBox Grid.Row="3" Grid.ColumnSpan="3" MinHeight="150" ItemsSource="{Binding InputFiles}" SelectedItem="{Binding SelectedInputFile}">
 			<ListBox.ItemTemplate>
 				<DataTemplate>
 					<StackPanel Orientation="Horizontal" 
@@ -129,16 +137,16 @@
 			</ListBox.ItemTemplate>
 		</ListBox>
 
-		<Label Content="Output Path" Grid.Row="5" Margin="0,5,0,0"/>
-		<StackPanel Grid.Column="0" Grid.Row="6" Grid.ColumnSpan="3" Margin="0,0,0,10" >
+		<Label Content="Output Path" Grid.Row="4" Margin="0,5,0,0"/>
+		<StackPanel Grid.Column="0" Grid.Row="5" Grid.ColumnSpan="3" Margin="0,0,0,10" >
 			<TextBox PlaceholderText="Combined Output File" Text="{Binding OutputPath}" />
 		</StackPanel>
-		<TextBlock Grid.Row="7" Grid.ColumnSpan="3"
+		<TextBlock Grid.Row="6" Grid.ColumnSpan="3"
 				   Text="{Binding OperationStatus}"
 				   TextWrapping="Wrap"
 				   Margin="0,8,0,8"
 				   Opacity="0.92"/>
-		<StackPanel Orientation="Horizontal" Grid.Row="8" Grid.Column="0" HorizontalAlignment="Left">
+		<StackPanel Orientation="Horizontal" Grid.Row="7" Grid.Column="0" HorizontalAlignment="Left">
 			<Button Command="{Binding StopCommand}" Padding="4" IsEnabled="{Binding CanStop}" Margin="0,0,5,0">
 				<Button.Content>
 					<StackPanel Orientation="Horizontal">
@@ -156,7 +164,7 @@
 				</Button.Content>
 			</Button>
 		</StackPanel>
-		<StackPanel Orientation="Horizontal" Grid.Row="8" Grid.Column="2" HorizontalAlignment="Right" >
+		<StackPanel Orientation="Horizontal" Grid.Row="7" Grid.Column="2" HorizontalAlignment="Right" >
 			<Button Margin="10,0,0,0" Command="{Binding CombineCommand}" Padding="4" IsEnabled="{Binding CanCombine}">
 				<Button.Content>
 					<StackPanel Orientation="Horizontal">
