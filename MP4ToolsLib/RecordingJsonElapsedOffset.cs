@@ -95,23 +95,24 @@ public static class RecordingJsonElapsedOffset
 	{
 		var sb = new StringBuilder();
 
+		var visitor = visitorName?.Trim() ?? string.Empty;
+		var home = homeName?.Trim() ?? string.Empty;
+
+		if (TryGetWinnerLine(visitor, visitorScore, home, homeScore, out var winnerLine))
+			sb.AppendLine(winnerLine);
+
 		if (eventDate.HasValue)
 			sb.AppendLine($"Event Date: {eventDate.Value:MM/dd/yyyy}");
 
 		if (!string.IsNullOrWhiteSpace(eventInfo))
 			sb.AppendLine($"Event Info: {eventInfo.Trim()}");
 
-		var visitor = visitorName?.Trim() ?? string.Empty;
-		var home = homeName?.Trim() ?? string.Empty;
 		if (!string.IsNullOrWhiteSpace(visitor) || !string.IsNullOrWhiteSpace(home) || visitorScore.HasValue || homeScore.HasValue)
 		{
 			var visitorPart = FormatTeamLine(visitor, visitorScore);
 			var homePart = FormatTeamLine(home, homeScore);
 			sb.AppendLine($"Visitor: {visitorPart}");
 			sb.AppendLine($"Home: {homePart}");
-
-			if (TryGetWinnerLine(visitor, visitorScore, home, homeScore, out var winnerLine))
-				sb.AppendLine(winnerLine);
 		}
 
 		var bookmarks = CollectBookmarks(offsetRoot);
