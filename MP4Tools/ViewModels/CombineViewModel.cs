@@ -40,8 +40,12 @@ public partial class CombineViewModel : MP4ViewModelBase
 	private string _recordingJsonPath;
 
 	/// <summary>High-level combine progress shown above the action buttons.</summary>
-	[ObservableProperty]
 	private string _operationStatus = string.Empty;
+	public string OperationStatus
+	{
+		get => _operationStatus;
+		set => SetProperty(ref _operationStatus, value);
+	}
 
 	private string _homeName;
 
@@ -1114,7 +1118,9 @@ public partial class CombineViewModel : MP4ViewModelBase
 			Logger.Log("Combine complete.");
 			if (combineSucceeded)
 			{
-				await WriteOffsetRecordingJsonIfNeededAsync(combineOutputFile, ct).ConfigureAwait(false);
+				var introChapterOffsetSeconds = shouldAddIntro ? IntroDurationSeconds : 0;
+				await WriteOffsetRecordingJsonIfNeededAsync(combineOutputFile, introChapterOffsetSeconds, ct)
+					.ConfigureAwait(false);
 				ReportCombineStep("Finished successfully.");
 				if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
 					FolderOpener.OpenContainingFolderIfExists(combineOutputFile);
@@ -1132,7 +1138,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 	}
 
-	private async Task WriteOffsetRecordingJsonIfNeededAsync(string combineOutputFile, CancellationToken ct)
+	private async Task WriteOffsetRecordingJsonIfNeededAsync(
+		string combineOutputFile,
+		double introChapterOffsetSeconds,
+		CancellationToken ct)
 	{
 		var jsonSource = RecordingJsonPath?.Trim();
 		if (string.IsNullOrWhiteSpace(jsonSource))
@@ -1149,9 +1158,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 				jsonDestPath,
 				offsetSeconds,
 				ct,
-				Logger.Log).ConfigureAwait(false);
+				Logger.Log,
+				introChapterOffsetSeconds).ConfigureAwait(false);
 
 			ReportCombineStep("Writing YouTube description…");
+			// Intro is already baked into offsetRoot elapsed times; do not add it again.
 			await RecordingJsonElapsedOffset.WriteYoutubeDescriptionAsync(
 				offsetRoot,
 				txtDestPath,
@@ -1163,6 +1174,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 				HomeScore,
 				ct,
 				Logger.Log).ConfigureAwait(false);
+
+			// MP4 chapter embedding is disabled for now; YouTube chapters come from the .txt description.
 		}
 		catch (OperationCanceledException)
 		{

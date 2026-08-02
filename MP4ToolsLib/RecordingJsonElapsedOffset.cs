@@ -12,8 +12,9 @@ using System.Threading.Tasks;
 namespace MP4ToolsLib;
 
 /// <summary>
-/// Reads a recording JSON (local path or http/https URL), subtracts a start-skip offset from all
-/// <c>elapsed</c> and <c>stopElapsed</c> string fields, and writes a new file. Never modifies the source.
+/// Reads a recording JSON (local path or http/https URL), adjusts all <c>elapsed</c> and
+/// <c>stopElapsed</c> string fields (subtract start skip, optionally add intro duration),
+/// and writes a new file. Never modifies the source.
 /// </summary>
 public static class RecordingJsonElapsedOffset
 {
@@ -25,28 +26,35 @@ public static class RecordingJsonElapsedOffset
 	};
 
 	/// <summary>
-	/// Loads source JSON, applies the start-skip offset, writes the offset JSON, and returns the in-memory root.
+	/// Loads source JSON, applies start-skip (subtract) and optional intro (add) offsets,
+	/// writes the adjusted JSON, and returns the in-memory root.
 	/// </summary>
 	public static async Task<JsonNode> WriteOffsetCopyAsync(
 		string sourcePathOrUrl,
 		string destinationPath,
-		double offsetSeconds,
+		double startSkipSeconds,
 		CancellationToken ct = default,
-		Action<string> log = null)
+		Action<string> log = null,
+		double introAddSeconds = 0)
 	{
 		if (string.IsNullOrWhiteSpace(sourcePathOrUrl))
 			throw new ArgumentException("Source path or URL is required.", nameof(sourcePathOrUrl));
 		if (string.IsNullOrWhiteSpace(destinationPath))
 			throw new ArgumentException("Destination path is required.", nameof(destinationPath));
 
-		var root = await LoadOffsetRootAsync(sourcePathOrUrl.Trim(), offsetSeconds, ct, log).ConfigureAwait(false);
+		var skip = Math.Max(0, startSkipSeconds);
+		var intro = Math.Max(0, introAddSeconds);
+		// Net shift relative to original elapsed: remove skipped lead-in, then push forward by intro.
+		var netAddSeconds = intro - skip;
+		var root = await LoadOffsetRootAsync(sourcePathOrUrl.Trim(), netAddSeconds, ct, log).ConfigureAwait(false);
 
 		var destDir = Path.GetDirectoryName(destinationPath);
 		if (!string.IsNullOrWhiteSpace(destDir) && !Directory.Exists(destDir))
 			Directory.CreateDirectory(destDir);
 
 		await File.WriteAllTextAsync(destinationPath, root.ToJsonString(WriteOptions), ct).ConfigureAwait(false);
-		log?.Invoke($"Wrote offset recording JSON ({Math.Max(0, offsetSeconds):0.###}s start skip): {destinationPath}");
+		log?.Invoke(
+			$"Wrote offset recording JSON (start skip -{skip:0.###}s, intro +{intro:0.###}s): {destinationPath}");
 		return root;
 	}
 
@@ -60,7 +68,8 @@ public static class RecordingJsonElapsedOffset
 		string homeName,
 		int? homeScore,
 		CancellationToken ct = default,
-		Action<string> log = null)
+		Action<string> log = null,
+		double bookmarkTimeOffsetSeconds = 0)
 	{
 		if (offsetRoot is null)
 			throw new ArgumentNullException(nameof(offsetRoot));
@@ -74,7 +83,8 @@ public static class RecordingJsonElapsedOffset
 			visitorName,
 			visitorScore,
 			homeName,
-			homeScore);
+			homeScore,
+			bookmarkTimeOffsetSeconds);
 
 		var destDir = Path.GetDirectoryName(destinationPath);
 		if (!string.IsNullOrWhiteSpace(destDir) && !Directory.Exists(destDir))
@@ -91,7 +101,8 @@ public static class RecordingJsonElapsedOffset
 		string visitorName,
 		int? visitorScore,
 		string homeName,
-		int? homeScore)
+		int? homeScore,
+		double bookmarkTimeOffsetSeconds = 0)
 	{
 		var sb = new StringBuilder();
 
@@ -121,16 +132,121 @@ public static class RecordingJsonElapsedOffset
 			if (sb.Length > 0)
 				sb.AppendLine();
 
+			var introOffset = Math.Max(0, bookmarkTimeOffsetSeconds);
 			foreach (var bookmark in bookmarks)
-				sb.AppendLine($"{bookmark.Elapsed} {bookmark.Text}");
+			{
+				var elapsed = introOffset > 0
+					? FormatElapsedTimestamp(bookmark.Seconds + introOffset)
+					: bookmark.Elapsed;
+				sb.AppendLine($"{elapsed} {bookmark.Text}");
+			}
 		}
 
 		return sb.ToString().TrimEnd() + Environment.NewLine;
 	}
 
+	/// <summary>
+	/// Builds an ffmpeg <c>;FFMETADATA1</c> chapters file from offset-adjusted bookmarks.
+	/// Optional <paramref name="chapterTimeOffsetSeconds"/> shifts all chapter starts (e.g. intro duration).
+	/// </summary>
+	/// <returns>Metadata text, or <c>null</c> when there are no bookmarks.</returns>
+	public static string BuildFfmetadataChapters(
+		JsonNode offsetRoot,
+		double chapterTimeOffsetSeconds = 0,
+		double? mediaDurationSeconds = null)
+	{
+		if (offsetRoot is null)
+			throw new ArgumentNullException(nameof(offsetRoot));
+
+		var bookmarks = CollectBookmarks(offsetRoot);
+		if (bookmarks.Count == 0)
+			return null;
+
+		var offset = Math.Max(0, chapterTimeOffsetSeconds);
+		var startsMs = new List<long>(bookmarks.Count);
+		foreach (var bookmark in bookmarks)
+		{
+			var ms = (long)Math.Round(Math.Max(0, bookmark.Seconds + offset) * 1000.0);
+			if (startsMs.Count > 0 && ms <= startsMs[^1])
+				ms = startsMs[^1] + 1;
+			startsMs.Add(ms);
+		}
+
+		long? durationMs = null;
+		if (mediaDurationSeconds.HasValue && mediaDurationSeconds.Value > 0)
+			durationMs = (long)Math.Round(mediaDurationSeconds.Value * 1000.0);
+
+		var sb = new StringBuilder();
+		sb.AppendLine(";FFMETADATA1");
+		for (var i = 0; i < bookmarks.Count; i++)
+		{
+			var start = startsMs[i];
+			long end;
+			if (i + 1 < startsMs.Count)
+				end = startsMs[i + 1];
+			else if (durationMs.HasValue && durationMs.Value > start)
+				end = durationMs.Value;
+			else
+				end = start + 1000;
+
+			if (end <= start)
+				end = start + 1;
+
+			sb.AppendLine("[CHAPTER]");
+			sb.AppendLine("TIMEBASE=1/1000");
+			sb.AppendLine($"START={start}");
+			sb.AppendLine($"END={end}");
+			sb.AppendLine($"title={EscapeFfmetadataValue(bookmarks[i].Text)}");
+		}
+
+		return sb.ToString();
+	}
+
+	public static async Task<bool> WriteFfmetadataChaptersAsync(
+		JsonNode offsetRoot,
+		string destinationPath,
+		double chapterTimeOffsetSeconds = 0,
+		double? mediaDurationSeconds = null,
+		CancellationToken ct = default,
+		Action<string> log = null)
+	{
+		if (string.IsNullOrWhiteSpace(destinationPath))
+			throw new ArgumentException("Destination path is required.", nameof(destinationPath));
+
+		var text = BuildFfmetadataChapters(offsetRoot, chapterTimeOffsetSeconds, mediaDurationSeconds);
+		if (string.IsNullOrWhiteSpace(text))
+		{
+			log?.Invoke("No bookmarks to write as ffmpeg chapters metadata.");
+			return false;
+		}
+
+		var destDir = Path.GetDirectoryName(destinationPath);
+		if (!string.IsNullOrWhiteSpace(destDir) && !Directory.Exists(destDir))
+			Directory.CreateDirectory(destDir);
+
+		await File.WriteAllTextAsync(destinationPath, text, ct).ConfigureAwait(false);
+		log?.Invoke($"Wrote ffmpeg chapters metadata: {destinationPath}");
+		return true;
+	}
+
+	private static string EscapeFfmetadataValue(string value)
+	{
+		if (string.IsNullOrEmpty(value))
+			return string.Empty;
+
+		return value
+			.Replace("\\", "\\\\", StringComparison.Ordinal)
+			.Replace("=", "\\=", StringComparison.Ordinal)
+			.Replace(";", "\\;", StringComparison.Ordinal)
+			.Replace("#", "\\#", StringComparison.Ordinal)
+			.Replace("\r\n", "\\\n", StringComparison.Ordinal)
+			.Replace("\n", "\\\n", StringComparison.Ordinal)
+			.Replace("\r", "\\\n", StringComparison.Ordinal);
+	}
+
 	private static async Task<JsonNode> LoadOffsetRootAsync(
 		string sourcePathOrUrl,
-		double offsetSeconds,
+		double netAddSeconds,
 		CancellationToken ct,
 		Action<string> log)
 	{
@@ -138,7 +254,7 @@ public static class RecordingJsonElapsedOffset
 		var root = JsonNode.Parse(json)
 			?? throw new InvalidOperationException("Recording JSON is empty or invalid.");
 
-		OffsetElapsedFields(root, Math.Max(0, offsetSeconds));
+		AdjustElapsedFields(root, netAddSeconds);
 		return root;
 	}
 
@@ -179,7 +295,7 @@ public static class RecordingJsonElapsedOffset
 		return await File.ReadAllTextAsync(sourcePathOrUrl, ct).ConfigureAwait(false);
 	}
 
-	private static void OffsetElapsedFields(JsonNode node, double offsetSeconds)
+	private static void AdjustElapsedFields(JsonNode node, double netAddSeconds)
 	{
 		if (node is JsonObject obj)
 		{
@@ -192,11 +308,11 @@ public static class RecordingJsonElapsedOffset
 				if ((key is "elapsed" or "stopElapsed") && child is JsonValue value)
 				{
 					var raw = value.GetValue<string>();
-					obj[key] = OffsetTimeString(raw, offsetSeconds);
+					obj[key] = AdjustTimeString(raw, netAddSeconds);
 				}
 				else
 				{
-					OffsetElapsedFields(child, offsetSeconds);
+					AdjustElapsedFields(child, netAddSeconds);
 				}
 			}
 		}
@@ -205,20 +321,19 @@ public static class RecordingJsonElapsedOffset
 			foreach (var item in arr)
 			{
 				if (item != null)
-					OffsetElapsedFields(item, offsetSeconds);
+					AdjustElapsedFields(item, netAddSeconds);
 			}
 		}
 	}
 
-	private static string OffsetTimeString(string time, double offsetSeconds)
+	/// <summary>Applies a signed net add to an HH:MM:SS elapsed string (clamped at zero).</summary>
+	private static string AdjustTimeString(string time, double netAddSeconds)
 	{
 		var range = TimeRange.FromString(time);
 		if (range == null)
 			return time ?? "00:00:00";
 
-		var remaining = Math.Max(0, range.TotalSeconds - offsetSeconds);
-		var ts = TimeSpan.FromSeconds(Math.Floor(remaining));
-		return $"{(int)ts.TotalHours:00}:{ts.Minutes:00}:{ts.Seconds:00}";
+		return FormatElapsedTimestamp(Math.Max(0, range.TotalSeconds + netAddSeconds));
 	}
 
 	private static string FormatTeamLine(string name, int? score)
@@ -278,18 +393,6 @@ public static class RecordingJsonElapsedOffset
 			}
 		}
 
-		if (obj["notes"] is JsonArray notes)
-		{
-			foreach (var item in notes.OfType<JsonObject>())
-			{
-				var text = item["text"]?.GetValue<string>()?.Trim();
-				if (string.IsNullOrWhiteSpace(text))
-					continue;
-
-				AddBookmark(bookmarks, item["elapsed"]?.GetValue<string>(), text);
-			}
-		}
-
 		return bookmarks
 			.OrderBy(b => b.Seconds)
 			.ThenBy(b => b.Text, StringComparer.OrdinalIgnoreCase)
@@ -304,8 +407,15 @@ public static class RecordingJsonElapsedOffset
 		var range = TimeRange.FromString(elapsed);
 		var seconds = range?.TotalSeconds ?? 0;
 		var formatted = range != null
-			? $"{range.Hours:00}:{range.Minutes:00}:{range.Seconds:00}"
+			? FormatElapsedTimestamp(seconds)
 			: (elapsed?.Trim() ?? "00:00:00");
 		bookmarks.Add((seconds, formatted, text));
+	}
+
+	private static string FormatElapsedTimestamp(double totalSeconds)
+	{
+		var remaining = Math.Max(0, totalSeconds);
+		var ts = TimeSpan.FromSeconds(Math.Floor(remaining));
+		return $"{(int)ts.TotalHours:00}:{ts.Minutes:00}:{ts.Seconds:00}";
 	}
 }

@@ -66,6 +66,10 @@ public static class FfmpegArguments
 	public const string ColorTransfer = "-color_trc";
 	public const string ColorSpace = "-colorspace";
 	public const string MuxerFlags = "-movflags";
+
+	public const string MapStreams = "-map";
+	public const string MapMetadata = "-map_metadata";
+	public const string MapChapters = "-map_chapters";
 }
 
 /// <summary>
