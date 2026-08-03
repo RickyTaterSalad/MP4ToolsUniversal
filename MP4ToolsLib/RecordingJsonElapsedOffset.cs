@@ -58,6 +58,97 @@ public static class RecordingJsonElapsedOffset
 		return root;
 	}
 
+	/// <summary>
+	/// Merges Combine intro-screen / game-info fields into the session JSON root
+	/// (used for the local offset file and Baseball Logger revision upload).
+	/// When game info is present, sets <c>id</c> to the same display name used for the combine MP4 file.
+	/// </summary>
+	public static void ApplyCombineMetadata(
+		JsonNode root,
+		string introTitle,
+		string introSubtitle,
+		string introDetails,
+		int introDurationSeconds,
+		DateTime? eventDate,
+		string eventInfo,
+		string visitorName,
+		int? visitorScore,
+		string homeName,
+		int? homeScore)
+	{
+		if (root is not JsonObject obj)
+			throw new ArgumentException("Recording JSON root must be an object.", nameof(root));
+
+		var title = introTitle?.Trim() ?? "";
+		var subtitle = introSubtitle?.Trim() ?? "";
+		var details = introDetails?.Trim() ?? "";
+		var duration = Math.Max(0, introDurationSeconds);
+
+		var metadata = new JsonObject
+		{
+			["durationSeconds"] = duration,
+		};
+		if (!string.IsNullOrWhiteSpace(title))
+			metadata["title"] = title;
+		if (!string.IsNullOrWhiteSpace(subtitle))
+			metadata["subtitle"] = subtitle;
+		if (!string.IsNullOrWhiteSpace(details))
+			metadata["details"] = details;
+		obj["metadata"] = metadata;
+
+		// Keep flat intro fields for older server builds / tooling.
+		SetOptionalString(obj, "introTitle", title);
+		SetOptionalString(obj, "introSubtitle", subtitle);
+		SetOptionalString(obj, "introDetails", details);
+		obj["introDurationSeconds"] = duration;
+
+		SetOptionalString(obj, "eventInfo", eventInfo);
+		SetOptionalString(obj, "visitorName", visitorName);
+		SetOptionalString(obj, "homeName", homeName);
+
+		if (eventDate.HasValue)
+			obj["startDate"] = eventDate.Value.ToString("yyyy-MM-dd");
+
+		if (visitorScore.HasValue)
+			obj["visitorScore"] = Math.Max(0, visitorScore.Value);
+
+		if (homeScore.HasValue)
+			obj["homeScore"] = Math.Max(0, homeScore.Value);
+
+		var displayName = FileUtils.BuildGameInfoOutputFileName(
+			eventDate, visitorName, homeName, visitorScore, homeScore);
+		if (!string.IsNullOrWhiteSpace(displayName))
+			obj["id"] = displayName;
+	}
+
+	public static async Task WriteJsonNodeAsync(
+		JsonNode root,
+		string destinationPath,
+		CancellationToken ct = default,
+		Action<string> log = null)
+	{
+		if (root is null)
+			throw new ArgumentNullException(nameof(root));
+		if (string.IsNullOrWhiteSpace(destinationPath))
+			throw new ArgumentException("Destination path is required.", nameof(destinationPath));
+
+		var destDir = Path.GetDirectoryName(destinationPath);
+		if (!string.IsNullOrWhiteSpace(destDir) && !Directory.Exists(destDir))
+			Directory.CreateDirectory(destDir);
+
+		await File.WriteAllTextAsync(destinationPath, root.ToJsonString(WriteOptions), ct).ConfigureAwait(false);
+		log?.Invoke($"Wrote recording JSON: {destinationPath}");
+	}
+
+	private static void SetOptionalString(JsonObject obj, string key, string value)
+	{
+		var trimmed = value?.Trim();
+		if (string.IsNullOrWhiteSpace(trimmed))
+			obj.Remove(key);
+		else
+			obj[key] = trimmed;
+	}
+
 	public static async Task WriteYoutubeDescriptionAsync(
 		JsonNode offsetRoot,
 		string destinationPath,

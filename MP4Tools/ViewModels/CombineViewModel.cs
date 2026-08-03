@@ -57,6 +57,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 			if (SetProperty(ref _homeName, value))
 			{
 				UpdateIntroTitleFromGameInfo();
+				UpdateIntroDetailsFromGameInfo();
+				UpdateOutputPathFromGameInfo();
 			}
 		}
 	}
@@ -74,6 +76,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 			if (SetProperty(ref _visitorName, value))
 			{
 				UpdateIntroTitleFromGameInfo();
+				UpdateIntroDetailsFromGameInfo();
+				UpdateOutputPathFromGameInfo();
 			}
 		}
 	}
@@ -1160,6 +1164,21 @@ public partial class CombineViewModel : MP4ViewModelBase
 				ct,
 				Logger.Log,
 				introChapterOffsetSeconds).ConfigureAwait(false);
+
+			RecordingJsonElapsedOffset.ApplyCombineMetadata(
+				offsetRoot,
+				IntroTitle,
+				IntroSubtitle,
+				IntroDetails,
+				IntroDurationSeconds,
+				EventDate,
+				EventInfo,
+				VisitorName,
+				VisitorScore,
+				HomeName,
+				HomeScore);
+			await RecordingJsonElapsedOffset.WriteJsonNodeAsync(offsetRoot, jsonDestPath, ct, Logger.Log)
+				.ConfigureAwait(false);
 
 			ReportCombineStep("Writing YouTube description…");
 			// Intro is already baked into offsetRoot elapsed times; do not add it again.
