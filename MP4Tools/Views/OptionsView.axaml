@@ -75,6 +75,17 @@
 								IsChecked="{Binding UseResolveSafeEncoding}"
 								ToolTip.Tip="When enabled, trim re-encodes video to clean 8-bit HEVC MP4. Combine always uses stream copy. When disabled, trim uses fast stream-copy (may crash or misalign in Resolve)."/>
 
+			<TextBlock Text="Baseball Logger Server" FontWeight="SemiBold" FontSize="16"/>
+			<TextBlock TextWrapping="Wrap"
+								 Text="Combine uploads a modified recording JSON only when the Recording JSON field is a /share/… URL on this server. Set the server base URL below. Revision uploads use the share token; API key is optional for that route."/>
+
+			<TextBox PlaceholderText="https://logger.example.com"
+							 Text="{Binding BaseballLoggerServerUrl, UpdateSourceTrigger=PropertyChanged}"/>
+
+			<TextBox PlaceholderText="API key"
+							 PasswordChar="*"
+							 Text="{Binding BaseballLoggerApiKey, UpdateSourceTrigger=PropertyChanged}"/>
+
 			<Button Command="{Binding SaveSettingsCommand}"
 							HorizontalAlignment="Left"
 							Padding="16,8">

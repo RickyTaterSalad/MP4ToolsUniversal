@@ -26,6 +26,18 @@ public sealed class AppUserSettings
 	/// When true (default), trim/combine re-encode to Resolve-safe HEVC MP4. When false, use fast stream-copy (may break DaVinci Resolve).
 	/// </summary>
 	public bool UseResolveSafeEncoding { get; set; } = true;
+
+	/// <summary>
+	/// Baseball Logger Server base URL (e.g. https://logger.example.com). Used when uploading a modified recording
+	/// with a bare share token; share URLs already include the host.
+	/// </summary>
+	public string BaseballLoggerServerUrl { get; set; } = "";
+
+	/// <summary>
+	/// Baseball Logger Server API key (<c>apikey</c> header). Not required for share-token revision uploads,
+	/// but stored for authenticated API calls.
+	/// </summary>
+	public string BaseballLoggerApiKey { get; set; } = "";
 }
 
 public static class AppSettingsStore

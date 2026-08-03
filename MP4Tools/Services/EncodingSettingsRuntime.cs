@@ -15,5 +15,6 @@ public static class EncodingSettingsRuntime
 		var resolved = settings ?? new AppUserSettings();
 		DefaultOutputPathRuntime.Apply(resolved);
 		UiBehaviorSettingsRuntime.Apply(resolved);
+		BaseballLoggerSettingsRuntime.Apply(resolved);
 	}
 }

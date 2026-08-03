@@ -30,6 +30,8 @@ public partial class OptionsViewModel : ViewModelBase
 		OpenOutputFolderOnComplete = loaded.OpenOutputFolderOnComplete;
 		DeleteTrimSegmentsAfterTrimAndCombine = loaded.DeleteTrimSegmentsAfterTrimAndCombine ?? true;
 		UseResolveSafeEncoding = loaded.UseResolveSafeEncoding;
+		BaseballLoggerServerUrl = loaded.BaseballLoggerServerUrl ?? "";
+		BaseballLoggerApiKey = loaded.BaseballLoggerApiKey ?? "";
 	}
 
 	[ObservableProperty]
@@ -49,6 +51,12 @@ public partial class OptionsViewModel : ViewModelBase
 
 	[ObservableProperty]
 	private bool _useResolveSafeEncoding = true;
+
+	[ObservableProperty]
+	private string _baseballLoggerServerUrl = "";
+
+	[ObservableProperty]
+	private string _baseballLoggerApiKey = "";
 
 	public string SettingsFilePathDisplay => AppSettingsStore.SettingsFilePath;
 
@@ -131,6 +139,8 @@ public partial class OptionsViewModel : ViewModelBase
 				OpenOutputFolderOnComplete = OpenOutputFolderOnComplete,
 				DeleteTrimSegmentsAfterTrimAndCombine = DeleteTrimSegmentsAfterTrimAndCombine,
 				UseResolveSafeEncoding = UseResolveSafeEncoding,
+				BaseballLoggerServerUrl = BaseballLoggerServerUrl?.Trim() ?? "",
+				BaseballLoggerApiKey = BaseballLoggerApiKey?.Trim() ?? "",
 			};
 			AppSettingsStore.SaveAndApply(s);
 			MP4Tools.Logger.Log($"Settings saved. Temporary files folder: {TempPathHelper.GetTempPath()}");
@@ -138,6 +148,10 @@ public partial class OptionsViewModel : ViewModelBase
 			MP4Tools.Logger.Log($"Open output folder on completion: {UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete}");
 			MP4Tools.Logger.Log($"Delete trim segments after Trim And Combine: {UiBehaviorSettingsRuntime.DeleteTrimSegmentsAfterTrimAndCombine}");
 			MP4Tools.Logger.Log($"Resolve-safe encoding: {EncodingSettingsRuntime.Current.UseResolveSafeEncoding}");
+			MP4Tools.Logger.Log(
+				$"Baseball Logger server: {(string.IsNullOrWhiteSpace(BaseballLoggerSettingsRuntime.ServerUrl) ? "(not set)" : BaseballLoggerSettingsRuntime.ServerUrl)}");
+			MP4Tools.Logger.Log(
+				$"Baseball Logger API key: {(string.IsNullOrWhiteSpace(BaseballLoggerSettingsRuntime.ApiKey) ? "(not set)" : "(saved)")}");
 		}
 		catch (Exception ex)
 		{

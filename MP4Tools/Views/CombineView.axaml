@@ -45,7 +45,7 @@
 				</Button.Content>
 			</Button>
 			<TextBox Grid.Column="2" Margin="0,0,10,0"
-					 PlaceholderText="Recording JSON (file path or URL)"
+					 PlaceholderText="Recording JSON (file path or share URL)"
 					 Text="{Binding RecordingJsonPath, UpdateSourceTrigger=PropertyChanged}"/>
 			<Button Grid.Column="3" Click="BrowseJsonButton_OnClick" Padding="4">
 				<Button.Content>

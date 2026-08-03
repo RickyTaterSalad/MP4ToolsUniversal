@@ -1175,6 +1175,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 				ct,
 				Logger.Log).ConfigureAwait(false);
 
+			await UploadModifiedRecordingIfNeededAsync(jsonSource, offsetRoot, ct).ConfigureAwait(false);
+
 			// MP4 chapter embedding is disabled for now; YouTube chapters come from the .txt description.
 		}
 		catch (OperationCanceledException)
@@ -1184,6 +1186,48 @@ public partial class CombineViewModel : MP4ViewModelBase
 		catch (Exception ex)
 		{
 			Logger.Log($"Failed to write recording JSON / YouTube description: {ex.Message}");
+		}
+	}
+
+	private async Task UploadModifiedRecordingIfNeededAsync(
+		string jsonSource,
+		System.Text.Json.Nodes.JsonNode offsetRoot,
+		CancellationToken ct)
+	{
+		if (offsetRoot is null)
+			return;
+
+		var configuredServer = BaseballLoggerSettingsRuntime.ServerUrl;
+		if (!ModifiedRecordingUploader.CanUploadFromSource(jsonSource, configuredServer))
+		{
+			Logger.Log(
+				"Skipping modified recording upload: recording JSON is not a share URL on the configured Baseball Logger server.");
+			return;
+		}
+
+		try
+		{
+			ReportCombineStep("Uploading modified recording JSON…");
+			var serverBase = ModifiedRecordingUploader.ResolveServerBaseUrl(configuredServer);
+			var jsonBody = offsetRoot.ToJsonString();
+			var result = await ModifiedRecordingUploader.UploadModifiedAsync(
+				serverBase,
+				jsonSource,
+				jsonBody,
+				BaseballLoggerSettingsRuntime.ApiKey,
+				ct,
+				Logger.Log).ConfigureAwait(false);
+
+			if (!string.IsNullOrWhiteSpace(result.SourceViewUrl))
+				Logger.Log($"Modified recording available at: {result.SourceViewUrl}");
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"Failed to upload modified recording JSON: {ex.Message}");
 		}
 	}
 
