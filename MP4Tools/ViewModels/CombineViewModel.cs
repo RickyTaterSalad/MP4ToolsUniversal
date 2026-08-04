@@ -1015,8 +1015,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 			else if (combineSucceeded)
 			{
 				ReportCombineStep("Merging clips (MPEG-TS pass)…");
-				Logger.Log("Combining with incremental TS merge (intro enabled)...");
-				string mergedTsFile = null;
+				Logger.Log("Combining with single-pass MPEG-TS concat (intro enabled)...");
+				var partTsFiles = new List<string>();
 				try
 				{
 					var videoCodecByPath = new Dictionary<string, string>();
@@ -1067,45 +1067,25 @@ public partial class CombineViewModel : MP4ViewModelBase
 							break;
 						}
 
-						if (string.IsNullOrWhiteSpace(mergedTsFile))
-						{
-							mergedTsFile = partTsFile;
-							continue;
-						}
-
-						var nextMergedTs = Path.Combine(TempPathHelper.GetTempPath(), $"combine_merge_{Guid.NewGuid():N}.ts");
-						ReportCombineStep($"Joining MPEG-TS streams ({i + 1}/{writeFiles.Count})…");
-						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
-							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
-							FfmpegCommandLine.DefaultInputThreadQueue(),
-							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{mergedTsFile}|{partTsFile}")),
-							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
-							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
-							FfmpegOption.Positional(FfmpegCommandLine.Quoted(nextMergedTs))), ct).ConfigureAwait(false);
-						if (!File.Exists(nextMergedTs))
-						{
-							TempPathHelper.DeleteTemporaryFileUnlessRetained(partTsFile);
-							TempPathHelper.DeleteTemporaryFileUnlessRetained(nextMergedTs);
-							combineSucceeded = false;
-							Logger.Log($"MPEG-TS join failed at clip {i + 1}.");
-							ReportCombineStep($"Failed: MPEG-TS join at clip {i + 1}.");
-							break;
-						}
-
-						TempPathHelper.DeleteTemporaryFileUnlessRetained(mergedTsFile);
-						TempPathHelper.DeleteTemporaryFileUnlessRetained(partTsFile);
-						mergedTsFile = nextMergedTs;
+						partTsFiles.Add(partTsFile);
 					}
 
-					if (combineSucceeded && !string.IsNullOrWhiteSpace(mergedTsFile) && File.Exists(mergedTsFile))
+					if (combineSucceeded && partTsFiles.Count > 0)
 					{
 						ReportCombineStep("Writing final MP4…");
-						Logger.Log("Finalizing merged TS into MP4 (stream copy)...");
+						Logger.Log(
+							partTsFiles.Count == 1
+								? "Finalizing MPEG-TS into MP4 (stream copy)..."
+								: $"Concatenating {partTsFiles.Count} MPEG-TS parts into MP4 (stream copy)...");
+
+						var tsInput = partTsFiles.Count == 1
+							? partTsFiles[0]
+							: $"concat:{string.Join("|", partTsFiles)}";
 						var finalizeParts = new List<FfmpegOption?>
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							FfmpegCommandLine.DefaultInputThreadQueue(),
-							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)),
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(tsInput)),
 							trimEndOpt,
 						};
 						LegacyFastEncoding.AppendStreamCopyTail(finalizeParts);
@@ -1116,8 +1096,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 					else if (combineSucceeded)
 					{
 						combineSucceeded = false;
-						Logger.Log("Combine failed: merged MPEG-TS was not created.");
-						ReportCombineStep("Failed: merged MPEG-TS was not created.");
+						Logger.Log("Combine failed: MPEG-TS parts were not created.");
+						ReportCombineStep("Failed: MPEG-TS parts were not created.");
 					}
 				}
 				catch (OperationCanceledException)
@@ -1134,11 +1114,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 					try
 					{
-						TempPathHelper.DeleteTemporaryFileUnlessRetained(mergedTsFile);
+						foreach (var partTs in partTsFiles)
+							TempPathHelper.DeleteTemporaryFileUnlessRetained(partTs);
 						foreach (var tempFile in tempFilesToDelete)
-						{
 							TempPathHelper.DeleteTemporaryFileUnlessRetained(tempFile);
-						}
 					}
 					catch (Exception e)
 					{
