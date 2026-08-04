@@ -49,17 +49,6 @@ namespace MP4Tools
 			}
 		}
 
-		private string _selectedAudioCodec = "copy";
-		public string SelectedAudioCodec
-		{
-			get => _selectedAudioCodec;
-			set
-			{
-				SetProperty(ref _selectedAudioCodec, value);
-			}
-		}
-
-
 		private string _videoBitDepth = string.Empty;
 		public string VideoBitDepth
 		{
@@ -204,21 +193,9 @@ namespace MP4Tools
 			var workDir = !string.IsNullOrWhiteSpace(workingDirectory)
 				? workingDirectory
 				: System.IO.Path.GetDirectoryName(InputPath ?? string.Empty) ?? string.Empty;
-			try
-			{
-				await FFMpegUtils.Instance
-					.RunAndLogFFMpegAsync(args, HandleProcessOutput, Logger.Log, cancellationToken, workDir)
-					.ConfigureAwait(false);
-			}
-			catch (OperationCanceledException)
-			{
-				throw;
-			}
-			catch (Exception ex)
-			{
-				Debug.WriteLine($"[RunAndLogFFMpegAsync][Error] {ex}");
-				Logger.Log($"** Error: {ex.Message} **");
-			}
+			await FFMpegUtils.Instance
+				.RunAndLogFFMpegAsync(args, HandleProcessOutput, Logger.Log, cancellationToken, workDir)
+				.ConfigureAwait(false);
 		}
 	}
 }

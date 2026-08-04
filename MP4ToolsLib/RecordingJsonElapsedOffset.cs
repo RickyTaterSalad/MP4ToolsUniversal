@@ -236,105 +236,6 @@ public static class RecordingJsonElapsedOffset
 		return sb.ToString().TrimEnd() + Environment.NewLine;
 	}
 
-	/// <summary>
-	/// Builds an ffmpeg <c>;FFMETADATA1</c> chapters file from offset-adjusted bookmarks.
-	/// Optional <paramref name="chapterTimeOffsetSeconds"/> shifts all chapter starts (e.g. intro duration).
-	/// </summary>
-	/// <returns>Metadata text, or <c>null</c> when there are no bookmarks.</returns>
-	public static string BuildFfmetadataChapters(
-		JsonNode offsetRoot,
-		double chapterTimeOffsetSeconds = 0,
-		double? mediaDurationSeconds = null)
-	{
-		if (offsetRoot is null)
-			throw new ArgumentNullException(nameof(offsetRoot));
-
-		var bookmarks = CollectBookmarks(offsetRoot);
-		if (bookmarks.Count == 0)
-			return null;
-
-		var offset = Math.Max(0, chapterTimeOffsetSeconds);
-		var startsMs = new List<long>(bookmarks.Count);
-		foreach (var bookmark in bookmarks)
-		{
-			var ms = (long)Math.Round(Math.Max(0, bookmark.Seconds + offset) * 1000.0);
-			if (startsMs.Count > 0 && ms <= startsMs[^1])
-				ms = startsMs[^1] + 1;
-			startsMs.Add(ms);
-		}
-
-		long? durationMs = null;
-		if (mediaDurationSeconds.HasValue && mediaDurationSeconds.Value > 0)
-			durationMs = (long)Math.Round(mediaDurationSeconds.Value * 1000.0);
-
-		var sb = new StringBuilder();
-		sb.AppendLine(";FFMETADATA1");
-		for (var i = 0; i < bookmarks.Count; i++)
-		{
-			var start = startsMs[i];
-			long end;
-			if (i + 1 < startsMs.Count)
-				end = startsMs[i + 1];
-			else if (durationMs.HasValue && durationMs.Value > start)
-				end = durationMs.Value;
-			else
-				end = start + 1000;
-
-			if (end <= start)
-				end = start + 1;
-
-			sb.AppendLine("[CHAPTER]");
-			sb.AppendLine("TIMEBASE=1/1000");
-			sb.AppendLine($"START={start}");
-			sb.AppendLine($"END={end}");
-			sb.AppendLine($"title={EscapeFfmetadataValue(bookmarks[i].Text)}");
-		}
-
-		return sb.ToString();
-	}
-
-	public static async Task<bool> WriteFfmetadataChaptersAsync(
-		JsonNode offsetRoot,
-		string destinationPath,
-		double chapterTimeOffsetSeconds = 0,
-		double? mediaDurationSeconds = null,
-		CancellationToken ct = default,
-		Action<string> log = null)
-	{
-		if (string.IsNullOrWhiteSpace(destinationPath))
-			throw new ArgumentException("Destination path is required.", nameof(destinationPath));
-
-		var text = BuildFfmetadataChapters(offsetRoot, chapterTimeOffsetSeconds, mediaDurationSeconds);
-		if (string.IsNullOrWhiteSpace(text))
-		{
-			log?.Invoke("No bookmarks to write as ffmpeg chapters metadata.");
-			return false;
-		}
-
-		var destDir = Path.GetDirectoryName(destinationPath);
-		if (!string.IsNullOrWhiteSpace(destDir) && !Directory.Exists(destDir))
-			Directory.CreateDirectory(destDir);
-
-		await File.WriteAllTextAsync(destinationPath, text, ct).ConfigureAwait(false);
-		log?.Invoke($"Wrote ffmpeg chapters metadata: {destinationPath}");
-		return true;
-	}
-
-	private static string EscapeFfmetadataValue(string value)
-	{
-		if (string.IsNullOrEmpty(value))
-			return string.Empty;
-
-		return value
-			.Replace("\\", "\\\\", StringComparison.Ordinal)
-			.Replace("=", "\\=", StringComparison.Ordinal)
-			.Replace(";", "\\;", StringComparison.Ordinal)
-			.Replace("#", "\\#", StringComparison.Ordinal)
-			.Replace("\r\n", "\\\n", StringComparison.Ordinal)
-			.Replace("\n", "\\\n", StringComparison.Ordinal)
-			.Replace("\r", "\\\n", StringComparison.Ordinal);
-	}
-
 	private static async Task<JsonNode> LoadOffsetRootAsync(
 		string sourcePathOrUrl,
 		double netAddSeconds,
@@ -366,7 +267,7 @@ public static class RecordingJsonElapsedOffset
 				}
 
 				var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-				log?.Invoke($"Recording JSON from URL:{Environment.NewLine}{body}");
+				log?.Invoke($"Fetched recording JSON ({body.Length} chars).");
 				return body;
 			}
 			catch (OperationCanceledException)

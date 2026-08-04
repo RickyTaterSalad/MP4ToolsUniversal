@@ -524,11 +524,25 @@ namespace MP4ToolsLib
 				if (process.ExitCode == 0)
 					log("** Complete **");
 				else
+				{
 					log($"** Exit Code {process.ExitCode} **");
+					throw new InvalidOperationException($"ffmpeg failed with exit code {process.ExitCode}");
+				}
 			}
 			catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
 			{
 				log("** FFmpeg timed out after 2 hours **");
+				try
+				{
+					if (!process.HasExited)
+						process.Kill(entireProcessTree: true);
+				}
+				catch
+				{
+					// ignored
+				}
+
+				throw new TimeoutException("ffmpeg timed out after 2 hours");
 			}
 			catch (OperationCanceledException)
 			{
@@ -539,6 +553,17 @@ namespace MP4ToolsLib
 			{
 				Debug.WriteLine($"[RunAndLogFFMpegAsync][Error] {ex}");
 				log($"** Error: {ex.Message} **");
+				try
+				{
+					if (!process.HasExited)
+						process.Kill(entireProcessTree: true);
+				}
+				catch
+				{
+					// ignored
+				}
+
+				throw;
 			}
 			finally
 			{

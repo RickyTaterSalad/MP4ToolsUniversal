@@ -449,9 +449,14 @@ public partial class TrimViewModel : MP4ViewModelBase
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
 							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
 							tsVideoBsf,
-							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
-							FfmpegOption.Positional(FfmpegCommandLine.Quoted(tsFile)),
 						};
+						var aCodec = await FFMpegUtils.Instance.GetFirstAudioCodecNameAsync(input, ct, Logger.Log)
+							.ConfigureAwait(false);
+						if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aCodec))
+							Logger.Log("Segment audio is Opus: using AAC in MPEG-TS intermediate.");
+						MpegTsConcatAudio.AppendMp4ToTsAudioOptions(tsParts, aCodec);
+						tsParts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
+						tsParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(tsFile)));
 						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(tsParts), ct).ConfigureAwait(false);
 						if (File.Exists(tsFile))
 							tempTsFiles.Add(tsFile);

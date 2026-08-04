@@ -28,8 +28,8 @@ public static class BoxScoreUploader
 	private static readonly string[] AllowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
 
 	/// <summary>
-	/// Returns true when server URL and API key are set, the image exists on disk,
-	/// and <paramref name="recordingJsonPathOrUrl"/> can identify a recording.
+	/// Returns true when server URL and API key are set and the image exists on disk
+	/// with an allowed extension. Recording identity is resolved at upload time.
 	/// </summary>
 	public static bool CanUpload(
 		string recordingJsonPathOrUrl,
@@ -72,10 +72,32 @@ public static class BoxScoreUploader
 		CancellationToken ct = default,
 		Action<string> log = null)
 	{
+		var recordingId = await ResolveRecordingIdAsync(recordingJsonPathOrUrl?.Trim(), ct, log)
+			.ConfigureAwait(false);
+		if (string.IsNullOrWhiteSpace(recordingId))
+			throw new InvalidOperationException(
+				"Recording JSON has no root \"id\" to resolve the Baseball Logger entry.");
+
+		return await UploadToRecordingAsync(serverBaseUrl, recordingId, imagePath, apiKey, ct, log)
+			.ConfigureAwait(false);
+	}
+
+	/// <summary>
+	/// Uploads <paramref name="imagePath"/> to <c>POST /api/recordings/{recordingId}/boxscore</c>.
+	/// If a box score already exists (conflict), deletes it and uploads again.
+	/// </summary>
+	public static async Task<UploadBoxScoreResult> UploadToRecordingAsync(
+		string serverBaseUrl,
+		string recordingId,
+		string imagePath,
+		string apiKey,
+		CancellationToken ct = default,
+		Action<string> log = null)
+	{
 		if (string.IsNullOrWhiteSpace(serverBaseUrl))
 			throw new ArgumentException("Server base URL is required.", nameof(serverBaseUrl));
-		if (string.IsNullOrWhiteSpace(recordingJsonPathOrUrl))
-			throw new ArgumentException("Recording JSON path or URL is required.", nameof(recordingJsonPathOrUrl));
+		if (string.IsNullOrWhiteSpace(recordingId))
+			throw new ArgumentException("Recording id is required.", nameof(recordingId));
 		if (string.IsNullOrWhiteSpace(imagePath))
 			throw new ArgumentException("Image path is required.", nameof(imagePath));
 		if (string.IsNullOrWhiteSpace(apiKey))
@@ -90,21 +112,16 @@ public static class BoxScoreUploader
 			throw new ArgumentException(
 				"Box score image must be JPEG, PNG, WebP, or GIF.", nameof(imagePath));
 
-		var recordingId = await ResolveRecordingIdAsync(recordingJsonPathOrUrl.Trim(), ct, log)
-			.ConfigureAwait(false);
-		if (string.IsNullOrWhiteSpace(recordingId))
-			throw new InvalidOperationException(
-				"Recording JSON has no root \"id\" to resolve the Baseball Logger entry.");
-
+		var id = recordingId.Trim();
 		var baseUri = NormalizeBaseUri(serverBaseUrl);
-		var relativePath = $"api/recordings/{Uri.EscapeDataString(recordingId)}/boxscore";
+		var relativePath = $"api/recordings/{Uri.EscapeDataString(id)}/boxscore";
 		log?.Invoke($"Uploading box score to {baseUri}{relativePath} …");
 
 		using var http = new HttpClient { BaseAddress = baseUri };
 		var result = await PostBoxScoreAsync(http, relativePath, image, apiKey, ct).ConfigureAwait(false);
 		if (result != null)
 		{
-			log?.Invoke($"Uploaded box score for recording {result.RecordingId ?? recordingId}: {result.FileName}");
+			log?.Invoke($"Uploaded box score for recording {result.RecordingId ?? id}: {result.FileName}");
 			return result;
 		}
 
@@ -118,7 +135,7 @@ public static class BoxScoreUploader
 				"Box score upload failed after replace (unexpected conflict).");
 		}
 
-		log?.Invoke($"Replaced box score for recording {result.RecordingId ?? recordingId}: {result.FileName}");
+		log?.Invoke($"Replaced box score for recording {result.RecordingId ?? id}: {result.FileName}");
 		return result;
 	}
 
