@@ -77,14 +77,27 @@
 
 			<TextBlock Text="Baseball Logger Server" FontWeight="SemiBold" FontSize="16"/>
 			<TextBlock TextWrapping="Wrap"
-								 Text="Combine uploads a modified recording JSON only when the Recording JSON field is a /share/… URL on this server. Set the server base URL below. Revision uploads use the share token; API key is optional for that route."/>
+								 Text="Combine uploads a modified recording JSON only when the Recording JSON field is a /share/… URL on this server. If a box-score image path is set, it is uploaded to the same source recording after the JSON upload (API key required). Set the server base URL below. Revision uploads use the share token; API key is optional for that route but required for box scores."/>
 
 			<TextBox PlaceholderText="https://logger.example.com"
 							 Text="{Binding BaseballLoggerServerUrl, UpdateSourceTrigger=PropertyChanged}"/>
 
-			<TextBox PlaceholderText="API key"
-							 PasswordChar="*"
-							 Text="{Binding BaseballLoggerApiKey, UpdateSourceTrigger=PropertyChanged}"/>
+			<Grid ColumnDefinitions="*,Auto">
+				<TextBox Grid.Column="0"
+								 PlaceholderText="API key (required for box-score upload)"
+								 PasswordChar="{Binding ApiKeyPasswordChar}"
+								 Text="{Binding BaseballLoggerApiKey, UpdateSourceTrigger=PropertyChanged}"
+								 Margin="0,0,8,0"/>
+				<Button Grid.Column="1"
+								Command="{Binding ToggleApiKeyVisibilityCommand}"
+								Padding="8,6"
+								ToolTip.Tip="Show or hide API key">
+					<Panel>
+						<materialIcons:MaterialIcon Kind="Eye" IsVisible="{Binding !IsApiKeyVisible}"/>
+						<materialIcons:MaterialIcon Kind="EyeOff" IsVisible="{Binding IsApiKeyVisible}"/>
+					</Panel>
+				</Button>
+			</Grid>
 
 			<Button Command="{Binding SaveSettingsCommand}"
 							HorizontalAlignment="Left"

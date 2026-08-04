@@ -27,16 +27,20 @@
 			<ColumnDefinition Width="auto"/>
 		</Grid.ColumnDefinitions>
 		<Grid Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,10">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="auto"/>
 				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="auto"/>
 			</Grid.ColumnDefinitions>
-			<TextBox Grid.Column="0" Margin="0,0,10,0"
+			<TextBox Grid.Row="0" Grid.Column="0" Margin="0,0,10,0"
 					 PlaceholderText="Source Video Folder"
 					 Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"/>
-			<Button Grid.Column="1" Click="BrowseButton_OnClick" Padding="4" Margin="0,0,15,0">
+			<Button Grid.Row="0" Grid.Column="1" Click="BrowseButton_OnClick" Padding="4" Margin="0,0,15,0">
 				<Button.Content>
 					<StackPanel Orientation="Horizontal">
 						<materialIcons:MaterialIcon Kind="Folder"/>
@@ -44,13 +48,25 @@
 					</StackPanel>
 				</Button.Content>
 			</Button>
-			<TextBox Grid.Column="2" Margin="0,0,10,0"
+			<TextBox Grid.Row="0" Grid.Column="2" Margin="0,0,10,0"
 					 PlaceholderText="Recording JSON (file path or share URL)"
 					 Text="{Binding RecordingJsonPath, UpdateSourceTrigger=PropertyChanged}"/>
-			<Button Grid.Column="3" Click="BrowseJsonButton_OnClick" Padding="4">
+			<Button Grid.Row="0" Grid.Column="3" Click="BrowseJsonButton_OnClick" Padding="4">
 				<Button.Content>
 					<StackPanel Orientation="Horizontal">
 						<materialIcons:MaterialIcon Kind="FileCode"/>
+						<TextBlock Text="Browse" Margin="5,0,5,0" />
+					</StackPanel>
+				</Button.Content>
+			</Button>
+			<TextBox Grid.Row="1" Grid.Column="2" Margin="0,8,10,0"
+					 PlaceholderText="Box score image (JPEG, PNG, WebP, or GIF)"
+					 Text="{Binding BoxScoreImagePath, UpdateSourceTrigger=PropertyChanged}"
+					 ToolTip.Tip="When set, uploaded to Baseball Logger with the modified recording JSON after Combine (requires API key in Options)"/>
+			<Button Grid.Row="1" Grid.Column="3" Click="BrowseBoxScoreButton_OnClick" Padding="4" Margin="0,8,0,0">
+				<Button.Content>
+					<StackPanel Orientation="Horizontal">
+						<materialIcons:MaterialIcon Kind="Image"/>
 						<TextBlock Text="Browse" Margin="5,0,5,0" />
 					</StackPanel>
 				</Button.Content>

@@ -128,4 +128,30 @@ public partial class CombineView : UserControl
 			vm.RecordingJsonPath = files[0].Path.LocalPath;
 		}
 	}
+
+	private async void BrowseBoxScoreButton_OnClick(object sender, RoutedEventArgs e)
+	{
+		var topLevel = TopLevel.GetTopLevel(this);
+		var files = await topLevel!.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+		{
+			Title = "Select Box Score Image",
+			AllowMultiple = false,
+			FileTypeFilter = new List<FilePickerFileType>
+			{
+				new FilePickerFileType("Images")
+				{
+					Patterns = new List<string> { "*.jpg", "*.jpeg", "*.png", "*.webp", "*.gif" }
+				},
+				new FilePickerFileType("All files")
+				{
+					Patterns = new List<string> { "*.*" }
+				}
+			}
+		});
+
+		if (files.Count > 0 && DataContext is CombineViewModel vm)
+		{
+			vm.BoxScoreImagePath = files[0].Path.LocalPath;
+		}
+	}
 }

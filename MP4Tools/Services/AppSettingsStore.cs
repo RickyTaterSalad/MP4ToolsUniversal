@@ -34,8 +34,8 @@ public sealed class AppUserSettings
 	public string BaseballLoggerServerUrl { get; set; } = "";
 
 	/// <summary>
-	/// Baseball Logger Server API key (<c>apikey</c> header). Not required for share-token revision uploads,
-	/// but stored for authenticated API calls.
+	/// Baseball Logger Server API key (<c>apikey</c> header). Optional for share-token revision uploads;
+	/// required for box-score image upload.
 	/// </summary>
 	public string BaseballLoggerApiKey { get; set; } = "";
 }

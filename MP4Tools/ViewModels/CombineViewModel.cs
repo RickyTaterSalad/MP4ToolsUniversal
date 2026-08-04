@@ -39,6 +39,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 	[ObservableProperty]
 	private string _recordingJsonPath;
 
+	/// <summary>Local path to a box-score image (JPEG/PNG/WebP/GIF) uploaded to the recording referenced by RecordingJsonPath.</summary>
+	[ObservableProperty]
+	private string _boxScoreImagePath;
+
 	/// <summary>High-level combine progress shown above the action buttons.</summary>
 	private string _operationStatus = string.Empty;
 	public string OperationStatus
@@ -714,6 +718,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		OperationStatus = string.Empty;
 		OutputPath = string.Empty;
 		RecordingJsonPath = string.Empty;
+		BoxScoreImagePath = string.Empty;
 		EventInfo = string.Empty;
 		TrimFirstVideo = TrimLastVideo = false;
 		StartRange.Minutes = 0;
@@ -1239,6 +1244,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			if (!string.IsNullOrWhiteSpace(result.SourceViewUrl))
 				Logger.Log($"Modified recording available at: {result.SourceViewUrl}");
+
+			await UploadBoxScoreIfNeededAsync(jsonSource, serverBase, ct).ConfigureAwait(false);
 		}
 		catch (OperationCanceledException)
 		{
@@ -1247,6 +1254,57 @@ public partial class CombineViewModel : MP4ViewModelBase
 		catch (Exception ex)
 		{
 			Logger.Log($"Failed to upload modified recording JSON: {ex.Message}");
+		}
+	}
+
+	private async Task UploadBoxScoreIfNeededAsync(
+		string jsonSource,
+		string serverBase,
+		CancellationToken ct)
+	{
+		if (!BoxScoreUploader.CanUpload(
+			    jsonSource,
+			    BoxScoreImagePath,
+			    BaseballLoggerSettingsRuntime.ServerUrl,
+			    BaseballLoggerSettingsRuntime.ApiKey))
+		{
+			if (!string.IsNullOrWhiteSpace(BoxScoreImagePath))
+			{
+				Logger.Log(
+					"Skipping box score upload: image path, Recording JSON, server URL, and API key are all required.");
+			}
+			return;
+		}
+
+		try
+		{
+			ReportCombineStep("Uploading box score image…");
+			var result = await BoxScoreUploader.UploadAsync(
+				serverBase,
+				jsonSource,
+				BoxScoreImagePath,
+				BaseballLoggerSettingsRuntime.ApiKey,
+				ct,
+				Logger.Log).ConfigureAwait(false);
+
+			var status = result.Parsed
+				? "Box score uploaded and parsed."
+				: result.ParseSkipped
+					? "Box score uploaded (parse skipped)."
+					: !string.IsNullOrWhiteSpace(result.ParseError)
+						? $"Box score uploaded (parse failed: {result.ParseError})."
+						: "Box score uploaded.";
+			Logger.Log(status);
+			if (!string.IsNullOrWhiteSpace(result.ImageUrl))
+				Logger.Log($"Box score image URL: {result.ImageUrl}");
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"Failed to upload box score: {ex.Message}");
 		}
 	}
 

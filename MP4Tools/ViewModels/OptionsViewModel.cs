@@ -58,6 +58,13 @@ public partial class OptionsViewModel : ViewModelBase
 	[ObservableProperty]
 	private string _baseballLoggerApiKey = "";
 
+	[ObservableProperty]
+	[NotifyPropertyChangedFor(nameof(ApiKeyPasswordChar))]
+	private bool _isApiKeyVisible;
+
+	/// <summary>Mask character when hidden; null char clears password masking.</summary>
+	public char ApiKeyPasswordChar => IsApiKeyVisible ? '\0' : '*';
+
 	public string SettingsFilePathDisplay => AppSettingsStore.SettingsFilePath;
 
 	[RelayCommand]
@@ -157,6 +164,12 @@ public partial class OptionsViewModel : ViewModelBase
 		{
 			MP4Tools.Logger.Log($"Could not save settings: {ex.Message}");
 		}
+	}
+
+	[RelayCommand]
+	private void ToggleApiKeyVisibility()
+	{
+		IsApiKeyVisible = !IsApiKeyVisible;
 	}
 
 	[RelayCommand]
