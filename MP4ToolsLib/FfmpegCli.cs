@@ -29,6 +29,13 @@ public static class FfmpegArguments
 	public const string ConcatDemuxerSafeFlag = "-safe";
 	public const string ConcatDemuxerAllowAnyPath = "0";
 
+	/// <summary>
+	/// Demuxer packet queue size (before each <c>-i</c>). Larger values reduce starvation on
+	/// multi-input / concat remux when disk or demux lags the rest of the pipeline.
+	/// </summary>
+	public const string ThreadQueueSize = "-thread_queue_size";
+	public const string DefaultThreadQueueSize = "512";
+
 	public const string SelectCodec = "-c";
 	public const string SelectVideoCodec = "-c:v";
 	public const string SelectAudioCodec = "-c:a";
@@ -120,6 +127,9 @@ public static class FfmpegCommandLine
 		}
 		return string.Join(" ", parts);
 	}
+
+	public static FfmpegOption DefaultInputThreadQueue() =>
+		FfmpegOption.Pair(FfmpegArguments.ThreadQueueSize, FfmpegArguments.DefaultThreadQueueSize);
 
 	public static string Quoted(string value) => $"\"{value}\"";
 }

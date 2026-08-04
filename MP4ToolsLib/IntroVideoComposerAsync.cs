@@ -143,8 +143,10 @@ namespace MP4ToolsLib
                     FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
                     FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
                     FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
+                    FfmpegCommandLine.DefaultInputThreadQueue(),
                     FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"color=c=0x1E1E1E:s={w}x{h}:r={fps}:d={durationSeconds}")),
                     FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatLavfi),
+                    FfmpegCommandLine.DefaultInputThreadQueue(),
                     FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"anullsrc=r={ar}:cl={acl}:d={durationSeconds}")),
                     FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{vf}\"")
                 );
@@ -187,6 +189,7 @@ namespace MP4ToolsLib
                     FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
                     FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
                     seekBeforeMainInput,
+                    FfmpegCommandLine.DefaultInputThreadQueue(),
                     FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputPath)),
                 };
                 if (resolveSafeEncoding)
@@ -241,6 +244,7 @@ namespace MP4ToolsLib
                 {
                     FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
                     FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+                    FfmpegCommandLine.DefaultInputThreadQueue(),
                     FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{introTs}|{inputTs}")),
                     FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
                     aacBsfOpt,

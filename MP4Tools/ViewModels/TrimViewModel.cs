@@ -417,6 +417,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatConcatDemuxer),
 							FfmpegOption.Pair(FfmpegArguments.ConcatDemuxerSafeFlag, FfmpegArguments.ConcatDemuxerAllowAnyPath),
+							FfmpegCommandLine.DefaultInputThreadQueue(),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(fileList)),
 							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
 							FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, FfmpegArguments.StreamCopy),
@@ -436,6 +437,16 @@ public partial class TrimViewModel : MP4ViewModelBase
 					var tempTsFiles = new List<string>();
 					var tsVideoBsf = MpegTsVideoBitstream.GetMp4ToAnnexBOption(
 						resolveSafe ? "hevc" : InputProbeVideoCodecName);
+					var audioCodecByPath = (await Task.WhenAll(outputPaths.Select(async input =>
+					{
+						ct.ThrowIfCancellationRequested();
+						var aCodec = await FFMpegUtils.Instance
+							.GetFirstAudioCodecNameAsync(input, ct, Logger.Log)
+							.ConfigureAwait(false);
+						return (input, aCodec);
+					})).ConfigureAwait(false))
+						.ToDictionary(x => x.input, x => x.aCodec, StringComparer.Ordinal);
+
 					for (var ti = 0; ti < outputPaths.Count; ti++)
 					{
 						var input = outputPaths[ti];
@@ -446,12 +457,12 @@ public partial class TrimViewModel : MP4ViewModelBase
 						var tsParts = new List<FfmpegOption?>
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegCommandLine.DefaultInputThreadQueue(),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
 							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
 							tsVideoBsf,
 						};
-						var aCodec = await FFMpegUtils.Instance.GetFirstAudioCodecNameAsync(input, ct, Logger.Log)
-							.ConfigureAwait(false);
+						audioCodecByPath.TryGetValue(input, out var aCodec);
 						if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aCodec))
 							Logger.Log("Segment audio is Opus: using AAC in MPEG-TS intermediate.");
 						MpegTsConcatAudio.AppendMp4ToTsAudioOptions(tsParts, aCodec);
@@ -474,6 +485,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 						var concatInput = string.Join("|", tempTsFiles);
 						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegCommandLine.DefaultInputThreadQueue(),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{concatInput}")),
 							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
 							FfmpegOption.Positional(FfmpegCommandLine.Quoted(finalCombinedPath))), ct).ConfigureAwait(false);
@@ -655,6 +667,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 					DaVinciOutputEncoding.AppendPreInputHwOptions(trimParts, hwAccel);
 					trimParts.AddRange(
 						FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
+						FfmpegCommandLine.DefaultInputThreadQueue(),
 						FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
 						FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
 						vfOpt

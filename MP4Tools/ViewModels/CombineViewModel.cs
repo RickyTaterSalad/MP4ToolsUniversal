@@ -299,11 +299,24 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			try
 			{
-				var durStr = await FFMpegUtils.Instance.GetFileDurationAsync(firstPath, ct, Logger.Log).ConfigureAwait(false);
-				var tr = TimeRange.FromString(durStr ?? string.Empty);
-				if (tr != null)
+				if (string.Equals(firstPath, lastPath, StringComparison.OrdinalIgnoreCase))
 				{
-					firstDur = tr.TotalSeconds;
+					var durStr = await FFMpegUtils.Instance.GetFileDurationAsync(firstPath, ct, Logger.Log).ConfigureAwait(false);
+					var tr = TimeRange.FromString(durStr ?? string.Empty);
+					if (tr != null)
+						firstDur = lastDur = tr.TotalSeconds;
+				}
+				else
+				{
+					var firstTask = FFMpegUtils.Instance.GetFileDurationAsync(firstPath, ct, Logger.Log);
+					var lastTask = FFMpegUtils.Instance.GetFileDurationAsync(lastPath, ct, Logger.Log);
+					await Task.WhenAll(firstTask, lastTask).ConfigureAwait(false);
+					var firstTr = TimeRange.FromString((await firstTask.ConfigureAwait(false)) ?? string.Empty);
+					var lastTr = TimeRange.FromString((await lastTask.ConfigureAwait(false)) ?? string.Empty);
+					if (firstTr != null)
+						firstDur = firstTr.TotalSeconds;
+					if (lastTr != null)
+						lastDur = lastTr.TotalSeconds;
 				}
 			}
 			catch (OperationCanceledException)
@@ -313,31 +326,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 			catch
 			{
 				// keep null — fall back to full combo ranges
-			}
-
-			if (string.Equals(firstPath, lastPath, StringComparison.OrdinalIgnoreCase))
-			{
-				lastDur = firstDur;
-			}
-			else
-			{
-				try
-				{
-					var durStr = await FFMpegUtils.Instance.GetFileDurationAsync(lastPath, ct, Logger.Log).ConfigureAwait(false);
-					var tr = TimeRange.FromString(durStr ?? string.Empty);
-					if (tr != null)
-					{
-						lastDur = tr.TotalSeconds;
-					}
-				}
-				catch (OperationCanceledException)
-				{
-					throw;
-				}
-				catch
-				{
-					// ignored
-				}
 			}
 
 			await Dispatcher.UIThread.InvokeAsync(() =>
@@ -853,18 +841,15 @@ public partial class CombineViewModel : MP4ViewModelBase
 			var videoDurations = new Dictionary<string, TimeRange>();
 			ReportCombineStep("Reading clip durations…");
 			Logger.Log("Reading input durations...");
-			foreach (var file in writeFiles)
+			var durationResults = await Task.WhenAll(writeFiles.Select(async file =>
 			{
 				try
 				{
 					ct.ThrowIfCancellationRequested();
-					var vidDurationString = await FFMpegUtils.Instance.GetFileDurationAsync(file.Path, ct, Logger.Log).ConfigureAwait(false);
-					var tr = TimeRange.FromString(vidDurationString ?? "");
-					if (tr != null)
-					{
-						videoDurations[file.Path] = tr;
-						dblTotalDuration += tr.TotalSeconds;
-					}
+					var vidDurationString = await FFMpegUtils.Instance
+						.GetFileDurationAsync(file.Path, ct, Logger.Log)
+						.ConfigureAwait(false);
+					return (Path: file.Path, Range: TimeRange.FromString(vidDurationString ?? ""), Error: (string)null);
 				}
 				catch (OperationCanceledException)
 				{
@@ -872,7 +857,22 @@ public partial class CombineViewModel : MP4ViewModelBase
 				}
 				catch (Exception ex)
 				{
-					Logger.Log($"Failed to read duration for '{file?.Path}': {ex.Message}");
+					return (Path: file.Path, Range: (TimeRange)null, Error: ex.Message);
+				}
+			})).ConfigureAwait(false);
+
+			foreach (var result in durationResults)
+			{
+				if (!string.IsNullOrWhiteSpace(result.Error))
+				{
+					Logger.Log($"Failed to read duration for '{result.Path}': {result.Error}");
+					continue;
+				}
+
+				if (result.Range != null)
+				{
+					videoDurations[result.Path] = result.Range;
+					dblTotalDuration += result.Range.TotalSeconds;
 				}
 			}
 
@@ -984,6 +984,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 						scanOpt,
 						FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatConcatDemuxer),
 						FfmpegOption.Pair(FfmpegArguments.ConcatDemuxerSafeFlag, FfmpegArguments.ConcatDemuxerAllowAnyPath),
+						FfmpegCommandLine.DefaultInputThreadQueue(),
 						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(fileList)),
 						trimEndOpt,
 					};
@@ -1020,12 +1021,18 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 					var videoCodecByPath = new Dictionary<string, string>();
 					var audioCodecByPath = new Dictionary<string, string>();
-					foreach (var f in writeFiles)
+					var codecResults = await Task.WhenAll(writeFiles.Select(async f =>
 					{
-						var vc = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(f.Path, ct, Logger.Log).ConfigureAwait(false);
-						videoCodecByPath[f.Path] = vc;
-						var ac = await FFMpegUtils.Instance.GetFirstAudioCodecNameAsync(f.Path, ct, Logger.Log).ConfigureAwait(false);
-						audioCodecByPath[f.Path] = ac;
+						ct.ThrowIfCancellationRequested();
+						var (vc, ac) = await FFMpegUtils.Instance
+							.GetFirstAvCodecNamesAsync(f.Path, ct, Logger.Log)
+							.ConfigureAwait(false);
+						return (f.Path, vc, ac);
+					})).ConfigureAwait(false);
+					foreach (var (path, vc, ac) in codecResults)
+					{
+						videoCodecByPath[path] = vc;
+						audioCodecByPath[path] = ac;
 					}
 
 					for (int i = 0; i < writeFiles.Count; i++)
@@ -1041,6 +1048,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							i == 0 ? scanOpt : default,
+							FfmpegCommandLine.DefaultInputThreadQueue(),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
 							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
 							MpegTsVideoBitstream.GetMp4ToAnnexBOption(vProbe),
@@ -1069,6 +1077,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 						ReportCombineStep($"Joining MPEG-TS streams ({i + 1}/{writeFiles.Count})…");
 						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegCommandLine.DefaultInputThreadQueue(),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{mergedTsFile}|{partTsFile}")),
 							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
 							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
@@ -1095,6 +1104,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 						var finalizeParts = new List<FfmpegOption?>
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegCommandLine.DefaultInputThreadQueue(),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)),
 							trimEndOpt,
 						};
