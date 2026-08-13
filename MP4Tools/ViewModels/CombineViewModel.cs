@@ -697,6 +697,16 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 	}
 
+	/// <summary>Uses a dragged folder as the Combine input folder (loads clips from it).</summary>
+	public bool AcceptDroppedFolder(string folderPath)
+	{
+		if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+			return false;
+
+		SetFile(folderPath);
+		return true;
+	}
+
 	protected override Task Clear()
 	{
 		CancelEdgeDurationRefresh();

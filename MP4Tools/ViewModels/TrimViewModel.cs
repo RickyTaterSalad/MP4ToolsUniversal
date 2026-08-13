@@ -265,6 +265,16 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 	}
 
+	/// <summary>Uses a dropped video file as the Trim source.</summary>
+	public bool AcceptDroppedVideoFile(string filePath)
+	{
+		if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+			return false;
+
+		SetFile(filePath);
+		return true;
+	}
+
 	private async Task TrimAndCombineAsync(bool combine = true)
 	{
 
