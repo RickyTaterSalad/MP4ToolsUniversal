@@ -39,7 +39,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 	[ObservableProperty]
 	private string _recordingJsonPath;
 
-	/// <summary>Local path to a box-score image (JPEG/PNG/WebP/GIF) uploaded to the recording referenced by RecordingJsonPath.</summary>
+	/// <summary>
+	/// Local path to a box-score image (JPEG/PNG/WebP/GIF).
+	/// With a share JSON: attached to the source recording after revision upload.
+	/// Without a share JSON: sent with <c>POST /api/boxscore-sessions</c> when creating a session.
+	/// </summary>
 	[ObservableProperty]
 	private string _boxScoreImagePath;
 
@@ -1151,6 +1155,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				var introChapterOffsetSeconds = introApplied ? IntroDurationSeconds : 0;
 				await WriteOffsetRecordingJsonIfNeededAsync(combineOutputFile, introChapterOffsetSeconds, ct)
 					.ConfigureAwait(false);
+				await CreateBoxScoreSessionIfNeededAsync(ct).ConfigureAwait(false);
 				ReportCombineStep("Finished successfully.");
 				if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
 					FolderOpener.OpenContainingFolderIfExists(combineOutputFile);
@@ -1345,6 +1350,94 @@ public partial class CombineViewModel : MP4ViewModelBase
 		catch (Exception ex)
 		{
 			Logger.Log($"Failed to upload box score: {ex.Message}");
+		}
+	}
+
+	/// <summary>
+	/// When there is no share-linked session JSON, create a score-only (or image) session
+	/// from Combine game info via <c>POST /api/boxscore-sessions</c>.
+	/// </summary>
+	private async Task CreateBoxScoreSessionIfNeededAsync(CancellationToken ct)
+	{
+		var configuredServer = BaseballLoggerSettingsRuntime.ServerUrl;
+		var apiKey = BaseballLoggerSettingsRuntime.ApiKey;
+		var jsonSource = RecordingJsonPath?.Trim();
+
+		// Share-linked path already handled revision + optional image upload.
+		if (ModifiedRecordingUploader.CanUploadFromSource(jsonSource, configuredServer))
+			return;
+
+		if (!BoxScoreSessionCreator.CanCreate(VisitorName, HomeName, configuredServer, apiKey))
+		{
+			if (!string.IsNullOrWhiteSpace(BoxScoreImagePath)
+				&& (string.IsNullOrWhiteSpace(VisitorName) || string.IsNullOrWhiteSpace(HomeName)))
+			{
+				Logger.Log(
+					"Skipping box-score session create: visitor and home team names are required when there is no recording JSON.");
+			}
+			return;
+		}
+
+		try
+		{
+			ReportCombineStep("Creating box-score session…");
+			var serverBase = ModifiedRecordingUploader.ResolveServerBaseUrl(configuredServer);
+			var sessionId = BuildGameInfoOutputFileName();
+			var request = new CreateBoxScoreSessionRequest(
+				VisitorName,
+				HomeName,
+				VisitorScore ?? 0,
+				HomeScore ?? 0,
+				EventDate?.ToString("yyyy-MM-dd"),
+				null,
+				string.IsNullOrWhiteSpace(sessionId) ? null : sessionId,
+				EventInfo,
+				IntroTitle,
+				IntroSubtitle,
+				IntroDetails,
+				IntroDurationSeconds,
+				string.IsNullOrWhiteSpace(BoxScoreImagePath) ? null : BoxScoreImagePath);
+
+			var result = await BoxScoreSessionCreator.CreateAsync(
+				serverBase,
+				apiKey,
+				request,
+				ct,
+				Logger.Log).ConfigureAwait(false);
+
+			if (!string.IsNullOrWhiteSpace(result.ViewUrl))
+			{
+				var absoluteView = result.ViewUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+					? result.ViewUrl
+					: $"{serverBase.TrimEnd('/')}{result.ViewUrl}";
+				Logger.Log($"Box-score session available at: {absoluteView}");
+			}
+
+			if (result.ManualOnly)
+			{
+				Logger.Log("Box-score session created without image; stats can be entered on the web detail page.");
+			}
+			else if (result.HasBoxScore)
+			{
+				var status = result.Parsed == true
+					? "Box score uploaded and parsed."
+					: result.ParseSkipped
+						? "Box score uploaded (parse skipped)."
+						: !string.IsNullOrWhiteSpace(result.ParseError)
+							? $"Box score uploaded (parse failed: {result.ParseError})."
+							: "Box score uploaded.";
+				Logger.Log(status);
+				if (!string.IsNullOrWhiteSpace(result.ImageUrl))
+					Logger.Log($"Box score image URL: {result.ImageUrl}");
+			}
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"Failed to create box-score session: {ex.Message}");
 		}
 	}
 
