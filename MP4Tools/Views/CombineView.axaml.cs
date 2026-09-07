@@ -80,7 +80,7 @@ public partial class CombineView : UserControl
 		var paths = await FileDropHelper.GetDroppedLocalPathsAsync(e.DataTransfer);
 		foreach (var path in paths)
 		{
-			if (vm.AcceptDroppedFolder(path))
+			if (vm.AcceptDroppedFolder(path) || vm.AcceptDroppedVideoFile(path))
 			{
 				e.Handled = true;
 				break;
@@ -89,19 +89,19 @@ public partial class CombineView : UserControl
 	}
 
 	private async void BrowseButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        var topLevel = TopLevel.GetTopLevel(this);
-        var folder = await topLevel!.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-        {
-            Title = "Select Folder",
-            AllowMultiple = false
-        });
+	{
+		var topLevel = TopLevel.GetTopLevel(this);
+		var folder = await topLevel!.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+		{
+			Title = "Select Folder",
+			AllowMultiple = false
+		});
 
-        if (folder.Count > 0)
-        {
-            ((MP4ViewModelBase)DataContext!).SetFileCommand.Execute(folder[0].Path.LocalPath);
-        }
-    }
+		if (folder.Count > 0)
+		{
+			((MP4ViewModelBase)DataContext!).SetFileCommand.Execute(folder[0].Path.LocalPath);
+		}
+	}
 
 	private async void BrowseJsonButton_OnClick(object sender, RoutedEventArgs e)
 	{
