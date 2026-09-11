@@ -14,7 +14,8 @@
     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
       <Button Content="Clear Log" Command="{Binding ClearLogCommand}" 
               Margin="0,0,10,0" Padding="10,5"/>
-      <CheckBox Content="Auto-scroll to bottom"
+      <ToggleSwitch Content="Auto-scroll to bottom"
+                OffContent="" OnContent=""
                 IsChecked="{Binding AutoScrollToBottom}"
                 VerticalAlignment="Center"/>
     </StackPanel>

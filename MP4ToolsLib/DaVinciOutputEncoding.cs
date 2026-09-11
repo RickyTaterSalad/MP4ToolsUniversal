@@ -14,8 +14,11 @@ public static class DaVinciOutputEncoding
 	/// <summary>HandBrake RF 20 (<c>VideoQualitySlider</c>).</summary>
 	public const int SoftwareCrf = 20;
 
-	/// <summary>HandBrake <c>VideoPreset</c>.</summary>
-	public const string SoftwareEncoderPreset = "slow";
+	/// <summary>
+	/// x265 speed/quality tradeoff. <c>medium</c> is much faster than HandBrake's reference
+	/// <c>slow</c> while keeping the same CRF / Main10 / psy params for Resolve-safe output.
+	/// </summary>
+	public const string SoftwareEncoderPreset = "medium";
 
 	/// <summary>HandBrake <c>VideoOptionExtra</c> for x265.</summary>
 	public const string SoftwareX265Params =
@@ -102,7 +105,7 @@ public static class DaVinciOutputEncoding
 		parts.Add(FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, encoder));
 		if (encoder == "libx265")
 		{
-			// HandBrake "4K Re-encode High Quality": always x265 10-bit Main10, RF 20, slow.
+			// Resolve-safe software path: x265 10-bit Main10, RF 20, medium (faster than HandBrake "slow").
 			parts.Add(FfmpegOption.Pair(FfmpegArguments.ConstantRateFactor, SoftwareCrf.ToString()));
 			parts.Add(FfmpegOption.Pair(FfmpegArguments.EncoderPreset, SoftwareEncoderPreset));
 			parts.Add(FfmpegOption.Pair(FfmpegArguments.VideoProfile, HevcProfileMain10));

@@ -35,7 +35,8 @@
 				</Button>
 			</Grid>
 
-			<CheckBox Content="Keep temporary files after processing (do not delete intermediates)"
+			<ToggleSwitch Content="Keep temporary files after processing (do not delete intermediates)"
+								OffContent="" OnContent=""
 								IsChecked="{Binding RetainTemporaryFiles}"/>
 
 			<TextBlock Text="Default output folder" FontWeight="SemiBold" FontSize="16"/>
@@ -63,15 +64,18 @@
 				</Button>
 			</Grid>
 
-			<CheckBox Content="Open output folder when Combine/Trim completes successfully"
+			<ToggleSwitch Content="Open output folder when Combine/Trim completes successfully"
+								OffContent="" OnContent=""
 								IsChecked="{Binding OpenOutputFolderOnComplete}"/>
 
-			<CheckBox Content="Delete segment clips after successful Trim And Combine"
+			<ToggleSwitch Content="Delete segment clips after successful Trim And Combine"
+								OffContent="" OnContent=""
 								IsChecked="{Binding DeleteTrimSegmentsAfterTrimAndCombine}"
 								ToolTip.Tip="Does not apply to Trim-only runs."/>
 
 			<TextBlock Text="Encoding" FontWeight="SemiBold" FontSize="16"/>
-			<CheckBox Content="Resolve-safe encoding (re-encode for DaVinci Resolve)"
+			<ToggleSwitch Content="Resolve-safe encoding (re-encode for DaVinci Resolve)"
+								OffContent="" OnContent=""
 								IsChecked="{Binding UseResolveSafeEncoding}"
 								ToolTip.Tip="When enabled, trim re-encodes video to clean 8-bit HEVC MP4. Combine always uses stream copy. When disabled, trim uses fast stream-copy (may crash or misalign in Resolve)."/>
 

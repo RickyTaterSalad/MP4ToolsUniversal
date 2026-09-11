@@ -14,7 +14,8 @@ namespace MP4ToolsLib;
 /// <summary>
 /// Reads a recording JSON (local path or http/https URL), adjusts all <c>elapsed</c> and
 /// <c>stopElapsed</c> string fields (subtract start skip, optionally add intro duration),
-/// and writes a new file. Never modifies the source.
+/// and writes a new file. Never modifies the source. When an intro is present, elapsed
+/// times are floored at the intro duration so early events land after the intro screen.
 /// </summary>
 public static class RecordingJsonElapsedOffset
 {
@@ -45,8 +46,10 @@ public static class RecordingJsonElapsedOffset
 		var skip = Math.Max(0, startSkipSeconds);
 		var intro = Math.Max(0, introAddSeconds);
 		// Net shift relative to original elapsed: remove skipped lead-in, then push forward by intro.
+		// When an intro is present, floor elapsed at intro length so early events land after the intro.
 		var netAddSeconds = intro - skip;
-		var root = await LoadOffsetRootAsync(sourcePathOrUrl.Trim(), netAddSeconds, ct, log).ConfigureAwait(false);
+		var root = await LoadOffsetRootAsync(sourcePathOrUrl.Trim(), netAddSeconds, intro, ct, log)
+			.ConfigureAwait(false);
 
 		var destDir = Path.GetDirectoryName(destinationPath);
 		if (!string.IsNullOrWhiteSpace(destDir) && !Directory.Exists(destDir))
@@ -239,6 +242,7 @@ public static class RecordingJsonElapsedOffset
 	private static async Task<JsonNode> LoadOffsetRootAsync(
 		string sourcePathOrUrl,
 		double netAddSeconds,
+		double minElapsedSeconds,
 		CancellationToken ct,
 		Action<string> log)
 	{
@@ -246,7 +250,7 @@ public static class RecordingJsonElapsedOffset
 		var root = JsonNode.Parse(json)
 			?? throw new InvalidOperationException("Recording JSON is empty or invalid.");
 
-		AdjustElapsedFields(root, netAddSeconds);
+		AdjustElapsedFields(root, netAddSeconds, minElapsedSeconds);
 		return root;
 	}
 
@@ -287,7 +291,7 @@ public static class RecordingJsonElapsedOffset
 		return await File.ReadAllTextAsync(sourcePathOrUrl, ct).ConfigureAwait(false);
 	}
 
-	private static void AdjustElapsedFields(JsonNode node, double netAddSeconds)
+	private static void AdjustElapsedFields(JsonNode node, double netAddSeconds, double minElapsedSeconds)
 	{
 		if (node is JsonObject obj)
 		{
@@ -300,11 +304,11 @@ public static class RecordingJsonElapsedOffset
 				if ((key is "elapsed" or "stopElapsed") && child is JsonValue value)
 				{
 					var raw = value.GetValue<string>();
-					obj[key] = AdjustTimeString(raw, netAddSeconds);
+					obj[key] = AdjustTimeString(raw, netAddSeconds, minElapsedSeconds);
 				}
 				else
 				{
-					AdjustElapsedFields(child, netAddSeconds);
+					AdjustElapsedFields(child, netAddSeconds, minElapsedSeconds);
 				}
 			}
 		}
@@ -313,19 +317,23 @@ public static class RecordingJsonElapsedOffset
 			foreach (var item in arr)
 			{
 				if (item != null)
-					AdjustElapsedFields(item, netAddSeconds);
+					AdjustElapsedFields(item, netAddSeconds, minElapsedSeconds);
 			}
 		}
 	}
 
-	/// <summary>Applies a signed net add to an HH:MM:SS elapsed string (clamped at zero).</summary>
-	private static string AdjustTimeString(string time, double netAddSeconds)
+	/// <summary>
+	/// Applies a signed net add to an HH:MM:SS elapsed string.
+	/// Floors at <paramref name="minElapsedSeconds"/> (intro length when an intro is present, otherwise 0).
+	/// </summary>
+	private static string AdjustTimeString(string time, double netAddSeconds, double minElapsedSeconds)
 	{
 		var range = TimeRange.FromString(time);
 		if (range == null)
 			return time ?? "00:00:00";
 
-		return FormatElapsedTimestamp(Math.Max(0, range.TotalSeconds + netAddSeconds));
+		var floor = Math.Max(0, minElapsedSeconds);
+		return FormatElapsedTimestamp(Math.Max(floor, range.TotalSeconds + netAddSeconds));
 	}
 
 	private static string FormatTeamLine(string name, int? score)

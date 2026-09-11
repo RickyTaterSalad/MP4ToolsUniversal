@@ -2,16 +2,90 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="MP4Tools.App"
              xmlns:local="using:MP4Tools"
-						 xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              RequestedThemeVariant="Dark">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+	<!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+	<Application.DataTemplates>
+		<local:ViewLocator/>
+	</Application.DataTemplates>
 	<Application.Styles>
+		<SimpleTheme/>
 		<materialIcons:MaterialIconStyles />
+
+		<!-- Underline-style tabs (SimpleTheme defaults look like buttons) -->
+		<Style Selector="TabControl">
+			<Setter Property="Padding" Value="0"/>
+			<Setter Property="Template">
+				<ControlTemplate>
+					<DockPanel>
+						<Border DockPanel.Dock="Top"
+								BorderBrush="{DynamicResource ThemeControlMidBrush}"
+								BorderThickness="0,0,0,1"
+								Margin="0,0,0,4">
+							<ItemsPresenter Name="PART_ItemsPresenter"
+											ItemsPanel="{TemplateBinding ItemsPanel}" />
+						</Border>
+						<Panel ClipToBounds="True">
+							<ContentPresenter Name="PART_SelectedContentHost2"
+											  Margin="{TemplateBinding Padding}"
+											  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+											  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+											  IsVisible="False" />
+							<ContentPresenter Name="PART_SelectedContentHost"
+											  Margin="{TemplateBinding Padding}"
+											  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+											  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+						</Panel>
+					</DockPanel>
+				</ControlTemplate>
+			</Setter>
+		</Style>
+
+		<Style Selector="TabItem">
+			<Setter Property="FontSize" Value="13"/>
+			<Setter Property="Padding" Value="14,8"/>
+			<Setter Property="Margin" Value="0"/>
+			<Setter Property="Foreground" Value="{DynamicResource ThemeForegroundLowBrush}"/>
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="CornerRadius" Value="0"/>
+		</Style>
+
+		<Style Selector="TabItem /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0,0,0,2"/>
+			<Setter Property="BorderBrush" Value="Transparent"/>
+			<Setter Property="CornerRadius" Value="0"/>
+		</Style>
+
+		<Style Selector="TabItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeControlMidBrush}"/>
+		</Style>
+
+		<Style Selector="TabItem:selected">
+			<Setter Property="Foreground" Value="{DynamicResource ThemeForegroundBrush}"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+		</Style>
+
+		<Style Selector="TabItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccentBrush}"/>
+		</Style>
+
+		<Style Selector="TabItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccentBrush}"/>
+		</Style>
+
+		<Style Selector="TabItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccentBrush}"/>
+		</Style>
+
+		<Style Selector="TabItem:selected:focus:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccentBrush}"/>
+		</Style>
 	</Application.Styles>
-    <Application.DataTemplates>
-        <local:ViewLocator/>
-    </Application.DataTemplates>
-    <Application.Styles>
-			<SimpleTheme/>
-    </Application.Styles>
 </Application>

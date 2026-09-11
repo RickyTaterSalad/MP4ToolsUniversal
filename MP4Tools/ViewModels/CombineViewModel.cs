@@ -32,6 +32,13 @@ public partial class CombineViewModel : MP4ViewModelBase
 	[ObservableProperty]
 	private string _introSubtitle;
 
+	/// <summary>
+	/// When true, prepend an intro screen. Auto-checked when any intro text field has content;
+	/// unchecking skips the intro without clearing those fields.
+	/// </summary>
+	[ObservableProperty]
+	private bool _includeIntro;
+
 	[ObservableProperty]
 	private string _outputPath;
 
@@ -39,7 +46,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 	[ObservableProperty]
 	private string _recordingJsonPath;
 
-	/// <summary>Local path to a box-score image (JPEG/PNG/WebP/GIF) uploaded to the recording referenced by RecordingJsonPath.</summary>
+	/// <summary>
+	/// Local path to a box-score image (JPEG/PNG/WebP/GIF).
+	/// With a share JSON: attached to the source recording after revision upload.
+	/// Without a share JSON: sent with <c>POST /api/boxscore-sessions</c> when creating a session.
+	/// </summary>
 	[ObservableProperty]
 	private string _boxScoreImagePath;
 
@@ -60,6 +71,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			if (SetProperty(ref _homeName, value))
 			{
+				OptInIntroFromGameInfo(!string.IsNullOrWhiteSpace(value));
 				UpdateIntroTitleFromGameInfo();
 				UpdateIntroDetailsFromGameInfo();
 				UpdateOutputPathFromGameInfo();
@@ -79,6 +91,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			if (SetProperty(ref _visitorName, value))
 			{
+				OptInIntroFromGameInfo(!string.IsNullOrWhiteSpace(value));
 				UpdateIntroTitleFromGameInfo();
 				UpdateIntroDetailsFromGameInfo();
 				UpdateOutputPathFromGameInfo();
@@ -125,6 +138,25 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 	public static IReadOnlyList<int> IntroDurationRange { get; } = Enumerable.Range(1, 59).ToList();
 
+	public static IReadOnlyList<string> InputFileSortOptions { get; } = ["Creation", "File name"];
+
+	private string _selectedInputFileSort = "Creation";
+	public string SelectedInputFileSort
+	{
+		get => _selectedInputFileSort;
+		set
+		{
+			if (!SetProperty(ref _selectedInputFileSort, value ?? "Creation"))
+				return;
+			ResortInputFiles();
+		}
+	}
+
+	private CombineFileSortMode CurrentInputFileSortMode =>
+		string.Equals(SelectedInputFileSort, "File name", StringComparison.OrdinalIgnoreCase)
+			? CombineFileSortMode.FileName
+			: CombineFileSortMode.Creation;
+
 	private ObservableCollection<CombineFile> _inputFiles = new ObservableCollection<CombineFile>();
 	public ObservableCollection<CombineFile> InputFiles
 	{
@@ -140,7 +172,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			SetProperty(ref _inputFiles, value ?? new ObservableCollection<CombineFile>());
 			_inputFiles.CollectionChanged += OnInputFilesCollectionChanged;
 
-			CanCombine = _inputFiles.Count > 1;
+			RefreshCanCombineFromInputs();
 			OnPropertyChanged(nameof(HasSelectedInputFile));
 		}
 	}
@@ -211,9 +243,43 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			InputFiles.Remove(SelectedInputFile);
 			SelectedInputFile = null;
-			CanCombine = InputFiles.Count > 1;
+			RefreshCanCombineFromInputs();
 		}
 	}
+
+	private bool HasIntroContent =>
+		!string.IsNullOrWhiteSpace(IntroTitle)
+		|| !string.IsNullOrWhiteSpace(IntroSubtitle)
+		|| !string.IsNullOrWhiteSpace(IntroDetails);
+
+	/// <summary>
+	/// Multiple clips always combine; a single clip is allowed only when an intro will be prepended.
+	/// </summary>
+	private bool EvaluateCanCombineFiles() =>
+		InputFiles.Count > 1 || (InputFiles.Count == 1 && IncludeIntro && HasIntroContent);
+
+	private void RefreshCanCombineFromInputs() =>
+		CanCombine = EvaluateCanCombineFiles();
+
+	private void OnIntroFieldTextChanged(string value)
+	{
+		// Typing into any intro field opts in; unchecking later leaves the text intact.
+		if (!string.IsNullOrWhiteSpace(value))
+			IncludeIntro = true;
+		RefreshCanCombineFromInputs();
+	}
+
+	/// <summary>Any game-info field with a value opts into the intro screen (same as typing intro text).</summary>
+	private void OptInIntroFromGameInfo(bool hasValue)
+	{
+		if (hasValue)
+			IncludeIntro = true;
+	}
+
+	partial void OnIntroTitleChanged(string value) => OnIntroFieldTextChanged(value);
+	partial void OnIntroSubtitleChanged(string value) => OnIntroFieldTextChanged(value);
+	partial void OnIntroDetailsChanged(string value) => OnIntroFieldTextChanged(value);
+	partial void OnIncludeIntroChanged(bool value) => RefreshCanCombineFromInputs();
 
 	private void OnInputFilesCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 	{
@@ -299,11 +365,24 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 			try
 			{
-				var durStr = await FFMpegUtils.Instance.GetFileDurationAsync(firstPath, ct, Logger.Log).ConfigureAwait(false);
-				var tr = TimeRange.FromString(durStr ?? string.Empty);
-				if (tr != null)
+				if (string.Equals(firstPath, lastPath, StringComparison.OrdinalIgnoreCase))
 				{
-					firstDur = tr.TotalSeconds;
+					var durStr = await FFMpegUtils.Instance.GetFileDurationAsync(firstPath, ct, Logger.Log).ConfigureAwait(false);
+					var tr = TimeRange.FromString(durStr ?? string.Empty);
+					if (tr != null)
+						firstDur = lastDur = tr.TotalSeconds;
+				}
+				else
+				{
+					var firstTask = FFMpegUtils.Instance.GetFileDurationAsync(firstPath, ct, Logger.Log);
+					var lastTask = FFMpegUtils.Instance.GetFileDurationAsync(lastPath, ct, Logger.Log);
+					await Task.WhenAll(firstTask, lastTask).ConfigureAwait(false);
+					var firstTr = TimeRange.FromString((await firstTask.ConfigureAwait(false)) ?? string.Empty);
+					var lastTr = TimeRange.FromString((await lastTask.ConfigureAwait(false)) ?? string.Empty);
+					if (firstTr != null)
+						firstDur = firstTr.TotalSeconds;
+					if (lastTr != null)
+						lastDur = lastTr.TotalSeconds;
 				}
 			}
 			catch (OperationCanceledException)
@@ -313,31 +392,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 			catch
 			{
 				// keep null — fall back to full combo ranges
-			}
-
-			if (string.Equals(firstPath, lastPath, StringComparison.OrdinalIgnoreCase))
-			{
-				lastDur = firstDur;
-			}
-			else
-			{
-				try
-				{
-					var durStr = await FFMpegUtils.Instance.GetFileDurationAsync(lastPath, ct, Logger.Log).ConfigureAwait(false);
-					var tr = TimeRange.FromString(durStr ?? string.Empty);
-					if (tr != null)
-					{
-						lastDur = tr.TotalSeconds;
-					}
-				}
-				catch (OperationCanceledException)
-				{
-					throw;
-				}
-				catch
-				{
-					// ignored
-				}
 			}
 
 			await Dispatcher.UIThread.InvokeAsync(() =>
@@ -509,7 +563,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 			{
 				CanClear = false;
 			}
-			if (!CanClear && _canCombine && Directory.Exists(InputPath))
+			if (!CanClear && _canCombine
+				&& (Directory.Exists(InputPath) || File.Exists(InputPath)))
 			{
 				CanClear = true;
 			}
@@ -536,6 +591,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			var newVal = Math.Max(0, value.Value);
 			if (SetProperty(ref _visitorScore, newVal))
 			{
+				OptInIntroFromGameInfo(true);
 				UpdateOutputPathFromGameInfo();
 				UpdateIntroDetailsFromGameInfo();
 			}
@@ -560,6 +616,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			var newVal = Math.Max(0, value.Value);
 			if (SetProperty(ref _homeScore, newVal))
 			{
+				OptInIntroFromGameInfo(true);
 				UpdateOutputPathFromGameInfo();
 				UpdateIntroDetailsFromGameInfo();
 			}
@@ -583,6 +640,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			if (SetProperty(ref _eventInfo, value ?? string.Empty))
 			{
+				OptInIntroFromGameInfo(!string.IsNullOrWhiteSpace(value));
 				UpdateSubtitleFromEventInfoAndDate();
 			}
 		}
@@ -596,6 +654,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			if (SetProperty(ref _eventDate, value))
 			{
+				OptInIntroFromGameInfo(value.HasValue);
 				UpdateOutputPathFromGameInfo();
 				UpdateSubtitleFromEventInfoAndDate();
 			}
@@ -626,6 +685,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			var leaf = new DirectoryInfo(InputPath).Name;
 			OutputPath = FFMpegUtils.Instance.CleanupPath(Path.Combine(baseDir, leaf, "combined.mp4"));
+		}
+		else if (File.Exists(InputPath))
+		{
+			var leaf = Path.GetFileNameWithoutExtension(InputPath);
+			OutputPath = FFMpegUtils.Instance.CleanupPath(Path.Combine(baseDir, $"{leaf}_combined.mp4"));
 		}
 		else
 		{
@@ -699,14 +763,55 @@ public partial class CombineViewModel : MP4ViewModelBase
 	}
 	protected override void OnInputPathSet()
 	{
-		var fileListResult = CombineFile.FromFolder(InputPath);
+		IReadOnlyList<CombineFile> fileListResult;
+		if (Directory.Exists(InputPath))
+			fileListResult = CombineFile.FromFolder(InputPath, CurrentInputFileSortMode);
+		else if (CombineFile.IsSupportedVideoFile(InputPath))
+			fileListResult = CombineFile.FromVideoFile(InputPath);
+		else
+			fileListResult = Array.Empty<CombineFile>();
+
 		UpdateOutputPathFromGameInfo();
-		CanCombine = fileListResult.Count > 1;
 		InputFiles.Clear();
 		foreach (var file in fileListResult)
 		{
 			InputFiles.Add(file);
 		}
+		RefreshCanCombineFromInputs();
+	}
+
+	private void ResortInputFiles()
+	{
+		if (InputFiles == null || InputFiles.Count <= 1)
+			return;
+
+		var sorted = CombineFile.Sort(InputFiles, CurrentInputFileSortMode);
+		var selected = SelectedInputFile;
+		InputFiles.Clear();
+		foreach (var file in sorted)
+			InputFiles.Add(file);
+		if (selected != null && InputFiles.Contains(selected))
+			SelectedInputFile = selected;
+	}
+
+	/// <summary>Uses a dragged folder as the Combine input folder (loads clips from it).</summary>
+	public bool AcceptDroppedFolder(string folderPath)
+	{
+		if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+			return false;
+
+		SetFile(folderPath);
+		return true;
+	}
+
+	/// <summary>Uses a dragged video file as the sole Combine input (intro + single clip).</summary>
+	public bool AcceptDroppedVideoFile(string filePath)
+	{
+		if (!CombineFile.IsSupportedVideoFile(filePath))
+			return false;
+
+		SetFile(filePath);
+		return true;
 	}
 
 	protected override Task Clear()
@@ -723,6 +828,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		IntroTitle = string.Empty;
 		IntroSubtitle = string.Empty;
 		IntroDetails = string.Empty;
+		IncludeIntro = false;
 		IntroDurationSeconds = 10;
 		EventDate = null;//DateTime.Today;
 		VisitorName = string.Empty;
@@ -788,7 +894,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				Logger.Log($"Unexpected error during log file handling: {ex.Message}");
 			}
 
-			CanCombine = InputFiles.Count > 1;
+			RefreshCanCombineFromInputs();
 			EndFfmpegOperation();
 		}
 	}
@@ -853,18 +959,15 @@ public partial class CombineViewModel : MP4ViewModelBase
 			var videoDurations = new Dictionary<string, TimeRange>();
 			ReportCombineStep("Reading clip durations…");
 			Logger.Log("Reading input durations...");
-			foreach (var file in writeFiles)
+			var durationResults = await Task.WhenAll(writeFiles.Select(async file =>
 			{
 				try
 				{
 					ct.ThrowIfCancellationRequested();
-					var vidDurationString = await FFMpegUtils.Instance.GetFileDurationAsync(file.Path, ct, Logger.Log).ConfigureAwait(false);
-					var tr = TimeRange.FromString(vidDurationString ?? "");
-					if (tr != null)
-					{
-						videoDurations[file.Path] = tr;
-						dblTotalDuration += tr.TotalSeconds;
-					}
+					var vidDurationString = await FFMpegUtils.Instance
+						.GetFileDurationAsync(file.Path, ct, Logger.Log)
+						.ConfigureAwait(false);
+					return (Path: file.Path, Range: TimeRange.FromString(vidDurationString ?? ""), Error: (string)null);
 				}
 				catch (OperationCanceledException)
 				{
@@ -872,12 +975,27 @@ public partial class CombineViewModel : MP4ViewModelBase
 				}
 				catch (Exception ex)
 				{
-					Logger.Log($"Failed to read duration for '{file?.Path}': {ex.Message}");
+					return (Path: file.Path, Range: (TimeRange)null, Error: ex.Message);
+				}
+			})).ConfigureAwait(false);
+
+			foreach (var result in durationResults)
+			{
+				if (!string.IsNullOrWhiteSpace(result.Error))
+				{
+					Logger.Log($"Failed to read duration for '{result.Path}': {result.Error}");
+					continue;
+				}
+
+				if (result.Range != null)
+				{
+					videoDurations[result.Path] = result.Range;
+					dblTotalDuration += result.Range.TotalSeconds;
 				}
 			}
 
 			var combineOutputFile = cleanedOutputPath;
-			var shouldAddIntro = !string.IsNullOrWhiteSpace(IntroTitle) || !string.IsNullOrWhiteSpace(IntroSubtitle) || !string.IsNullOrWhiteSpace(IntroDetails);
+			var shouldAddIntro = IncludeIntro && HasIntroContent;
 			var scanOpt = TrimFirstVideo
 				? FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, StartRange.AsInputParameterString())
 				: default;
@@ -984,6 +1102,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 						scanOpt,
 						FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatConcatDemuxer),
 						FfmpegOption.Pair(FfmpegArguments.ConcatDemuxerSafeFlag, FfmpegArguments.ConcatDemuxerAllowAnyPath),
+						FfmpegCommandLine.DefaultInputThreadQueue(),
 						FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(fileList)),
 						trimEndOpt,
 					};
@@ -1011,21 +1130,73 @@ public partial class CombineViewModel : MP4ViewModelBase
 					}
 				}
 			}
+			else if (combineSucceeded && introApplied && writeFiles.Count == 1)
+			{
+				// PrependIntroAsync already produced intro+clip as an MP4; do not remux via MPEG-TS again.
+				ReportCombineStep("Writing final MP4…");
+				var introMergedPath = writeFiles[0].Path;
+				try
+				{
+					if (trimEndOpt.IsSkipped)
+					{
+						Logger.Log("Intro + single clip already complete; promoting to output...");
+						if (File.Exists(combineOutputFile))
+							File.Delete(combineOutputFile);
+						File.Move(introMergedPath, combineOutputFile);
+						tempFilesToDelete.Remove(introMergedPath);
+					}
+					else
+					{
+						Logger.Log("Intro + single clip complete; applying end trim to output (stream copy)...");
+						var promoteOpts = new List<FfmpegOption?>
+						{
+							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+							FfmpegCommandLine.DefaultInputThreadQueue(),
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(introMergedPath)),
+							trimEndOpt,
+						};
+						LegacyFastEncoding.AppendStreamCopyTail(promoteOpts);
+						promoteOpts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile)));
+						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(promoteOpts), ct).ConfigureAwait(false);
+					}
+				}
+				catch (OperationCanceledException)
+				{
+					throw;
+				}
+				catch (Exception e)
+				{
+					combineSucceeded = false;
+					Logger.Log($"Error during combine: {e.Message}");
+					ReportCombineStep($"Failed: {e.Message}");
+				}
+				finally
+				{
+					foreach (var tempFile in tempFilesToDelete)
+						TempPathHelper.DeleteTemporaryFileUnlessRetained(tempFile);
+				}
+			}
 			else if (combineSucceeded)
 			{
 				ReportCombineStep("Merging clips (MPEG-TS pass)…");
-				Logger.Log("Combining with incremental TS merge (intro enabled)...");
-				string mergedTsFile = null;
+				Logger.Log("Combining with single-pass MPEG-TS concat (intro enabled)...");
+				var partTsFiles = new List<string>();
 				try
 				{
 					var videoCodecByPath = new Dictionary<string, string>();
 					var audioCodecByPath = new Dictionary<string, string>();
-					foreach (var f in writeFiles)
+					var codecResults = await Task.WhenAll(writeFiles.Select(async f =>
 					{
-						var vc = await FFMpegUtils.Instance.GetFirstVideoCodecNameAsync(f.Path, ct, Logger.Log).ConfigureAwait(false);
-						videoCodecByPath[f.Path] = vc;
-						var ac = await FFMpegUtils.Instance.GetFirstAudioCodecNameAsync(f.Path, ct, Logger.Log).ConfigureAwait(false);
-						audioCodecByPath[f.Path] = ac;
+						ct.ThrowIfCancellationRequested();
+						var (vc, ac) = await FFMpegUtils.Instance
+							.GetFirstAvCodecNamesAsync(f.Path, ct, Logger.Log)
+							.ConfigureAwait(false);
+						return (f.Path, vc, ac);
+					})).ConfigureAwait(false);
+					foreach (var (path, vc, ac) in codecResults)
+					{
+						videoCodecByPath[path] = vc;
+						audioCodecByPath[path] = ac;
 					}
 
 					for (int i = 0; i < writeFiles.Count; i++)
@@ -1041,6 +1212,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
 							i == 0 ? scanOpt : default,
+							FfmpegCommandLine.DefaultInputThreadQueue(),
 							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(input)),
 							FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
 							MpegTsVideoBitstream.GetMp4ToAnnexBOption(vProbe),
@@ -1059,43 +1231,25 @@ public partial class CombineViewModel : MP4ViewModelBase
 							break;
 						}
 
-						if (string.IsNullOrWhiteSpace(mergedTsFile))
-						{
-							mergedTsFile = partTsFile;
-							continue;
-						}
-
-						var nextMergedTs = Path.Combine(TempPathHelper.GetTempPath(), $"combine_merge_{Guid.NewGuid():N}.ts");
-						ReportCombineStep($"Joining MPEG-TS streams ({i + 1}/{writeFiles.Count})…");
-						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(
-							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
-							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted($"concat:{mergedTsFile}|{partTsFile}")),
-							FfmpegOption.Pair(FfmpegArguments.SelectCodec, FfmpegArguments.StreamCopy),
-							FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs),
-							FfmpegOption.Positional(FfmpegCommandLine.Quoted(nextMergedTs))), ct).ConfigureAwait(false);
-						if (!File.Exists(nextMergedTs))
-						{
-							TempPathHelper.DeleteTemporaryFileUnlessRetained(partTsFile);
-							TempPathHelper.DeleteTemporaryFileUnlessRetained(nextMergedTs);
-							combineSucceeded = false;
-							Logger.Log($"MPEG-TS join failed at clip {i + 1}.");
-							ReportCombineStep($"Failed: MPEG-TS join at clip {i + 1}.");
-							break;
-						}
-
-						TempPathHelper.DeleteTemporaryFileUnlessRetained(mergedTsFile);
-						TempPathHelper.DeleteTemporaryFileUnlessRetained(partTsFile);
-						mergedTsFile = nextMergedTs;
+						partTsFiles.Add(partTsFile);
 					}
 
-					if (combineSucceeded && !string.IsNullOrWhiteSpace(mergedTsFile) && File.Exists(mergedTsFile))
+					if (combineSucceeded && partTsFiles.Count > 0)
 					{
 						ReportCombineStep("Writing final MP4…");
-						Logger.Log("Finalizing merged TS into MP4 (stream copy)...");
+						Logger.Log(
+							partTsFiles.Count == 1
+								? "Finalizing MPEG-TS into MP4 (stream copy)..."
+								: $"Concatenating {partTsFiles.Count} MPEG-TS parts into MP4 (stream copy)...");
+
+						var tsInput = partTsFiles.Count == 1
+							? partTsFiles[0]
+							: $"concat:{string.Join("|", partTsFiles)}";
 						var finalizeParts = new List<FfmpegOption?>
 						{
 							FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
-							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(mergedTsFile)),
+							FfmpegCommandLine.DefaultInputThreadQueue(),
+							FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(tsInput)),
 							trimEndOpt,
 						};
 						LegacyFastEncoding.AppendStreamCopyTail(finalizeParts);
@@ -1106,8 +1260,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 					else if (combineSucceeded)
 					{
 						combineSucceeded = false;
-						Logger.Log("Combine failed: merged MPEG-TS was not created.");
-						ReportCombineStep("Failed: merged MPEG-TS was not created.");
+						Logger.Log("Combine failed: MPEG-TS parts were not created.");
+						ReportCombineStep("Failed: MPEG-TS parts were not created.");
 					}
 				}
 				catch (OperationCanceledException)
@@ -1124,11 +1278,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 				{
 					try
 					{
-						TempPathHelper.DeleteTemporaryFileUnlessRetained(mergedTsFile);
+						foreach (var partTs in partTsFiles)
+							TempPathHelper.DeleteTemporaryFileUnlessRetained(partTs);
 						foreach (var tempFile in tempFilesToDelete)
-						{
 							TempPathHelper.DeleteTemporaryFileUnlessRetained(tempFile);
-						}
 					}
 					catch (Exception e)
 					{
@@ -1152,6 +1305,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				var introChapterOffsetSeconds = introApplied ? IntroDurationSeconds : 0;
 				await WriteOffsetRecordingJsonIfNeededAsync(combineOutputFile, introChapterOffsetSeconds, ct)
 					.ConfigureAwait(false);
+				await CreateBoxScoreSessionIfNeededAsync(ct).ConfigureAwait(false);
 				ReportCombineStep("Finished successfully.");
 				if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
 					FolderOpener.OpenContainingFolderIfExists(combineOutputFile);
@@ -1197,7 +1351,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				IntroTitle,
 				IntroSubtitle,
 				IntroDetails,
-				IntroDurationSeconds,
+				IncludeIntro && HasIntroContent ? IntroDurationSeconds : 0,
 				EventDate,
 				EventInfo,
 				VisitorName,
@@ -1346,6 +1500,94 @@ public partial class CombineViewModel : MP4ViewModelBase
 		catch (Exception ex)
 		{
 			Logger.Log($"Failed to upload box score: {ex.Message}");
+		}
+	}
+
+	/// <summary>
+	/// When there is no share-linked session JSON, create a score-only (or image) session
+	/// from Combine game info via <c>POST /api/boxscore-sessions</c>.
+	/// </summary>
+	private async Task CreateBoxScoreSessionIfNeededAsync(CancellationToken ct)
+	{
+		var configuredServer = BaseballLoggerSettingsRuntime.ServerUrl;
+		var apiKey = BaseballLoggerSettingsRuntime.ApiKey;
+		var jsonSource = RecordingJsonPath?.Trim();
+
+		// Share-linked path already handled revision + optional image upload.
+		if (ModifiedRecordingUploader.CanUploadFromSource(jsonSource, configuredServer))
+			return;
+
+		if (!BoxScoreSessionCreator.CanCreate(VisitorName, HomeName, configuredServer, apiKey))
+		{
+			if (!string.IsNullOrWhiteSpace(BoxScoreImagePath)
+				&& (string.IsNullOrWhiteSpace(VisitorName) || string.IsNullOrWhiteSpace(HomeName)))
+			{
+				Logger.Log(
+					"Skipping box-score session create: visitor and home team names are required when there is no recording JSON.");
+			}
+			return;
+		}
+
+		try
+		{
+			ReportCombineStep("Creating box-score session…");
+			var serverBase = ModifiedRecordingUploader.ResolveServerBaseUrl(configuredServer);
+			var sessionId = BuildGameInfoOutputFileName();
+			var request = new CreateBoxScoreSessionRequest(
+				VisitorName,
+				HomeName,
+				VisitorScore ?? 0,
+				HomeScore ?? 0,
+				EventDate?.ToString("yyyy-MM-dd"),
+				null,
+				string.IsNullOrWhiteSpace(sessionId) ? null : sessionId,
+				EventInfo,
+				IntroTitle,
+				IntroSubtitle,
+				IntroDetails,
+				IncludeIntro && HasIntroContent ? IntroDurationSeconds : 0,
+				string.IsNullOrWhiteSpace(BoxScoreImagePath) ? null : BoxScoreImagePath);
+
+			var result = await BoxScoreSessionCreator.CreateAsync(
+				serverBase,
+				apiKey,
+				request,
+				ct,
+				Logger.Log).ConfigureAwait(false);
+
+			if (!string.IsNullOrWhiteSpace(result.ViewUrl))
+			{
+				var absoluteView = result.ViewUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+					? result.ViewUrl
+					: $"{serverBase.TrimEnd('/')}{result.ViewUrl}";
+				Logger.Log($"Box-score session available at: {absoluteView}");
+			}
+
+			if (result.ManualOnly)
+			{
+				Logger.Log("Box-score session created without image; stats can be entered on the web detail page.");
+			}
+			else if (result.HasBoxScore)
+			{
+				var status = result.Parsed == true
+					? "Box score uploaded and parsed."
+					: result.ParseSkipped
+						? "Box score uploaded (parse skipped)."
+						: !string.IsNullOrWhiteSpace(result.ParseError)
+							? $"Box score uploaded (parse failed: {result.ParseError})."
+							: "Box score uploaded.";
+				Logger.Log(status);
+				if (!string.IsNullOrWhiteSpace(result.ImageUrl))
+					Logger.Log($"Box score image URL: {result.ImageUrl}");
+			}
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"Failed to create box-score session: {ex.Message}");
 		}
 	}
 

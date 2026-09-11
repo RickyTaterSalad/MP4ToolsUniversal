@@ -205,36 +205,47 @@ namespace MP4ToolsLib
 
 		public async Task<string> GetFirstVideoCodecNameAsync(string inputFile, CancellationToken cancellationToken = default, Action<string> log = null)
 		{
-			if (string.IsNullOrWhiteSpace(inputFile) || !File.Exists(inputFile))
-			{
-				return string.Empty;
-			}
-			try
-			{
-				var args = $"-v error -select_streams v:0 -show_entries stream=codec_name -of default=nk=1:nw=1 {QuoteArgument(inputFile)}";
-				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
-				return (output ?? string.Empty).Trim();
-			}
-			catch (OperationCanceledException)
-			{
-				throw;
-			}
-			catch
-			{
-			}
-			return string.Empty;
-
+			var (video, _) = await GetFirstAvCodecNamesAsync(inputFile, cancellationToken, log).ConfigureAwait(false);
+			return video;
 		}
 
 		public async Task<string> GetFirstAudioCodecNameAsync(string inputFile, CancellationToken cancellationToken = default, Action<string> log = null)
 		{
+			var (_, audio) = await GetFirstAvCodecNamesAsync(inputFile, cancellationToken, log).ConfigureAwait(false);
+			return audio;
+		}
+
+		/// <summary>
+		/// One ffprobe pass for the first video and audio <c>codec_name</c> values.
+		/// </summary>
+		public async Task<(string video, string audio)> GetFirstAvCodecNamesAsync(
+			string inputFile,
+			CancellationToken cancellationToken = default,
+			Action<string> log = null)
+		{
 			if (string.IsNullOrWhiteSpace(inputFile) || !File.Exists(inputFile))
-				return string.Empty;
+				return (string.Empty, string.Empty);
+
 			try
 			{
-				var args = $"-v error -select_streams a:0 -show_entries stream=codec_name -of default=nk=1:nw=1 {QuoteArgument(inputFile)}";
+				var args =
+					"-v error -show_entries stream=codec_type,codec_name -of csv=p=0 " +
+					QuoteArgument(inputFile);
 				var output = await RunCaptureAsync(FFPROBE_EXE, args, cancellationToken, log).ConfigureAwait(false);
-				return (output ?? string.Empty).Trim();
+				var video = string.Empty;
+				var audio = string.Empty;
+				foreach (var line in (output ?? string.Empty).Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+				{
+					var parts = line.Split(',', 2, StringSplitOptions.TrimEntries);
+					if (parts.Length < 2)
+						continue;
+					if (parts[0].Equals("video", StringComparison.OrdinalIgnoreCase) && string.IsNullOrEmpty(video))
+						video = parts[1];
+					else if (parts[0].Equals("audio", StringComparison.OrdinalIgnoreCase) && string.IsNullOrEmpty(audio))
+						audio = parts[1];
+				}
+
+				return (video, audio);
 			}
 			catch (OperationCanceledException)
 			{
@@ -244,7 +255,7 @@ namespace MP4ToolsLib
 			{
 			}
 
-			return string.Empty;
+			return (string.Empty, string.Empty);
 		}
 
 		private static readonly Regex FfmpegVideoResolutionRegex = new(

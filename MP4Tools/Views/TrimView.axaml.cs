@@ -5,8 +5,6 @@ using Avalonia.Platform.Storage;
 using MP4Tools.ViewModels;
 using MP4ToolsLib;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 
 namespace MP4Tools.Views;
 
@@ -67,13 +65,19 @@ public partial class TrimView : UserControl
 
 	private void OnDragOver(object sender, DragEventArgs e)
 	{
-		if (e.DataTransfer.Contains(DataFormat.File))
+		if (FileDropHelper.HasFilePayload(e.DataTransfer))
 		{
 			e.DragEffects = DragDropEffects.Copy;
+			e.Handled = true;
 		}
 		else if (e.DataTransfer.Contains(StartStopRangeFormat))
 		{
 			e.DragEffects = DragDropEffects.Move;
+			e.Handled = true;
+		}
+		else
+		{
+			e.DragEffects = DragDropEffects.None;
 		}
 	}
 
@@ -113,22 +117,21 @@ public partial class TrimView : UserControl
 		}
 	}
 
-	private void OnDrop(object sender, DragEventArgs e)
+	private async void OnDrop(object sender, DragEventArgs e)
 	{
-		if (e.DataTransfer.Contains(DataFormat.File))
+		if (!FileDropHelper.HasFilePayload(e.DataTransfer) || DataContext is not TrimViewModel vm)
+			return;
+
+		var paths = await FileDropHelper.GetDroppedLocalPathsAsync(e.DataTransfer);
+		foreach (var path in paths)
 		{
-			var files = e.DataTransfer.GetItems(DataFormat.File);
-			if (files != null)
+			if (!FileDropHelper.IsVideoFilePath(path))
+				continue;
+
+			if (vm.AcceptDroppedVideoFile(path))
 			{
-				foreach (var file in files)
-				{
-					var droppedFile = file.TryGetFile();
-					if (!string.IsNullOrWhiteSpace(droppedFile?.Path?.LocalPath) && File.Exists(droppedFile?.Path?.LocalPath))
-					{
-						((MP4ViewModelBase)DataContext!).SetFileCommand.Execute(droppedFile.Path.LocalPath);
-						break;
-					}
-				}
+				e.Handled = true;
+				break;
 			}
 		}
 	}

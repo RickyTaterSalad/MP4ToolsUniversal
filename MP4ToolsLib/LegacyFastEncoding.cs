@@ -43,6 +43,7 @@ public static class LegacyFastEncoding
 			trimParts.Add(FfmpegOption.Pair(FfmpegArguments.HardwareAcceleration, accelerationApi));
 
 		trimParts.Add(FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, seekTimestamp));
+		trimParts.Add(FfmpegCommandLine.DefaultInputThreadQueue());
 		trimParts.Add(FfmpegOption.Pair(FfmpegArguments.Input, quotedInput));
 		trimParts.Add(FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, duration));
 		if (!vfOpt.IsSkipped)
