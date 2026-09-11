@@ -1,0 +1,302 @@
+{
+  ".vscode/launch.json": {
+    "mtime": 1777997240.4359725,
+    "seen": 1789090585.5096045,
+    "ast_hash": "c32588855a2de9b394a6a6b832eeb8a6",
+    "semantic_hash": ""
+  },
+  ".vscode/tasks.json": {
+    "mtime": 1777997240.4360127,
+    "seen": 1789090585.5096078,
+    "ast_hash": "68acfc66506f7ef0fcf7880bb7e92c6c",
+    "semantic_hash": ""
+  },
+  "MP4Tools.sln": {
+    "mtime": 1778001222.3197045,
+    "seen": 1789090585.5096095,
+    "ast_hash": "109be43f1603b76bade9e00be7c581e7",
+    "semantic_hash": ""
+  },
+  "MP4Tools/App.axaml.cs": {
+    "mtime": 1786846627.6334643,
+    "seen": 1789090585.50961,
+    "ast_hash": "406200b7d3043a41653daf0ef425ba23",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Logger.cs": {
+    "mtime": 1777649224.8478076,
+    "seen": 1789090585.5096104,
+    "ast_hash": "ccd271cfd0745ab9941e95fa93580d49",
+    "semantic_hash": ""
+  },
+  "MP4Tools/MP4Tools.csproj": {
+    "mtime": 1789090580.1978347,
+    "seen": 1789090585.509611,
+    "ast_hash": "82a185e0b3f20d1ecd2cdadc6f9aa4c3",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Program.cs": {
+    "mtime": 1789090580.1978693,
+    "seen": 1789090585.5096116,
+    "ast_hash": "bcb6c055a43166b50cdd37bd12b9ffd8",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Services/AppSettingsStore.cs": {
+    "mtime": 1785871894.7123759,
+    "seen": 1789090585.5096118,
+    "ast_hash": "cddf03dc59be0ec240f28604df492cb2",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Services/BaseballLoggerSettingsRuntime.cs": {
+    "mtime": 1785778270.825924,
+    "seen": 1789090585.5096123,
+    "ast_hash": "be890f9000fbdaa9638af0654250e531",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Services/DefaultOutputPathRuntime.cs": {
+    "mtime": 1777997240.4361894,
+    "seen": 1789090585.5096126,
+    "ast_hash": "69ca17188d154fd64b0b4c440c69941f",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Services/EncodingSettingsRuntime.cs": {
+    "mtime": 1785778270.827924,
+    "seen": 1789090585.509613,
+    "ast_hash": "3b89b0f7144fa41af954999c4997aa4f",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Services/FolderOpener.cs": {
+    "mtime": 1778185982.8574705,
+    "seen": 1789090585.5096135,
+    "ast_hash": "b1d179047f15294643685ebe515d8d1d",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Services/UiBehaviorSettingsRuntime.cs": {
+    "mtime": 1778186894.7067912,
+    "seen": 1789090585.5096138,
+    "ast_hash": "ebd8dd1d57f8ac92ef41dae9527bccc8",
+    "semantic_hash": ""
+  },
+  "MP4Tools/ViewLocator.cs": {
+    "mtime": 1777649224.8479066,
+    "seen": 1789090585.5096142,
+    "ast_hash": "cc86ce7d41083429f39024b82b826892",
+    "semantic_hash": ""
+  },
+  "MP4Tools/ViewModels/CombineViewModel.cs": {
+    "mtime": 1789090580.1980224,
+    "seen": 1789090585.509615,
+    "ast_hash": "bb725c921a6f6be3476f0cf390ec7dbf",
+    "semantic_hash": ""
+  },
+  "MP4Tools/ViewModels/LogViewModel.cs": {
+    "mtime": 1777997240.4363616,
+    "seen": 1789090585.5096152,
+    "ast_hash": "ec61517d8d04ce27d725577e76a87579",
+    "semantic_hash": ""
+  },
+  "MP4Tools/ViewModels/MP4ViewModelBase.cs": {
+    "mtime": 1786846627.6344643,
+    "seen": 1789090585.5096157,
+    "ast_hash": "cd02d2f367796ce7097a0930417f9991",
+    "semantic_hash": ""
+  },
+  "MP4Tools/ViewModels/MainWindowViewModel.cs": {
+    "mtime": 1786846627.6344643,
+    "seen": 1789090585.509616,
+    "ast_hash": "223dcfcc25833622b2a893ea8de1d0fe",
+    "semantic_hash": ""
+  },
+  "MP4Tools/ViewModels/OptionsViewModel.cs": {
+    "mtime": 1785872435.767619,
+    "seen": 1789090585.5096164,
+    "ast_hash": "006f46f384f2cb5f0c1639f2ca67de74",
+    "semantic_hash": ""
+  },
+  "MP4Tools/ViewModels/TrimViewModel.cs": {
+    "mtime": 1789090580.1981337,
+    "seen": 1789090585.5096166,
+    "ast_hash": "a136d940a9d53f18e883bf6c75a50ef4",
+    "semantic_hash": ""
+  },
+  "MP4Tools/ViewModels/ViewModelBase.cs": {
+    "mtime": 1777649224.8481982,
+    "seen": 1789090585.509617,
+    "ast_hash": "34cc4026429f79cc854fc327a98c8e93",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Views/CombineView.axaml.cs": {
+    "mtime": 1789090580.1982293,
+    "seen": 1789090585.5096173,
+    "ast_hash": "479406a3e71f0520a1e1ae295f0432ba",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Views/LogView.axaml.cs": {
+    "mtime": 1777997240.4366002,
+    "seen": 1789090585.5096183,
+    "ast_hash": "39b3a4effbf5dad02d2946d9dc27e0c5",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Views/MainWindow.axaml.cs": {
+    "mtime": 1777649224.848375,
+    "seen": 1789090585.5096185,
+    "ast_hash": "8746ccc352f91a3d2f18c0c8bec8e52f",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Views/OptionsView.axaml.cs": {
+    "mtime": 1777858228.4103444,
+    "seen": 1789090585.509619,
+    "ast_hash": "848d089f216a1e05f7d31f33a8e82f07",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Views/TrimView.axaml.cs": {
+    "mtime": 1789090580.19834,
+    "seen": 1789090585.5096195,
+    "ast_hash": "d879f4c34d9b7d568ab1ba9c63e307ce",
+    "semantic_hash": ""
+  },
+  "MP4Tools/handbrake/4K_Reencode_High_Quality.json": {
+    "mtime": 1789090580.1999533,
+    "seen": 1789090585.50962,
+    "ast_hash": "fa6db76bbdc28173540be975135ed6f2",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/BoxScoreUploader.cs": {
+    "mtime": 1788748408.5496144,
+    "seen": 1789090585.5096202,
+    "ast_hash": "88c76654721c03cfb6619a4bb8e32efa",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/CombineFile.cs": {
+    "mtime": 1789090580.20002,
+    "seen": 1789090585.5096207,
+    "ast_hash": "65e240e99eb9ddc1a8118d4a93d244ff",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/DaVinciOutputEncoding.cs": {
+    "mtime": 1789090580.2000813,
+    "seen": 1789090585.5096211,
+    "ast_hash": "3b87e163059237e47a2159293dc60cdb",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/DrawTextUtils.cs": {
+    "mtime": 1778084136.7371068,
+    "seen": 1789090585.5096219,
+    "ast_hash": "e22036eec1f60b126fb44ee7ee858275",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/EncodingSettingsDto.cs": {
+    "mtime": 1781572949.423992,
+    "seen": 1789090585.509622,
+    "ast_hash": "a81f7310b7960a8dd9a8e582663404c9",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/FFMpegUtils.cs": {
+    "mtime": 1789090580.2001889,
+    "seen": 1789090585.5096226,
+    "ast_hash": "8a6bf0a3a24ad76c5a2a291ac5d7a50c",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/FfmpegCli.cs": {
+    "mtime": 1789090580.2002468,
+    "seen": 1789090585.509623,
+    "ast_hash": "c2a884256e025451319741fa7f21b633",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/FfmpegUserHints.cs": {
+    "mtime": 1778038859.0868187,
+    "seen": 1789090585.5096235,
+    "ast_hash": "b40e1ca18f9c571b640bec77786fa155",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/FileUtils.cs": {
+    "mtime": 1777247994.3295777,
+    "seen": 1789090585.5096238,
+    "ast_hash": "e020ef3cb222910b8874b7bdcc1d1295",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/IntroVideoComposerAsync.cs": {
+    "mtime": 1789090580.2003257,
+    "seen": 1789090585.5096242,
+    "ast_hash": "fb97a99a9028a17b8c234328b4d40d66",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/IntroVideoFontScaling.cs": {
+    "mtime": 1780417610.8859494,
+    "seen": 1789090585.5096245,
+    "ast_hash": "59b29fb38660ddaa07c3a5c622961283",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/LegacyFastEncoding.cs": {
+    "mtime": 1789090580.2003741,
+    "seen": 1789090585.5096254,
+    "ast_hash": "0f9013c0e8b78379ada51ab0914a9580",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/MP4ToolsLib.csproj": {
+    "mtime": 1777649224.848649,
+    "seen": 1789090585.509626,
+    "ast_hash": "e34351ef2a709844bcb58cec0718cd05",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/ModifiedRecordingUploader.cs": {
+    "mtime": 1788748408.549657,
+    "seen": 1789090585.5096264,
+    "ast_hash": "7333e6ab17a283c675c36b6e1b95696b",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/MpegTsConcatAudio.cs": {
+    "mtime": 1785541882.2090547,
+    "seen": 1789090585.5096269,
+    "ast_hash": "b9c8c0da345908fac8e03117984f7bfc",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/MpegTsVideoBitstream.cs": {
+    "mtime": 1785541981.0572376,
+    "seen": 1789090585.5096273,
+    "ast_hash": "5c3e3b462b867b6a42254ead53bf26cb",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/Ranges.cs": {
+    "mtime": 1778001222.320754,
+    "seen": 1789090585.509628,
+    "ast_hash": "324c6eb2bfffbe96b8d6141fe4434ce6",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/RecordingJsonElapsedOffset.cs": {
+    "mtime": 1789090580.2004478,
+    "seen": 1789090585.5096285,
+    "ast_hash": "cad7e6d800b2dcd32601edd70b347ccd",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/StreamProbeInfo.cs": {
+    "mtime": 1781575263.6961746,
+    "seen": 1789090585.509629,
+    "ast_hash": "d8d5a3a7b92f1f8c9a430e4b7b913e3f",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/TempPathHelper.cs": {
+    "mtime": 1778038632.9210684,
+    "seen": 1789090585.5096292,
+    "ast_hash": "0b1e48651150ee1828fdb82c442843b6",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/TimeRange.cs": {
+    "mtime": 1778038652.8845718,
+    "seen": 1789090585.5096297,
+    "ast_hash": "53e0b471b31c99765d00f3e4c37b5108",
+    "semantic_hash": ""
+  },
+  "MP4ToolsLib/VideoBitDepthHelper.cs": {
+    "mtime": 1786846627.6334643,
+    "seen": 1789090585.5096302,
+    "ast_hash": "3667f1dbdc186c57dc1f2f00a89dddc2",
+    "semantic_hash": ""
+  },
+  "MP4Tools/Notes/1_vs_1_working_analysis.md": {
+    "mtime": 1781555530.9842374,
+    "seen": 1789090585.5096304,
+    "ast_hash": "1b5a65188132f3bb2a8659dc102b467c",
+    "semantic_hash": ""
+  }
+}
