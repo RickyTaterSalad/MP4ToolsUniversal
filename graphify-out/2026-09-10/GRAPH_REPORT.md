@@ -1,18 +1,12 @@
 # Graph Report - MP4ToolsUniversal  (2026-09-10)
 
 ## Corpus Check
-- 52 files · ~20,206 words
-- Verdict: corpus is large enough that graph structure adds value.
+- Corpus is ~20,206 words - fits in a single context window. You may not need a graph.
 
 ## Summary
 - 616 nodes · 1177 edges · 33 communities (30 shown, 1 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 33 edges (avg confidence: 0.84)
 - Token cost: 0 input · 0 output
-
-## Graph Freshness
-- Built from commit: `ebb12dd4`
-- Run `git rev-parse HEAD` and compare to check if the graph is stale.
-- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - FFMPEG Combine Pipeline
@@ -135,7 +129,7 @@ Nodes (12): IReadOnlyList, DrawTextPositionOption, DisplayName, Value, DrawTextU
 
 ### Community 13 - "Project Dependencies"
 Cohesion: 0.14
-Nodes (12): net10.0, Microsoft.NET.Sdk, net10.0, Microsoft.NET.Sdk, Avalonia (12.1.2), Avalonia.Desktop (12.1.2), Avalonia.Fonts.Inter (12.1.2), Avalonia.Themes.Simple (12.1.2) (+4 more)
+Nodes (12): net10.0, Microsoft.NET.Sdk, net10.0, Microsoft.NET.Sdk, Avalonia (12.1.1), Avalonia.Desktop (12.1.1), Avalonia.Fonts.Inter (12.1.1), Avalonia.Themes.Simple (12.1.1) (+4 more)
 
 ### Community 14 - "Log ViewModel"
 Cohesion: 0.19
@@ -206,7 +200,7 @@ Nodes (3): UiBehaviorSettingsRuntime, DeleteTrimSegmentsAfterTrimAndCombine, Ope
   MP4Tools/Notes/1_vs_1_working_analysis.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **134 isolated node(s):** `net10.0`, `Avalonia (12.1.2)`, `Avalonia.Desktop (12.1.2)`, `Avalonia.Fonts.Inter (12.1.2)`, `Avalonia.Themes.Simple (12.1.2)` (+129 more)
+- **134 isolated node(s):** `net10.0`, `Avalonia (12.1.1)`, `Avalonia.Desktop (12.1.1)`, `Avalonia.Fonts.Inter (12.1.1)`, `Avalonia.Themes.Simple (12.1.1)` (+129 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 220 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **1 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -221,7 +215,7 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.232) - this node is a cross-community bridge._
 - **Why does `TrimViewModel` connect `Trim ViewModel Commands` to `FFMPEG Combine Pipeline`, `Combine Operation Control`, `Input Path File Info`, `Log ViewModel`, `Skip Range Clamping`, `Time Range Model`, `Trim State Export`, `Start Stop Ranges`?**
   _High betweenness centrality (0.111) - this node is a cross-community bridge._
-- **What connects `net10.0`, `Avalonia (12.1.2)`, `Avalonia.Desktop (12.1.2)` to the rest of the system?**
+- **What connects `net10.0`, `Avalonia (12.1.1)`, `Avalonia.Desktop (12.1.1)` to the rest of the system?**
   _134 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `FFMPEG Combine Pipeline` be split into smaller, more focused modules?**
   _Cohesion score 0.06701754385964913 - nodes in this community are weakly interconnected._

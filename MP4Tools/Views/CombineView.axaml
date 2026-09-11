@@ -99,19 +99,15 @@
 				</StackPanel>
 			</StackPanel>
 			<!-- Game Info Section -->
-			<StackPanel Margin="0,5,0,10">
-				<StackPanel Orientation="Horizontal" Margin="0,10,0,10">
-					<TextBlock Text="Event Date" VerticalAlignment="Center" MinWidth="75" />
+			<StackPanel Margin="10,5,0,10">
+				<StackPanel Orientation="Horizontal" Margin="0,10,0,10" Spacing="10">
 					<CalendarDatePicker SelectedDate="{Binding EventDate}" MinWidth="150" PlaceholderText="Date"/>
-					<TextBlock Text="Event Info" VerticalAlignment="Center" Margin="15,0,0,0" />
-					<TextBox PlaceholderText="Event Info" Text="{Binding EventInfo, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="10,0,0,0"/>
+					<TextBox PlaceholderText="Event Info" Text="{Binding EventInfo, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
 				</StackPanel>
-				<StackPanel Orientation="Horizontal" Margin="0,00,0,0">
-					<TextBlock Text="Visitor" VerticalAlignment="Center" MinWidth="75" />
-					<TextBox PlaceholderText="Visitor" Text="{Binding VisitorName, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,10,0"/>
-					<TextBox PlaceholderText="Runs" Text="{Binding VisitorScore, UpdateSourceTrigger=PropertyChanged}" Width="40" Margin="0,0,15,0"/>
-					<TextBlock Text="Home" VerticalAlignment="Center" MinWidth="50" />
-					<TextBox PlaceholderText="Home" Text="{Binding HomeName, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,10,0"/>
+				<StackPanel Orientation="Horizontal" Spacing="10">
+					<TextBox PlaceholderText="Visitor" Text="{Binding VisitorName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+					<TextBox PlaceholderText="Runs" Text="{Binding VisitorScore, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
+					<TextBox PlaceholderText="Home" Text="{Binding HomeName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
 					<TextBox PlaceholderText="Runs" Text="{Binding HomeScore, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
 				</StackPanel>
 			</StackPanel>
@@ -151,7 +147,7 @@
 				<Button Command="{Binding RemoveSelectedFileCommand}" Padding="5" ToolTip.Tip="Remove Selected File">
 					<materialIcons:MaterialIcon Kind="Remove"/>
 				</Button>
-				<Label Content="Input Files" VerticalAlignment="Center"/>
+				<Label Content="Input Files" VerticalAlignment="Center" Margin="5,0,0,0"/>
 			</StackPanel>
 			<StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
 				<TextBlock Text="Sort" VerticalAlignment="Center" Opacity="0.85"/>
