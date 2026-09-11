@@ -71,47 +71,49 @@
 			</Button>
 		</Grid>
 
-		<StackPanel Grid.Row="1" Margin="0,0,0,8">
-			<StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-				<StackPanel Margin="10,0,30,0">
-					<TextBlock Text="Start Video Skip" Margin="0,0,0,4"/>
-					<StackPanel Orientation="Horizontal">
-						<ToggleSwitch IsChecked="{Binding TrimFirstVideo}" OffContent="" OnContent="" VerticalAlignment="Center" />
-						<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimFirstVideo}" VerticalAlignment="Center" Margin="10,0,0,0">
-							<ComboBox ItemsSource="{Binding StartVideoMinuteRange}" SelectedValue="{Binding StartRange.Minutes}" Width="50" VerticalAlignment="Center"/>
-							<TextBlock Text=" m " VerticalAlignment="Center"/>
-							<ComboBox ItemsSource="{Binding StartVideoSecondRange}" SelectedValue="{Binding StartRange.Seconds}" Width="50" VerticalAlignment="Center"/>
-							<TextBlock Text=" s " VerticalAlignment="Center"/>
+		<StackPanel Grid.Row="1" Margin="0,0,0,8" Orientation="Horizontal" HorizontalAlignment="Left">
+			<StackPanel Margin="0,5,15,0">
+				<StackPanel Orientation="Horizontal">
+					<StackPanel Margin="10,0,30,0">
+						<TextBlock Text="Start Video Skip" Margin="0,0,0,4"/>
+						<StackPanel Orientation="Horizontal">
+							<ToggleSwitch IsChecked="{Binding TrimFirstVideo}" OffContent="" OnContent="" VerticalAlignment="Center" />
+							<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimFirstVideo}" VerticalAlignment="Center" Margin="10,0,0,0">
+								<ComboBox ItemsSource="{Binding StartVideoMinuteRange}" SelectedValue="{Binding StartRange.Minutes}" Width="50" VerticalAlignment="Center"/>
+								<TextBlock Text=" m " VerticalAlignment="Center"/>
+								<ComboBox ItemsSource="{Binding StartVideoSecondRange}" SelectedValue="{Binding StartRange.Seconds}" Width="50" VerticalAlignment="Center"/>
+								<TextBlock Text=" s " VerticalAlignment="Center"/>
+							</StackPanel>
+						</StackPanel>
+					</StackPanel>
+					<StackPanel>
+						<TextBlock Text="End Video Duration" Margin="0,0,0,4"/>
+						<StackPanel Orientation="Horizontal">
+							<ToggleSwitch IsChecked="{Binding TrimLastVideo}" OffContent="" OnContent="" VerticalAlignment="Center" />
+							<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimLastVideo}" VerticalAlignment="Center" Margin="10,0,0,0">
+								<ComboBox ItemsSource="{Binding EndVideoMinuteRange}" SelectedValue="{Binding EndRange.Minutes}" Width="50" VerticalAlignment="Center"/>
+								<TextBlock Text=" m " VerticalAlignment="Center"/>
+								<ComboBox ItemsSource="{Binding EndVideoSecondRange}" SelectedValue="{Binding EndRange.Seconds}" Width="50" VerticalAlignment="Center"/>
+								<TextBlock Text=" s " VerticalAlignment="Center"/>
+							</StackPanel>
 						</StackPanel>
 					</StackPanel>
 				</StackPanel>
-				<StackPanel>
-					<TextBlock Text="End Video Duration" Margin="0,0,0,4"/>
-					<StackPanel Orientation="Horizontal">
-						<ToggleSwitch IsChecked="{Binding TrimLastVideo}" OffContent="" OnContent="" VerticalAlignment="Center" />
-						<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimLastVideo}" VerticalAlignment="Center" Margin="10,0,0,0">
-							<ComboBox ItemsSource="{Binding EndVideoMinuteRange}" SelectedValue="{Binding EndRange.Minutes}" Width="50" VerticalAlignment="Center"/>
-							<TextBlock Text=" m " VerticalAlignment="Center"/>
-							<ComboBox ItemsSource="{Binding EndVideoSecondRange}" SelectedValue="{Binding EndRange.Seconds}" Width="50" VerticalAlignment="Center"/>
-							<TextBlock Text=" s " VerticalAlignment="Center"/>
-						</StackPanel>
+				<!-- Game Info Section -->
+				<StackPanel Margin="10,5,0,10">
+					<StackPanel Orientation="Horizontal" Margin="0,10,0,10" Spacing="10">
+						<CalendarDatePicker SelectedDate="{Binding EventDate}" MinWidth="150" PlaceholderText="Date"/>
+						<TextBox PlaceholderText="Event Info" Text="{Binding EventInfo, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal" Spacing="10">
+						<TextBox PlaceholderText="Visitor" Text="{Binding VisitorName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+						<TextBox PlaceholderText="Runs" Text="{Binding VisitorScore, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
+						<TextBox PlaceholderText="Home" Text="{Binding HomeName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+						<TextBox PlaceholderText="Runs" Text="{Binding HomeScore, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
 					</StackPanel>
 				</StackPanel>
 			</StackPanel>
-			<!-- Game Info Section -->
-			<StackPanel Margin="10,5,0,10">
-				<StackPanel Orientation="Horizontal" Margin="0,10,0,10" Spacing="10">
-					<CalendarDatePicker SelectedDate="{Binding EventDate}" MinWidth="150" PlaceholderText="Date"/>
-					<TextBox PlaceholderText="Event Info" Text="{Binding EventInfo, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-				</StackPanel>
-				<StackPanel Orientation="Horizontal" Spacing="10">
-					<TextBox PlaceholderText="Visitor" Text="{Binding VisitorName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-					<TextBox PlaceholderText="Runs" Text="{Binding VisitorScore, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
-					<TextBox PlaceholderText="Home" Text="{Binding HomeName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-					<TextBox PlaceholderText="Runs" Text="{Binding HomeScore, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
-				</StackPanel>
-			</StackPanel>
-			<StackPanel Spacing="8">
+			<StackPanel Spacing="8" Margin="30,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
 				<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
 					<ToggleSwitch IsChecked="{Binding IncludeIntro}" OffContent="" OnContent="" VerticalAlignment="Center" />
 					<TextBlock Text="Intro Screen" VerticalAlignment="Center" />
