@@ -31,6 +31,8 @@ sealed class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            // Prefer native Wayland on Linux (avoids XWayland cursor/title-bar quirks); fall back to X11.
+            .UseWaylandWithFallback()
             .With(new X11PlatformOptions { OverlayPopups = true })
             .With(new Win32PlatformOptions { OverlayPopups = true }) // Optional for cross-platform
 #if DEBUG

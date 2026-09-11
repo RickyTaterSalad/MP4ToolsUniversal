@@ -71,6 +71,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			if (SetProperty(ref _homeName, value))
 			{
+				OptInIntroFromGameInfo(!string.IsNullOrWhiteSpace(value));
 				UpdateIntroTitleFromGameInfo();
 				UpdateIntroDetailsFromGameInfo();
 				UpdateOutputPathFromGameInfo();
@@ -90,6 +91,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			if (SetProperty(ref _visitorName, value))
 			{
+				OptInIntroFromGameInfo(!string.IsNullOrWhiteSpace(value));
 				UpdateIntroTitleFromGameInfo();
 				UpdateIntroDetailsFromGameInfo();
 				UpdateOutputPathFromGameInfo();
@@ -265,6 +267,13 @@ public partial class CombineViewModel : MP4ViewModelBase
 		if (!string.IsNullOrWhiteSpace(value))
 			IncludeIntro = true;
 		RefreshCanCombineFromInputs();
+	}
+
+	/// <summary>Any game-info field with a value opts into the intro screen (same as typing intro text).</summary>
+	private void OptInIntroFromGameInfo(bool hasValue)
+	{
+		if (hasValue)
+			IncludeIntro = true;
 	}
 
 	partial void OnIntroTitleChanged(string value) => OnIntroFieldTextChanged(value);
@@ -582,6 +591,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			var newVal = Math.Max(0, value.Value);
 			if (SetProperty(ref _visitorScore, newVal))
 			{
+				OptInIntroFromGameInfo(true);
 				UpdateOutputPathFromGameInfo();
 				UpdateIntroDetailsFromGameInfo();
 			}
@@ -606,6 +616,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 			var newVal = Math.Max(0, value.Value);
 			if (SetProperty(ref _homeScore, newVal))
 			{
+				OptInIntroFromGameInfo(true);
 				UpdateOutputPathFromGameInfo();
 				UpdateIntroDetailsFromGameInfo();
 			}
@@ -629,6 +640,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			if (SetProperty(ref _eventInfo, value ?? string.Empty))
 			{
+				OptInIntroFromGameInfo(!string.IsNullOrWhiteSpace(value));
 				UpdateSubtitleFromEventInfoAndDate();
 			}
 		}
@@ -642,6 +654,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			if (SetProperty(ref _eventDate, value))
 			{
+				OptInIntroFromGameInfo(value.HasValue);
 				UpdateOutputPathFromGameInfo();
 				UpdateSubtitleFromEventInfoAndDate();
 			}

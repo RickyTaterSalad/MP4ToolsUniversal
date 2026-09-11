@@ -115,9 +115,12 @@
 					<TextBox PlaceholderText="Runs" Text="{Binding HomeScore, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
 				</StackPanel>
 			</StackPanel>
-			<Border BorderThickness=".35" BorderBrush="LightGray" Padding="10" CornerRadius="2">
-				<StackPanel Spacing="8">
-					<ToggleSwitch IsChecked="{Binding IncludeIntro}" Content="Intro Screen" OffContent="" OnContent="" />
+			<StackPanel Spacing="8">
+				<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+					<ToggleSwitch IsChecked="{Binding IncludeIntro}" OffContent="" OnContent="" VerticalAlignment="Center" />
+					<TextBlock Text="Intro Screen" VerticalAlignment="Center" />
+				</StackPanel>
+				<StackPanel Spacing="8" IsVisible="{Binding IncludeIntro}">
 					<StackPanel Orientation="Horizontal" Spacing="10">
 						<TextBox PlaceholderText="Title"
 								 Width="270"
@@ -132,8 +135,7 @@
 								 Text="{Binding IntroDetails, UpdateSourceTrigger=PropertyChanged}"
 								 VerticalAlignment="Center"/>
 						<StackPanel Orientation="Horizontal"
-									VerticalAlignment="Center"
-									IsEnabled="{Binding IncludeIntro}">
+									VerticalAlignment="Center">
 							<TextBlock Text="Intro Duration" VerticalAlignment="Center" Margin="0,0,8,0"/>
 							<ComboBox ItemsSource="{Binding IntroDurationRange}"
 									  SelectedValue="{Binding IntroDurationSeconds}"
@@ -141,7 +143,7 @@
 						</StackPanel>
 					</StackPanel>
 				</StackPanel>
-			</Border>
+			</StackPanel>
 		</StackPanel>
 
 		<Grid Grid.Row="2" Margin="0,5,0,5" ColumnDefinitions="Auto,*,Auto">
