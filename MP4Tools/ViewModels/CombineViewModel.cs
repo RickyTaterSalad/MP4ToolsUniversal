@@ -134,7 +134,59 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 	}
 
-	public bool HasSelectedInputFile => SelectedInputFile != null;
+	private readonly List<CombineFile> _selectedInputFiles = new();
+	public IReadOnlyList<CombineFile> SelectedInputFiles => _selectedInputFiles;
+
+	public bool HasSelectedInputFile => _selectedInputFiles.Count > 0 || SelectedInputFile != null;
+
+	public void SyncSelectedInputFiles(IEnumerable<CombineFile> selected)
+	{
+		_selectedInputFiles.Clear();
+		if (selected != null)
+		{
+			foreach (var file in selected)
+			{
+				if (file != null)
+					_selectedInputFiles.Add(file);
+			}
+		}
+
+		OnPropertyChanged(nameof(SelectedInputFiles));
+		OnPropertyChanged(nameof(HasSelectedInputFile));
+		NotifyCommandsCanExecuteChanged();
+	}
+
+	public void MoveInputFilesToIndex(IReadOnlyList<CombineFile> sources, int insertIndex)
+	{
+		if (sources == null || sources.Count == 0 || InputFiles == null)
+			return;
+
+		var ordered = sources
+			.Where(s => s != null && InputFiles.Contains(s))
+			.Distinct()
+			.OrderBy(s => InputFiles.IndexOf(s))
+			.ToList();
+		if (ordered.Count == 0)
+			return;
+
+		insertIndex = Math.Clamp(insertIndex, 0, InputFiles.Count);
+		foreach (var source in ordered)
+		{
+			var sourceIndex = InputFiles.IndexOf(source);
+			if (sourceIndex < 0)
+				continue;
+			if (sourceIndex < insertIndex)
+				insertIndex--;
+			InputFiles.Remove(source);
+		}
+
+		insertIndex = Math.Clamp(insertIndex, 0, InputFiles.Count);
+		for (var i = 0; i < ordered.Count; i++)
+			InputFiles.Insert(insertIndex + i, ordered[i]);
+
+		SelectedInputFile = ordered[^1];
+		SyncSelectedInputFiles(ordered);
+	}
 
 	public static IReadOnlyList<int> IntroDurationRange { get; } = Enumerable.Range(1, 59).ToList();
 
@@ -239,12 +291,20 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 	private void RemoveSelectedFile()
 	{
-		if (SelectedInputFile != null)
-		{
-			InputFiles.Remove(SelectedInputFile);
-			SelectedInputFile = null;
-			RefreshCanCombineFromInputs();
-		}
+		var toRemove = _selectedInputFiles.Count > 0
+			? _selectedInputFiles.ToList()
+			: SelectedInputFile != null ? [SelectedInputFile] : [];
+		if (toRemove.Count == 0)
+			return;
+
+		foreach (var file in toRemove)
+			InputFiles.Remove(file);
+
+		_selectedInputFiles.Clear();
+		SelectedInputFile = null;
+		OnPropertyChanged(nameof(SelectedInputFiles));
+		OnPropertyChanged(nameof(HasSelectedInputFile));
+		RefreshCanCombineFromInputs();
 	}
 
 	private bool HasIntroContent =>

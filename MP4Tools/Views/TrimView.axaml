@@ -15,7 +15,6 @@
 	>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
@@ -48,7 +47,7 @@
 				</Button.Content>
 			</Button>
 		</Grid>
-		<StackPanel Grid.Column="0" Grid.Row="1">
+		<StackPanel Grid.Column="0" Grid.Row="1" VerticalAlignment="Top">
 			<Border BorderThickness=".35" BorderBrush="gray" CornerRadius="2" Padding="3">
 				<StackPanel>
 					<TextBlock Text="Create New Trim Range" Grid.Row="1" VerticalAlignment="Center" Margin="5,5,10,10"/>
@@ -80,7 +79,7 @@
 				</StackPanel>
 			</Border>
 		</StackPanel>
-		<StackPanel Grid.Row="2" Grid.Column="1" HorizontalAlignment="Left" Margin="10,0,0,0">
+		<StackPanel Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,0,0,0">
 			<StackPanel Margin="0,0,0,10" Orientation="Horizontal">
 				<Button Command="{Binding ResetTimeRangeCommand}" ToolTip.Tip="Reset Range">
 					<Button.Content>
@@ -126,7 +125,7 @@
 				</Button.Content>
 			</Button>
 		</StackPanel>
-		<ListBox Grid.Row="2" Grid.Column="2" Margin="10,0,0,0" ItemsSource="{Binding TrimRanges}" SelectedItem="{Binding SelectedStartStopRange}">
+		<ListBox Grid.Row="1" Grid.Column="2" Margin="10,0,0,0" VerticalAlignment="Stretch" ItemsSource="{Binding TrimRanges}" SelectedItem="{Binding SelectedStartStopRange}">
 			<ListBox.ItemTemplate>
 				<DataTemplate x:DataType="mlib:StartStopRange">
 					<StackPanel Orientation="Horizontal" Margin="5"
@@ -143,16 +142,16 @@
 				</DataTemplate>
 			</ListBox.ItemTemplate>
 		</ListBox>
-		<Label Content="Output Path" Grid.Row="3" Margin="0,5,0,0"/>
-		<StackPanel Grid.Column="0" Grid.Row="4" Grid.ColumnSpan="3" Margin="0,0,0,10" >
+		<Label Content="Output Path" Grid.Row="2" Margin="0,5,0,0"/>
+		<StackPanel Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="3" Margin="0,0,0,10" >
 			<TextBox PlaceholderText="Trimmed Output Folder" Text="{Binding OutputFolder}" />
 		</StackPanel>
-		<TextBlock Grid.Row="5" Grid.ColumnSpan="3"
+		<TextBlock Grid.Row="4" Grid.ColumnSpan="3"
 				   Text="{Binding OperationStatus}"
 				   TextWrapping="Wrap"
 				   Margin="0,12,0,8"
 				   Opacity="0.92"/>
-		<StackPanel Orientation="Horizontal" Grid.Row="6" HorizontalAlignment="Left">
+		<StackPanel Orientation="Horizontal" Grid.Row="5" HorizontalAlignment="Left">
 			<Button Command="{Binding StopCommand}" Padding="4" IsEnabled="{Binding CanStop}" Margin="0,0,5,0">
 				<Button.Content>
 					<StackPanel Orientation="Horizontal">
@@ -170,7 +169,7 @@
 				</Button.Content>
 			</Button>
 		</StackPanel>
-		<StackPanel Orientation="Horizontal" Grid.Row="6" Grid.ColumnSpan="3" HorizontalAlignment="Right" >
+		<StackPanel Orientation="Horizontal" Grid.Row="5" Grid.ColumnSpan="3" HorizontalAlignment="Right" >
 			<Button Margin="10,0,0,0" Command="{Binding TrimCommand}" Padding="4" IsEnabled="{Binding CanTrim}">
 				<Button.Content>
 					<StackPanel Orientation="Horizontal">

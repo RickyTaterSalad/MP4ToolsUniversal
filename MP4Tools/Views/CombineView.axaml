@@ -15,70 +15,85 @@
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
 
-		<Grid Grid.Row="0" Margin="0,0,0,10">
-			<Grid.RowDefinitions>
-				<RowDefinition Height="Auto"/>
-				<RowDefinition Height="Auto"/>
-			</Grid.RowDefinitions>
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-			<TextBox Grid.Row="0" Grid.Column="0" Margin="0,0,10,0"
-					 PlaceholderText="Source video folder or single .mp4/.mov"
-					 Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"
-					 ToolTip.Tip="Folder of clips to concatenate, or one video file when adding an intro screen."/>
-			<Button Grid.Row="0" Grid.Column="1" Click="BrowseButton_OnClick" Padding="4" Margin="0,0,15,0">
-				<Button.Content>
-					<StackPanel Orientation="Horizontal">
-						<materialIcons:MaterialIcon Kind="Folder"/>
-						<TextBlock Text="Browse" Margin="5,0,5,0" />
-					</StackPanel>
-				</Button.Content>
-			</Button>
-			<TextBox Grid.Row="0" Grid.Column="2" Margin="0,0,10,0"
-					 PlaceholderText="Recording JSON (file, /share/…, or /recordings/… URL)"
-					 Text="{Binding RecordingJsonPath, UpdateSourceTrigger=PropertyChanged}"
-					 ToolTip.Tip="Local .json file, public /share/{token} link, or recording page /recordings/{id} (API key required for page/API URLs)."/>
-			<Button Grid.Row="0" Grid.Column="3" Click="BrowseJsonButton_OnClick" Padding="4">
-				<Button.Content>
-					<StackPanel Orientation="Horizontal">
-						<materialIcons:MaterialIcon Kind="FileCode"/>
-						<TextBlock Text="Browse" Margin="5,0,5,0" />
-					</StackPanel>
-				</Button.Content>
-			</Button>
-			<TextBox Grid.Row="1" Grid.Column="2" Margin="0,8,10,0"
-					 PlaceholderText="Box score image (JPEG, PNG, WebP, or GIF)"
-					 Text="{Binding BoxScoreImagePath, UpdateSourceTrigger=PropertyChanged}"
-					 ToolTip.Tip="When set, uploaded to Baseball Logger with the modified recording JSON after Combine (requires API key in Options)"/>
-			<Button Grid.Row="1" Grid.Column="3" Click="BrowseBoxScoreButton_OnClick" Padding="4" Margin="0,8,0,0">
-				<Button.Content>
-					<StackPanel Orientation="Horizontal">
-						<materialIcons:MaterialIcon Kind="Image"/>
-						<TextBlock Text="Browse" Margin="5,0,5,0" />
-					</StackPanel>
-				</Button.Content>
-			</Button>
-		</Grid>
-
-		<StackPanel Grid.Row="1" Margin="0,0,0,8" Orientation="Horizontal" HorizontalAlignment="Left">
-			<StackPanel Margin="0,5,15,0">
-				<StackPanel Orientation="Horizontal">
-					<StackPanel Margin="10,0,30,0">
-						<TextBlock Text="Start Video Skip" Margin="0,0,0,4"/>
+		<!-- Inputs -->
+		<StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+			<TextBlock Text="Inputs"
+					   FontSize="12"
+					   FontWeight="SemiBold"
+					   Opacity="0.65"
+					   LetterSpacing="0.4"/>
+			<Grid ColumnDefinitions="*,Auto">
+				<TextBox Grid.Column="0"
+						 Margin="0,0,10,0"
+						 HorizontalAlignment="Stretch"
+						 PlaceholderText="Source video folder or single .mp4/.mov"
+						 Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"
+						 ToolTip.Tip="Folder of clips to concatenate, or one video file when adding an intro screen."/>
+				<Button Grid.Column="1" Click="BrowseButton_OnClick" Padding="4">
+					<Button.Content>
 						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="Folder"/>
+							<TextBlock Text="Browse" Margin="5,0,5,0" />
+						</StackPanel>
+					</Button.Content>
+				</Button>
+			</Grid>
+			<Grid ColumnDefinitions="*,Auto">
+				<TextBox Grid.Column="0"
+						 Margin="0,0,10,0"
+						 HorizontalAlignment="Stretch"
+						 PlaceholderText="Recording JSON (file, /share/…, or /recordings/… URL)"
+						 Text="{Binding RecordingJsonPath, UpdateSourceTrigger=PropertyChanged}"
+						 ToolTip.Tip="Local .json file, public /share/{token} link, or recording page /recordings/{id} (API key required for page/API URLs)."/>
+				<Button Grid.Column="1" Click="BrowseJsonButton_OnClick" Padding="4">
+					<Button.Content>
+						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="FileCode"/>
+							<TextBlock Text="Browse" Margin="5,0,5,0" />
+						</StackPanel>
+					</Button.Content>
+				</Button>
+			</Grid>
+			<Grid ColumnDefinitions="*,Auto">
+				<TextBox Grid.Column="0"
+						 Margin="0,0,10,0"
+						 HorizontalAlignment="Stretch"
+						 PlaceholderText="Box score image (JPEG, PNG, WebP, or GIF)"
+						 Text="{Binding BoxScoreImagePath, UpdateSourceTrigger=PropertyChanged}"
+						 ToolTip.Tip="When set, uploaded to Baseball Logger with the modified recording JSON after Combine (requires API key in Options)"/>
+				<Button Grid.Column="1" Click="BrowseBoxScoreButton_OnClick" Padding="4">
+					<Button.Content>
+						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="Image"/>
+							<TextBlock Text="Browse" Margin="5,0,5,0" />
+						</StackPanel>
+					</Button.Content>
+				</Button>
+			</Grid>
+		</StackPanel>
+
+		<Separator Grid.Row="1" Margin="0,0,0,12" Opacity="0.45"/>
+
+		<!-- Options: trim/game | intro -->
+		<Grid Grid.Row="2" ColumnDefinitions="*,Auto,*" Margin="0,0,0,12" ColumnSpacing="16">
+			<StackPanel Grid.Column="0" Spacing="10">
+				<TextBlock Text="Trim &amp; game"
+						   FontSize="12"
+						   FontWeight="SemiBold"
+						   Opacity="0.65"
+						   LetterSpacing="0.4"/>
+				<StackPanel Orientation="Horizontal" Spacing="24">
+					<StackPanel Spacing="4">
+						<TextBlock Text="Start Video Skip" Opacity="0.85"/>
+						<StackPanel Orientation="Horizontal" Spacing="10">
 							<ToggleSwitch IsChecked="{Binding TrimFirstVideo}" OffContent="" OnContent="" VerticalAlignment="Center" />
-							<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimFirstVideo}" VerticalAlignment="Center" Margin="10,0,0,0">
+							<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimFirstVideo}" VerticalAlignment="Center">
 								<ComboBox ItemsSource="{Binding StartVideoMinuteRange}" SelectedValue="{Binding StartRange.Minutes}" Width="50" VerticalAlignment="Center"/>
 								<TextBlock Text=" m " VerticalAlignment="Center"/>
 								<ComboBox ItemsSource="{Binding StartVideoSecondRange}" SelectedValue="{Binding StartRange.Seconds}" Width="50" VerticalAlignment="Center"/>
@@ -86,11 +101,11 @@
 							</StackPanel>
 						</StackPanel>
 					</StackPanel>
-					<StackPanel>
-						<TextBlock Text="End Video Duration" Margin="0,0,0,4"/>
-						<StackPanel Orientation="Horizontal">
+					<StackPanel Spacing="4">
+						<TextBlock Text="End Video Duration" Opacity="0.85"/>
+						<StackPanel Orientation="Horizontal" Spacing="10">
 							<ToggleSwitch IsChecked="{Binding TrimLastVideo}" OffContent="" OnContent="" VerticalAlignment="Center" />
-							<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimLastVideo}" VerticalAlignment="Center" Margin="10,0,0,0">
+							<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimLastVideo}" VerticalAlignment="Center">
 								<ComboBox ItemsSource="{Binding EndVideoMinuteRange}" SelectedValue="{Binding EndRange.Minutes}" Width="50" VerticalAlignment="Center"/>
 								<TextBlock Text=" m " VerticalAlignment="Center"/>
 								<ComboBox ItemsSource="{Binding EndVideoSecondRange}" SelectedValue="{Binding EndRange.Seconds}" Width="50" VerticalAlignment="Center"/>
@@ -99,121 +114,204 @@
 						</StackPanel>
 					</StackPanel>
 				</StackPanel>
-				<!-- Game Info Section -->
-				<StackPanel Margin="10,5,0,10">
-					<StackPanel Orientation="Horizontal" Margin="0,10,0,10" Spacing="10">
-						<CalendarDatePicker SelectedDate="{Binding EventDate}" MinWidth="150" PlaceholderText="Date"/>
-						<TextBox PlaceholderText="Event Info" Text="{Binding EventInfo, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-					</StackPanel>
-					<StackPanel Orientation="Horizontal" Spacing="10">
-						<TextBox PlaceholderText="Visitor" Text="{Binding VisitorName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-						<TextBox PlaceholderText="Runs" Text="{Binding VisitorScore, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
-						<TextBox PlaceholderText="Home" Text="{Binding HomeName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-						<TextBox PlaceholderText="Runs" Text="{Binding HomeScore, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
-					</StackPanel>
-				</StackPanel>
+				<Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+					<CalendarDatePicker Grid.Row="0" Grid.Column="0"
+										SelectedDate="{Binding EventDate}"
+										MinWidth="150"
+										PlaceholderText="Date"/>
+					<TextBox Grid.Row="0" Grid.Column="1"
+							 PlaceholderText="Event Info"
+							 HorizontalAlignment="Stretch"
+							 Text="{Binding EventInfo, UpdateSourceTrigger=PropertyChanged}"/>
+					<Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="*,48,*,48" ColumnSpacing="8">
+						<TextBox Grid.Column="0"
+								 PlaceholderText="Visitor"
+								 HorizontalAlignment="Stretch"
+								 Text="{Binding VisitorName, UpdateSourceTrigger=PropertyChanged}"/>
+						<TextBox Grid.Column="1"
+								 PlaceholderText="Runs"
+								 Text="{Binding VisitorScore, UpdateSourceTrigger=PropertyChanged}"/>
+						<TextBox Grid.Column="2"
+								 PlaceholderText="Home"
+								 HorizontalAlignment="Stretch"
+								 Text="{Binding HomeName, UpdateSourceTrigger=PropertyChanged}"/>
+						<TextBox Grid.Column="3"
+								 PlaceholderText="Runs"
+								 Text="{Binding HomeScore, UpdateSourceTrigger=PropertyChanged}"/>
+					</Grid>
+				</Grid>
 			</StackPanel>
-			<StackPanel Spacing="8" Margin="30,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
-				<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+
+			<Separator Grid.Column="1" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" Opacity="0.45"/>
+
+			<StackPanel Grid.Column="2" Spacing="10">
+				<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 					<ToggleSwitch IsChecked="{Binding IncludeIntro}" OffContent="" OnContent="" VerticalAlignment="Center" />
-					<TextBlock Text="Intro Screen" VerticalAlignment="Center" />
+					<TextBlock Text="Intro"
+							   FontSize="12"
+							   FontWeight="SemiBold"
+							   Opacity="0.65"
+							   LetterSpacing="0.4"
+							   VerticalAlignment="Center"/>
 				</StackPanel>
 				<StackPanel Spacing="8" IsVisible="{Binding IncludeIntro}">
-					<StackPanel Orientation="Horizontal" Spacing="10">
-						<TextBox PlaceholderText="Title"
-								 Width="270"
-								 Text="{Binding IntroTitle, UpdateSourceTrigger=PropertyChanged}"/>
-						<TextBox PlaceholderText="Subtitle"
-								 Width="270"
-								 Text="{Binding IntroSubtitle, UpdateSourceTrigger=PropertyChanged}"/>
-					</StackPanel>
-					<StackPanel Orientation="Horizontal" Spacing="10">
-						<TextBox PlaceholderText="Details"
-								 Width="270"
+					<TextBox PlaceholderText="Title"
+							 HorizontalAlignment="Stretch"
+							 Text="{Binding IntroTitle, UpdateSourceTrigger=PropertyChanged}"/>
+					<TextBox PlaceholderText="Subtitle"
+							 HorizontalAlignment="Stretch"
+							 Text="{Binding IntroSubtitle, UpdateSourceTrigger=PropertyChanged}"/>
+					<Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+						<TextBox Grid.Column="0"
+								 PlaceholderText="Details"
+								 HorizontalAlignment="Stretch"
 								 Text="{Binding IntroDetails, UpdateSourceTrigger=PropertyChanged}"
 								 VerticalAlignment="Center"/>
-						<StackPanel Orientation="Horizontal"
-									VerticalAlignment="Center">
-							<TextBlock Text="Intro Duration" VerticalAlignment="Center" Margin="0,0,8,0"/>
+						<StackPanel Grid.Column="1"
+									Orientation="Horizontal"
+									VerticalAlignment="Center"
+									Spacing="8">
+							<TextBlock Text="Duration" VerticalAlignment="Center" Opacity="0.85"/>
 							<ComboBox ItemsSource="{Binding IntroDurationRange}"
 									  SelectedValue="{Binding IntroDurationSeconds}"
 									  Width="80"/>
 						</StackPanel>
-					</StackPanel>
+					</Grid>
 				</StackPanel>
 			</StackPanel>
+		</Grid>
+
+		<Separator Grid.Row="3" Margin="0,0,0,8" Opacity="0.45"/>
+
+		<!-- Files toolbar + list -->
+		<DockPanel Grid.Row="4" LastChildFill="True">
+			<Grid DockPanel.Dock="Top" Margin="0,0,0,6" ColumnDefinitions="Auto,*,Auto">
+				<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+					<TextBlock Text="Input files"
+							   VerticalAlignment="Center"
+							   FontSize="12"
+							   FontWeight="SemiBold"
+							   Opacity="0.65"
+							   LetterSpacing="0.4"/>
+					<Button Command="{Binding RemoveSelectedFileCommand}"
+							Padding="4"
+							ToolTip.Tip="Remove selected file(s)">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Minus"/>
+								<TextBlock Text="Remove" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+				</StackPanel>
+				<StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+					<TextBlock Text="Sort" VerticalAlignment="Center" Opacity="0.85"/>
+					<ComboBox ItemsSource="{Binding InputFileSortOptions}"
+							  SelectedItem="{Binding SelectedInputFileSort}"
+							  MinWidth="120"
+							  VerticalAlignment="Center"/>
+				</StackPanel>
+			</Grid>
+			<Grid x:Name="InputFilesHost"
+				  ClipToBounds="False"
+				  PointerMoved="OnInputFilesHostPointerMoved"
+				  PointerReleased="OnInputFilesHostPointerReleased"
+				  PointerCaptureLost="OnInputFilesHostPointerCaptureLost">
+				<ListBox x:Name="InputFilesList"
+						 ItemsSource="{Binding InputFiles}"
+						 SelectedItem="{Binding SelectedInputFile}"
+						 SelectionMode="Multiple"
+						 SelectionChanged="OnInputFilesSelectionChanged">
+					<ListBox.Styles>
+						<Style Selector="ListBoxItem">
+							<Setter Property="Opacity" Value="1"/>
+							<Setter Property="Foreground" Value="{DynamicResource ThemeForegroundBrush}"/>
+						</Style>
+						<Style Selector="ListBoxItem:selected">
+							<Setter Property="Foreground" Value="{DynamicResource ThemeForegroundBrush}"/>
+						</Style>
+						<Style Selector="ListBoxItem:pointerover">
+							<Setter Property="Foreground" Value="{DynamicResource ThemeForegroundBrush}"/>
+						</Style>
+						<Style Selector="ListBoxItem:selected:pointerover">
+							<Setter Property="Foreground" Value="{DynamicResource ThemeForegroundBrush}"/>
+						</Style>
+					</ListBox.Styles>
+					<ListBox.ItemTemplate>
+						<DataTemplate>
+							<Border Background="Transparent"
+									PointerPressed="OnListBoxItemPointerPressed">
+								<TextBlock Text="{Binding Name}"
+										   Foreground="{DynamicResource ThemeForegroundBrush}"/>
+							</Border>
+						</DataTemplate>
+					</ListBox.ItemTemplate>
+				</ListBox>
+				<Canvas x:Name="ReorderOverlay" IsHitTestVisible="False">
+					<Border x:Name="DropIndicator"
+							Height="2"
+							CornerRadius="1"
+							IsVisible="False"
+							Background="{DynamicResource ThemeAccentBrush}"
+							HorizontalAlignment="Left"
+							VerticalAlignment="Top"/>
+					<Border x:Name="DragGhost"
+							IsVisible="False"
+							Padding="10,6"
+							CornerRadius="3"
+							Opacity="0.92"
+							Background="{DynamicResource ThemeControlMidBrush}"
+							BorderBrush="{DynamicResource ThemeAccentBrush}"
+							BorderThickness="1">
+						<TextBlock x:Name="DragGhostText" TextWrapping="NoWrap"/>
+					</Border>
+				</Canvas>
+			</Grid>
+		</DockPanel>
+
+		<Separator Grid.Row="5" Margin="0,10,0,10" Opacity="0.45"/>
+
+		<!-- Footer: output + status + actions -->
+		<StackPanel Grid.Row="6" Spacing="8">
+			<TextBlock Text="Output"
+					   FontSize="12"
+					   FontWeight="SemiBold"
+					   Opacity="0.65"
+					   LetterSpacing="0.4"/>
+			<TextBox PlaceholderText="Combined Output File"
+					 HorizontalAlignment="Stretch"
+					 Text="{Binding OutputPath}" />
+			<TextBlock Text="{Binding OperationStatus}"
+					   TextWrapping="Wrap"
+					   Opacity="0.92"/>
+			<Grid ColumnDefinitions="*,Auto">
+				<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5">
+					<Button Command="{Binding StopCommand}" Padding="4" IsEnabled="{Binding CanStop}">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Stop"/>
+								<TextBlock Text="Stop" Margin="5,0,5,0" />
+							</StackPanel>
+						</Button.Content>
+					</Button>
+					<Button Command="{Binding ClearCommand}" Padding="4" IsEnabled="{Binding CanClear}">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Remove"/>
+								<TextBlock Text="Clear" Margin="5,0,5,0" />
+							</StackPanel>
+						</Button.Content>
+					</Button>
+				</StackPanel>
+				<Button Grid.Column="1" Command="{Binding CombineCommand}" Padding="4" IsEnabled="{Binding CanCombine}">
+					<Button.Content>
+						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="VectorCombine"/>
+							<TextBlock Text="Combine" Margin="5,0,5,0" />
+						</StackPanel>
+					</Button.Content>
+				</Button>
+			</Grid>
 		</StackPanel>
-
-		<Grid Grid.Row="2" Margin="0,5,0,5" ColumnDefinitions="Auto,*,Auto">
-			<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-				<Button Command="{Binding RemoveSelectedFileCommand}" Padding="5" ToolTip.Tip="Remove Selected File">
-					<materialIcons:MaterialIcon Kind="Remove"/>
-				</Button>
-				<Label Content="Input Files" VerticalAlignment="Center" Margin="5,0,0,0"/>
-			</StackPanel>
-			<StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-				<TextBlock Text="Sort" VerticalAlignment="Center" Opacity="0.85"/>
-				<ComboBox ItemsSource="{Binding InputFileSortOptions}"
-						  SelectedItem="{Binding SelectedInputFileSort}"
-						  MinWidth="120"
-						  VerticalAlignment="Center"/>
-			</StackPanel>
-		</Grid>
-
-		<ListBox Grid.Row="3"
-				 ItemsSource="{Binding InputFiles}"
-				 SelectedItem="{Binding SelectedInputFile}">
-			<ListBox.ItemTemplate>
-				<DataTemplate>
-					<StackPanel Orientation="Horizontal"
-								Background="Transparent"
-								PointerPressed="OnListBoxItemPointerPressed"
-								DragDrop.AllowDrop="True"
-								DragDrop.DragOver="OnListBoxItemDragOver"
-								DragDrop.Drop="OnListBoxItemDrop">
-						<TextBlock Text="{Binding Name}"/>
-					</StackPanel>
-				</DataTemplate>
-			</ListBox.ItemTemplate>
-		</ListBox>
-
-		<Label Content="Output Path" Grid.Row="4" Margin="0,5,0,5"/>
-		<TextBox Grid.Row="5"
-				 Margin="0,0,0,8"
-				 PlaceholderText="Combined Output File"
-				 Text="{Binding OutputPath}" />
-		<TextBlock Grid.Row="6"
-				   Text="{Binding OperationStatus}"
-				   TextWrapping="Wrap"
-				   Margin="0,4,0,8"
-				   Opacity="0.92"/>
-		<Grid Grid.Row="7" ColumnDefinitions="*,Auto">
-			<StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-				<Button Command="{Binding StopCommand}" Padding="4" IsEnabled="{Binding CanStop}" Margin="0,0,5,0">
-					<Button.Content>
-						<StackPanel Orientation="Horizontal">
-							<materialIcons:MaterialIcon Kind="Stop"/>
-							<TextBlock Text="Stop" Margin="5,0,5,0" />
-						</StackPanel>
-					</Button.Content>
-				</Button>
-				<Button Command="{Binding ClearCommand}" Padding="4" IsEnabled="{Binding CanClear}">
-					<Button.Content>
-						<StackPanel Orientation="Horizontal">
-							<materialIcons:MaterialIcon Kind="Remove"/>
-							<TextBlock Text="Clear" Margin="5,0,5,0" />
-						</StackPanel>
-					</Button.Content>
-				</Button>
-			</StackPanel>
-			<Button Grid.Column="1" Margin="10,0,0,0" Command="{Binding CombineCommand}" Padding="4" IsEnabled="{Binding CanCombine}">
-				<Button.Content>
-					<StackPanel Orientation="Horizontal">
-						<materialIcons:MaterialIcon Kind="VectorCombine"/>
-						<TextBlock Text="Combine" Margin="5,0,5,0" />
-					</StackPanel>
-				</Button.Content>
-			</Button>
-		</Grid>
 	</Grid>
 </UserControl>
