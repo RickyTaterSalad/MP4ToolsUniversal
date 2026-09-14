@@ -1,4 +1,6 @@
-﻿
+﻿using System.IO;
+using System.Text.Json.Serialization;
+
 namespace MP4ToolsLib
 {
 	public enum DrawTextPosition
@@ -31,9 +33,28 @@ namespace MP4ToolsLib
 		public TimeRange StartRange { get; set; }
 		public TimeRange EndRange { get; set; }
 
+		/// <summary>
+		/// When false, keep through EOF (no ffmpeg <c>-t</c>). Defaults to true for legacy imports.
+		/// </summary>
+		public bool HasEndBound { get; set; } = true;
+
+		/// <summary>Source video this trim range applies to. Enables multi-video trim lists.</summary>
+		public string InputPath { get; set; }
+
+		[JsonIgnore]
+		public string SourceFileName =>
+			string.IsNullOrWhiteSpace(InputPath) ? string.Empty : Path.GetFileName(InputPath);
+
+		[JsonIgnore]
+		public string EndRangeDisplay => HasEndBound ? (EndRange?.ToString() ?? string.Empty) : "end";
+
 		public override string ToString()
 		{
-			var ss = $"{StartRange} - {EndRange}";
+			var ss = $"{StartRange} - {EndRangeDisplay}";
+			if (!string.IsNullOrWhiteSpace(SourceFileName))
+			{
+				ss = $"{SourceFileName}: {ss}";
+			}
 			if (!string.IsNullOrWhiteSpace(Label))
 			{
 				ss += $" ({Label})";
@@ -43,6 +64,18 @@ namespace MP4ToolsLib
 		
 		public bool IsValidRange()
 		{
+			if (StartRange == null)
+			{
+				return false;
+			}
+			if (!HasEndBound)
+			{
+				return true;
+			}
+			if (EndRange == null)
+			{
+				return false;
+			}
 			if (StartRange.Hours > EndRange.Hours)
 			{
 				return false;

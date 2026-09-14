@@ -97,6 +97,7 @@ Thumbs.db
 **/graphify-out/manifest.json
 **/graphify-out/cost.json
 **/graphify-out/20*/
+**/graphify-out/.*.json.sig
 
 
 

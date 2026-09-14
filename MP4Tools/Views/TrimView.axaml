@@ -51,21 +51,39 @@
 			<Border BorderThickness=".35" BorderBrush="gray" CornerRadius="2" Padding="3">
 				<StackPanel>
 					<TextBlock Text="Create New Trim Range" Grid.Row="1" VerticalAlignment="Center" Margin="5,5,10,10"/>
-					<StackPanel Orientation="Horizontal" Margin="0,0,0,0" VerticalAlignment="Top">
-						<materialIcons:MaterialIcon Kind="Play" VerticalAlignment="Center" Margin="0,0,10,0"/>
-						<ComboBox ItemsSource="{Binding VideoHourRange}" Width="50" SelectedValue="{Binding StartRange.Hours}" IsEnabled="{Binding IsHoursRangeEnabled}"/>
-						<Label Content=" h " VerticalAlignment="Bottom"/>
-						<ComboBox ItemsSource="{Binding VideoMinuteRange}" Width="50" SelectedValue="{Binding StartRange.Minutes}"/>
-						<Label Content=" m " VerticalAlignment="Bottom"/>
-						<ComboBox ItemsSource="{Binding Range}" Width="50" SelectedValue="{Binding StartRange.Seconds}"/>
-						<Label Content=" s " VerticalAlignment="Bottom"/>
-						<materialIcons:MaterialIcon Kind="Stop" VerticalAlignment="Center" Margin="20,0,10,0"/>
-						<ComboBox ItemsSource="{Binding VideoHourRange}" Width="50" SelectedValue="{Binding EndRange.Hours}" IsEnabled="{Binding IsHoursRangeEnabled}"/>
-						<Label Content=" h " VerticalAlignment="Bottom"/>
-						<ComboBox ItemsSource="{Binding VideoMinuteRange}" Width="50" SelectedValue="{Binding EndRange.Minutes}"/>
-						<Label Content=" m " VerticalAlignment="Bottom"/>
-						<ComboBox ItemsSource="{Binding Range}" Width="50" SelectedValue="{Binding EndRange.Seconds}"/>
-						<Label Content=" s " VerticalAlignment="Bottom"/>
+					<StackPanel Orientation="Horizontal" Spacing="24" Margin="0,0,0,0" VerticalAlignment="Top">
+						<StackPanel Spacing="4">
+							<TextBlock Text="Start" Opacity="0.85"/>
+							<StackPanel Orientation="Horizontal" Spacing="10">
+								<ToggleSwitch IsChecked="{Binding IsStartRangeEnabled}" OffContent="" OnContent="" VerticalAlignment="Center"
+											  ToolTip.Tip="Trim from start time. Turn off to keep from the beginning of the video."/>
+								<StackPanel Orientation="Horizontal" IsEnabled="{Binding IsStartRangeEnabled}" VerticalAlignment="Center">
+									<materialIcons:MaterialIcon Kind="Play" VerticalAlignment="Center" Margin="0,0,10,0"/>
+									<ComboBox ItemsSource="{Binding VideoHourRange}" Width="50" SelectedValue="{Binding StartRange.Hours}" IsEnabled="{Binding IsHoursRangeEnabled}"/>
+									<Label Content=" h " VerticalAlignment="Bottom"/>
+									<ComboBox ItemsSource="{Binding VideoMinuteRange}" Width="50" SelectedValue="{Binding StartRange.Minutes}"/>
+									<Label Content=" m " VerticalAlignment="Bottom"/>
+									<ComboBox ItemsSource="{Binding Range}" Width="50" SelectedValue="{Binding StartRange.Seconds}"/>
+									<Label Content=" s " VerticalAlignment="Bottom"/>
+								</StackPanel>
+							</StackPanel>
+						</StackPanel>
+						<StackPanel Spacing="4">
+							<TextBlock Text="End" Opacity="0.85"/>
+							<StackPanel Orientation="Horizontal" Spacing="10">
+								<ToggleSwitch IsChecked="{Binding IsEndRangeEnabled}" OffContent="" OnContent="" VerticalAlignment="Center"
+											  ToolTip.Tip="Trim to end time. Turn off to keep through the end of the video."/>
+								<StackPanel Orientation="Horizontal" IsEnabled="{Binding IsEndRangeEnabled}" VerticalAlignment="Center">
+									<materialIcons:MaterialIcon Kind="Stop" VerticalAlignment="Center" Margin="0,0,10,0"/>
+									<ComboBox ItemsSource="{Binding VideoHourRange}" Width="50" SelectedValue="{Binding EndRange.Hours}" IsEnabled="{Binding IsHoursRangeEnabled}"/>
+									<Label Content=" h " VerticalAlignment="Bottom"/>
+									<ComboBox ItemsSource="{Binding VideoMinuteRange}" Width="50" SelectedValue="{Binding EndRange.Minutes}"/>
+									<Label Content=" m " VerticalAlignment="Bottom"/>
+									<ComboBox ItemsSource="{Binding Range}" Width="50" SelectedValue="{Binding EndRange.Seconds}"/>
+									<Label Content=" s " VerticalAlignment="Bottom"/>
+								</StackPanel>
+							</StackPanel>
+						</StackPanel>
 					</StackPanel>
 					<Grid Margin="25,0,0,0">
 						<Grid.RowDefinitions>
@@ -134,9 +152,13 @@
 								DragDrop.AllowDrop="True"
 								DragDrop.DragOver="OnListBoxItemDragOver"
 								DragDrop.Drop="OnListBoxItemDrop">
+						<TextBlock Text="{Binding SourceFileName}" VerticalAlignment="Center" MinWidth="120" MaxWidth="220"
+								   TextTrimming="CharacterEllipsis" Opacity="0.85"
+								   ToolTip.Tip="{Binding InputPath}"/>
+						<TextBlock Text="  " VerticalAlignment="Center"/>
 						<TextBlock Text="{Binding StartRange}" VerticalAlignment="Center"/>
 						<TextBlock Text=" - " VerticalAlignment="Center"/>
-						<TextBlock Text="{Binding EndRange}" VerticalAlignment="Center"/>
+						<TextBlock Text="{Binding EndRangeDisplay}" VerticalAlignment="Center"/>
 						<TextBox PlaceholderText="Label" Text="{Binding Label}" MinWidth="180" Margin="10,0,0,0"/>
 					</StackPanel>
 				</DataTemplate>

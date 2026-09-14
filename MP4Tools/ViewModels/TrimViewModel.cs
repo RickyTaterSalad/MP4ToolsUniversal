@@ -47,6 +47,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 	protected override Task Clear()
 	{
 		OperationStatus = string.Empty;
+		ClearTimeRanges();
 		return base.Clear();
 	}
 
@@ -107,18 +108,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 	public bool CanTrim
 	{
 		get => _canTrim;
-		set
-		{
-			SetProperty(ref _canTrim, value);
-			if (!_canTrim && CanClear)
-			{
-				CanClear = false;
-			}
-			if (!CanClear && _canTrim && File.Exists(InputPath))
-			{
-				CanClear = true;
-			}
-		}
+		set => SetProperty(ref _canTrim, value);
 	}
 
 	private string _rangeLabel;
@@ -168,6 +158,37 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 	public bool HasSelectedRange => _selectedStartStopRange != null;
 
+	private bool _isStartRangeEnabled = true;
+	public bool IsStartRangeEnabled
+	{
+		get => _isStartRangeEnabled;
+		set
+		{
+			// At least one of start/end must stay enabled.
+			if (!value && !_isEndRangeEnabled)
+			{
+				OnPropertyChanged(nameof(IsStartRangeEnabled));
+				return;
+			}
+			SetProperty(ref _isStartRangeEnabled, value);
+		}
+	}
+
+	private bool _isEndRangeEnabled = true;
+	public bool IsEndRangeEnabled
+	{
+		get => _isEndRangeEnabled;
+		set
+		{
+			if (!value && !_isStartRangeEnabled)
+			{
+				OnPropertyChanged(nameof(IsEndRangeEnabled));
+				return;
+			}
+			SetProperty(ref _isEndRangeEnabled, value);
+		}
+	}
+
 	public TimeRange StartRange { get; } = new TimeRange();
 	public TimeRange EndRange { get; } = new TimeRange();
 
@@ -193,6 +214,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 	{
 		_selectedStartStopRange = null;
 		TrimRanges = new ObservableCollection<StartStopRange>();
+		TrimRanges.CollectionChanged += (_, _) => RefreshTrimAvailability();
 
 		_videoHourRange = new List<int>(TimeRange.Range);
 		_videMinuteRange = new List<int>(TimeRange.Range);
@@ -200,6 +222,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 		ResetTimeRangeCommand = new RelayCommand(() =>
 		{
+			IsStartRangeEnabled = true;
+			IsEndRangeEnabled = true;
 			StartRange.Hours = 0;
 			StartRange.Minutes = 0;
 			StartRange.Seconds = 0;
@@ -212,10 +236,24 @@ public partial class TrimViewModel : MP4ViewModelBase
 		TrimCommand = new AsyncRelayCommand(async () => await TrimAndCombineAsync(false));
 		AddTimeRangeCommand = new RelayCommand(() =>
 		{
-			var range = new StartStopRange(StartRange.Clone(), EndRange.Clone(), RangeLabel ?? string.Empty)
+			if (string.IsNullOrWhiteSpace(InputPath) || !File.Exists(InputPath))
 			{
+				Logger.Log("Add range: select an input video first.");
+				return;
+			}
+			if (_inputDuration <= TimeSpan.Zero)
+			{
+				Logger.Log("Add range: video duration not loaded yet — wait for the input file to finish probing.");
+				return;
+			}
+
+			var start = IsStartRangeEnabled ? StartRange.Clone() : new TimeRange();
+			var end = IsEndRangeEnabled ? EndRange.Clone() : null;
+			var range = new StartStopRange(start, end, RangeLabel ?? string.Empty)
+			{
+				InputPath = InputPath,
+				HasEndBound = IsEndRangeEnabled,
 				SelectedDrawTextPosition = DrawTextPosition.TopLeft
-				//SelectedDrawTextPosition = DrawTextUtils.DrawTextPositionOptions.FirstOrDefault(x => x.DisplayName == SelectedDrawTextPosition)?.Value ?? DrawTextPosition.TopLeft
 			};
 			if (range.IsValidRange() && IsRangeWithinInputBounds(range))
 			{
@@ -224,8 +262,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 			}
 			else if (!range.IsValidRange())
 				Logger.Log("Add range: end time must be after start.");
-			else if (_inputDuration <= TimeSpan.Zero)
-				Logger.Log("Add range: video duration not loaded yet — wait for the input file to finish probing.");
 			else
 				Logger.Log($"Add range: selection exceeds clip duration (~{_inputDuration}).");
 		});
@@ -335,12 +371,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 	private async Task TrimAndCombineAsyncInternal(string outTrimmedFolder, bool combine, bool deleteIntermediateSegmentsFolderOnSuccess, CancellationToken ct)
 	{
-		if (!CanTrim || !TrimRanges.Any() || string.IsNullOrWhiteSpace(InputPath))
-		{
-			ReportTrimStep("Stopped: nothing to process.");
-			return;
-		}
-		var validRanges = TrimRanges.Where(IsRangeWithinInputBounds).ToList();
+		var validRanges = TrimRanges.Where(IsProcessableTrimRange).ToList();
 		if (validRanges.Count == 0)
 		{
 			ReportTrimStep("Stopped: no valid time ranges.");
@@ -361,7 +392,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 				var trim = validRanges[ri];
 				ct.ThrowIfCancellationRequested();
 				ReportTrimStep($"Trimming segment {ri + 1} of {validRanges.Count}…");
-				Logger.Log($"Trimming range: {trim.StartRange} - {trim.EndRange}");
+				Logger.Log($"Trimming {trim.SourceFileName}: {trim.StartRange} - {trim.EndRange}");
 				outputPaths.Add(await TrimRangeAsync(trim, segmentsFolder, ct).ConfigureAwait(false));
 			}
 
@@ -600,7 +631,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 		}
 		finally
 		{
-			CanTrim = true;
+			RefreshTrimAvailability();
 		}
 	}
 
@@ -623,15 +654,16 @@ public partial class TrimViewModel : MP4ViewModelBase
 	private async Task<string> TrimRangeAsync(StartStopRange range, string outFolder, CancellationToken ct)
 	{
 		string trimOutputPath = string.Empty;
-		if (string.IsNullOrWhiteSpace(InputPath))
+		var sourcePath = ResolveRangeInputPath(range);
+		if (string.IsNullOrWhiteSpace(sourcePath))
 		{
 			return trimOutputPath;
 		}
 
 		try
 		{
-			trimOutputPath = CreateTrimOutputPath(InputPath, outFolder, range);
-			var inputFullPath = Path.GetFullPath(InputPath);
+			trimOutputPath = CreateTrimOutputPath(sourcePath, outFolder, range);
+			var inputFullPath = Path.GetFullPath(sourcePath);
 			if (!File.Exists(inputFullPath))
 			{
 				Logger.Log($"Trim skipped: input not found: {inputFullPath}");
@@ -640,12 +672,17 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 			if (!File.Exists(trimOutputPath))
 			{
-				TimeSpan endSpan = new TimeSpan(range.EndRange.Hours, range.EndRange.Minutes, range.EndRange.Seconds);
-				TimeSpan startSpan = new TimeSpan(range.StartRange.Hours, range.StartRange.Minutes, range.StartRange.Seconds);
-				var dif = endSpan - startSpan;
-				var totalHours = Math.Max(0, (int)dif.TotalHours);
-				var endString = $"{totalHours:00}:{dif.Minutes:00}:{dif.Seconds:00}";
+				string endString = null;
+				if (range.HasEndBound && range.EndRange != null)
+				{
+					TimeSpan endSpan = new TimeSpan(range.EndRange.Hours, range.EndRange.Minutes, range.EndRange.Seconds);
+					TimeSpan startSpan = new TimeSpan(range.StartRange.Hours, range.StartRange.Minutes, range.StartRange.Seconds);
+					var dif = endSpan - startSpan;
+					var totalHours = Math.Max(0, (int)dif.TotalHours);
+					endString = $"{totalHours:00}:{dif.Minutes:00}:{dif.Seconds:00}";
+				}
 				var quotedInput = FfmpegCommandLine.Quoted(inputFullPath);
+				var workDir = Path.GetDirectoryName(inputFullPath) ?? string.Empty;
 
 				var encPrefs = EncodingSettingsRuntime.Current;
 				var hwAccel = encPrefs.HardwareAcceleration;
@@ -679,14 +716,18 @@ public partial class TrimViewModel : MP4ViewModelBase
 						FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, range.StartRange.AsInputParameterString()),
 						FfmpegCommandLine.DefaultInputThreadQueue(),
 						FfmpegOption.Pair(FfmpegArguments.Input, quotedInput),
-						FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
+						string.IsNullOrWhiteSpace(endString)
+							? null
+							: FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
 						vfOpt
 					);
 					DaVinciOutputEncoding.AppendPostInputHwOptions(trimParts, hwAccel);
 				}
 				else
 				{
-					Logger.Log("Using fast stream-copy trim (Resolve-safe encoding disabled).");
+					Logger.Log(string.IsNullOrWhiteSpace(endString)
+						? "Using fast stream-copy trim through EOF (end bound disabled)."
+						: "Using fast stream-copy trim (Resolve-safe encoding disabled).");
 					LegacyFastEncoding.AppendTrimOptions(
 						trimParts,
 						encodingTail,
@@ -705,7 +746,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 
 				var args = FfmpegCommandLine.Build(trimParts);
 
-				await RunAndLogFFMpegAsync(args, ct).ConfigureAwait(false);
+				await RunAndLogFFMpegAsync(args, ct, workDir).ConfigureAwait(false);
 				if (!File.Exists(trimOutputPath))
 				{
 					Logger.Log($"Trim failed: expected output was not created: {trimOutputPath}");
@@ -746,6 +787,28 @@ public partial class TrimViewModel : MP4ViewModelBase
 		{
 			Logger.Log("Error clearing time ranges");
 		}
+		RefreshTrimAvailability();
+	}
+
+	private void RefreshTrimAvailability()
+	{
+		var hasProcessable = TrimRanges.Any(IsProcessableTrimRange);
+		CanTrim = hasProcessable;
+		CanClear = hasProcessable
+			|| (!string.IsNullOrWhiteSpace(InputPath) && File.Exists(InputPath));
+	}
+
+	private static string ResolveRangeInputPath(StartStopRange range)
+	{
+		return range?.InputPath?.Trim() ?? string.Empty;
+	}
+
+	private static bool IsProcessableTrimRange(StartStopRange range)
+	{
+		if (range == null || range.StartRange == null || !range.IsValidRange())
+			return false;
+		var path = ResolveRangeInputPath(range);
+		return !string.IsNullOrWhiteSpace(path) && File.Exists(path);
 	}
 
 	private string CreateTrimOutputPath(string inputPath, string outputFolder, StartStopRange startStopRange)
@@ -754,7 +817,10 @@ public partial class TrimViewModel : MP4ViewModelBase
 		{
 			var fileName = Path.GetFileNameWithoutExtension(inputPath);
 			var ext = Path.GetExtension(inputPath);
-			var outFileName = $"{fileName}_{startStopRange.StartRange}-{startStopRange.EndRange}{ext}".Replace(":", "_");
+			var endLabel = startStopRange.HasEndBound
+				? startStopRange.EndRange?.ToString() ?? "end"
+				: "end";
+			var outFileName = $"{fileName}_{startStopRange.StartRange}-{endLabel}{ext}".Replace(":", "_");
 			return Path.Combine(outputFolder, outFileName);
 		}
 		catch
@@ -764,9 +830,10 @@ public partial class TrimViewModel : MP4ViewModelBase
 		return TempPathHelper.GetTempFileName();
 	}
 
+	/// <summary>Validates a draft range against the currently loaded input duration (add-range path only).</summary>
 	private bool IsRangeWithinInputBounds(StartStopRange range)
 	{
-		if (range == null || range.StartRange == null || range.EndRange == null)
+		if (range == null || range.StartRange == null)
 		{
 			return false;
 		}
@@ -775,8 +842,16 @@ public partial class TrimViewModel : MP4ViewModelBase
 			return false;
 		}
 		var startSeconds = range.StartRange.TotalSeconds;
-		var endSeconds = range.EndRange.TotalSeconds;
 		var durationSeconds = _inputDuration.TotalSeconds;
+		if (!range.HasEndBound)
+		{
+			return startSeconds >= 0 && startSeconds < durationSeconds;
+		}
+		if (range.EndRange == null)
+		{
+			return false;
+		}
+		var endSeconds = range.EndRange.TotalSeconds;
 		if (endSeconds > durationSeconds)
 		{
 			Logger.Log("End seconds is longer than video duration");
@@ -803,10 +878,16 @@ public partial class TrimViewModel : MP4ViewModelBase
 					{
 						foreach (var range in exportObj.StartStopRanges)
 						{
+							if (string.IsNullOrWhiteSpace(range.InputPath)
+								&& !string.IsNullOrWhiteSpace(exportObj.InputFile))
+							{
+								range.InputPath = exportObj.InputFile;
+							}
 							TrimRanges.Add(range);
 						}
 					}
 				}
+				RefreshTrimAvailability();
 			}
 			catch (Exception e)
 			{
@@ -838,9 +919,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 		EndRange.Hours = 0;
 		EndRange.Minutes = 0;
 		EndRange.Seconds = 0;
-		CanClear = false;
-		CanTrim = false;
 		_inputDuration = TimeSpan.Zero;
+		RefreshTrimAvailability();
 		try
 		{
 			var durationStr = await FFMpegUtils.Instance.GetFileDurationAsync(InputPath, CancellationToken.None, Logger.Log)
@@ -856,8 +936,6 @@ public partial class TrimViewModel : MP4ViewModelBase
 			await Dispatcher.UIThread.InvokeAsync(() =>
 			{
 				_inputDuration = parsedDuration;
-				CanClear = true;
-				CanTrim = true;
 				var hours = (int)_inputDuration.TotalHours;
 				var min = _inputDuration.Minutes;
 				var sec = _inputDuration.Seconds;
@@ -868,6 +946,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 					VideoMinuteRange = [.. Enumerable.Range(0, min + 1)];
 				EndRange.Minutes = min;
 				EndRange.Seconds = Math.Min(sec + 1, 59);
+				RefreshTrimAvailability();
 			});
 		}
 		catch (Exception ex)

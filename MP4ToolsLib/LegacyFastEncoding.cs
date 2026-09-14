@@ -45,7 +45,9 @@ public static class LegacyFastEncoding
 		trimParts.Add(FfmpegOption.Pair(FfmpegArguments.SeekInputTimestamp, seekTimestamp));
 		trimParts.Add(FfmpegCommandLine.DefaultInputThreadQueue());
 		trimParts.Add(FfmpegOption.Pair(FfmpegArguments.Input, quotedInput));
-		trimParts.Add(FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, duration));
+		// Omit -t when duration is empty so ffmpeg keeps through EOF (end-trim disabled).
+		if (!string.IsNullOrWhiteSpace(duration))
+			trimParts.Add(FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, duration));
 		if (!vfOpt.IsSkipped)
 			trimParts.Add(vfOpt);
 
