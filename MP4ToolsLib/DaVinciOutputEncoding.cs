@@ -40,6 +40,14 @@ public static class DaVinciOutputEncoding
 
 	public const string VaapiVideoBitrate = "40M";
 
+	/// <summary>
+	/// Zero presentation timestamps so MP4 muxing does not insert an empty edit
+	/// (Resolve shows that as a black timeline thumbnail). Needed for hevc_vaapi trims.
+	/// </summary>
+	public const string ResetPresentationTimestampsFilter = "setpts=PTS-STARTPTS";
+
+	public const string ResetAudioPresentationTimestampsFilter = "asetpts=PTS-STARTPTS";
+
 	public static bool UsesHardwareAcceleration(string hwAccel) =>
 		hwAccel is "vaapi" or "amf";
 
@@ -99,6 +107,17 @@ public static class DaVinciOutputEncoding
 			? $",{GetVaapiHwUploadFilterChain(encodeTenBit)}"
 			: string.Empty;
 
+	static string WithPresentationTimestampReset(string filterChain) =>
+		string.IsNullOrEmpty(filterChain)
+			? ResetPresentationTimestampsFilter
+			: $"{ResetPresentationTimestampsFilter},{filterChain}";
+
+	/// <summary>
+	/// Pair with re-encoded audio (<c>-c:a</c> not copy) so A/V both start at PTS 0.
+	/// </summary>
+	public static FfmpegOption BuildAudioTimestampResetOption() =>
+		FfmpegOption.Pair(FfmpegArguments.AudioFilter, ResetAudioPresentationTimestampsFilter);
+
 	public static void AppendVideoEncodeOptions(ICollection<FfmpegOption?> parts, string hwAccel, bool encodeTenBit = false)
 	{
 		var encoder = GetHevcVideoEncoder(hwAccel);
@@ -145,6 +164,7 @@ public static class DaVinciOutputEncoding
 	{
 		if (softwareFrameInput)
 		{
+			// lavfi sources already start at PTS 0; no empty-edit risk.
 			var uploadSuffix = GetSoftwareToVaapiUploadFilterSuffix(hwAccel, encodeTenBit);
 			if (!string.IsNullOrEmpty(drawTextFilter))
 				return FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawTextFilter}{uploadSuffix}\"");
@@ -156,15 +176,19 @@ public static class DaVinciOutputEncoding
 		if (UsesVaapi(hwAccel) && OperatingSystem.IsLinux())
 		{
 			var upload = GetVaapiHwUploadFilterChain(encodeTenBit);
-			if (!string.IsNullOrEmpty(drawTextFilter))
-				return FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawTextFilter},{upload}\"");
-
-			return FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{upload}\"");
+			var chain = string.IsNullOrEmpty(drawTextFilter) ? upload : $"{drawTextFilter},{upload}";
+			return FfmpegOption.Pair(
+				FfmpegArguments.VideoFilter,
+				$"\"{WithPresentationTimestampReset(chain)}\"");
 		}
 
 		if (string.IsNullOrEmpty(drawTextFilter))
-			return default;
+			return FfmpegOption.Pair(
+				FfmpegArguments.VideoFilter,
+				$"\"{ResetPresentationTimestampsFilter}\"");
 
-		return FfmpegOption.Pair(FfmpegArguments.VideoFilter, $"\"{drawTextFilter}\"");
+		return FfmpegOption.Pair(
+			FfmpegArguments.VideoFilter,
+			$"\"{WithPresentationTimestampReset(drawTextFilter)}\"");
 	}
 }

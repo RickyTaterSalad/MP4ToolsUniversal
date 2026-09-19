@@ -706,6 +706,7 @@ public partial class TrimViewModel : MP4ViewModelBase
 						: $"Resolve-safe trim: encoding to 10-bit Main10 HEVC (source {VideoBitDepth}), CRF {DaVinciOutputEncoding.SoftwareCrf}, preset {DaVinciOutputEncoding.SoftwareEncoderPreset}.");
 
 					var vfOpt = DaVinciOutputEncoding.BuildVideoFilterOption(drawInner, hwAccel, encodeTenBit: encodeTenBit);
+					var afOpt = DaVinciOutputEncoding.BuildAudioTimestampResetOption();
 					DaVinciOutputEncoding.AppendVideoEncodeOptions(encodingTail, hwAccel, encodeTenBit);
 					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.SelectAudioCodec, encPrefs.TrimAudioCodec));
 					encodingTail.Add(FfmpegOption.Pair(FfmpegArguments.AudioChannels, "2"));
@@ -719,7 +720,8 @@ public partial class TrimViewModel : MP4ViewModelBase
 						string.IsNullOrWhiteSpace(endString)
 							? null
 							: FfmpegOption.Pair(FfmpegArguments.LimitOutputDuration, endString),
-						vfOpt
+						vfOpt,
+						afOpt
 					);
 					DaVinciOutputEncoding.AppendPostInputHwOptions(trimParts, hwAccel);
 				}

@@ -213,6 +213,8 @@ namespace MP4ToolsLib
                     if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aCodec))
                         log("Main clip audio is Opus: using AAC in MPEG-TS intermediate (avoids opus packet header errors when concatenating).");
                     MpegTsConcatAudio.AppendMp4ToTsAudioOptions(inputToTs, aCodec);
+                    if (resolveSafeEncoding && MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aCodec))
+                        inputToTs.Add(DaVinciOutputEncoding.BuildAudioTimestampResetOption());
                 }
                 else
                 {

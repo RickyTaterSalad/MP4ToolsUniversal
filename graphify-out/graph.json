@@ -107,7 +107,7 @@
       },
       "norm_label": "ffmpegcommandline",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L115"
+      "source_location": "L116"
     },
     {
       "id": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegoption",
@@ -126,7 +126,7 @@
       },
       "norm_label": "ffmpegoption",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L86"
+      "source_location": "L87"
     },
     {
       "id": "mp4toolslib_introvideocomposerasync_mp4toolslib_introvideocomposerasync",
@@ -224,25 +224,6 @@
       "source_location": "L7"
     },
     {
-      "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper",
-      "label": "TempPathHelper",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": ".PrependIntroAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s33"
-        ]
-      },
-      "norm_label": "temppathhelper",
-      "source_file": "MP4ToolsLib/TempPathHelper.cs",
-      "source_location": "L7"
-    },
-    {
       "id": "mp4tools_viewmodels_mp4viewmodelbase_mp4tools_mp4viewmodelbase",
       "label": "MP4ViewModelBase",
       "_callable": true,
@@ -301,32 +282,13 @@
       "source_location": "L5"
     },
     {
-      "id": "mp4toolslib_combinefile_mp4toolslib_combinefile",
-      "label": "CombineFile",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "CombineFile",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s114"
-        ]
-      },
-      "norm_label": "combinefile",
-      "source_file": "MP4ToolsLib/CombineFile.cs",
-      "source_location": "L17"
-    },
-    {
       "id": "mp4toolslib_combinefile_mp4toolslib_combinefilesortmode",
       "label": "CombineFileSortMode",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -413,46 +375,6 @@
       "norm_label": "logviewmodel",
       "source_file": "MP4Tools/ViewModels/LogViewModel.cs",
       "source_location": "L11"
-    },
-    {
-      "id": "mp4tools_views_logview_axaml_mp4tools_views_logview",
-      "label": "LogView",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "LogViewModel",
-      "file_type": "code",
-      "metadata": {
-        "is_partial": true,
-        "namespace": "MP4Tools.Views",
-        "scope_chain": [
-          "s109"
-        ]
-      },
-      "norm_label": "logview",
-      "source_file": "MP4Tools/Views/LogView.axaml.cs",
-      "source_location": "L9"
-    },
-    {
-      "id": "mp4tools_views_optionsview_axaml_mp4tools_views_optionsview",
-      "label": "OptionsView",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "LogViewModel",
-      "file_type": "code",
-      "metadata": {
-        "is_partial": true,
-        "namespace": "MP4Tools.Views",
-        "scope_chain": [
-          "s26"
-        ]
-      },
-      "norm_label": "optionsview",
-      "source_file": "MP4Tools/Views/OptionsView.axaml.cs",
-      "source_location": "L5"
     },
     {
       "id": "mp4tools_viewmodels_mainwindowviewmodel_mp4tools_viewmodels_mainwindowviewmodel",
@@ -628,23 +550,61 @@
       "source_location": "L9"
     },
     {
-      "id": "mp4tools_logger_mp4tools_logger",
-      "label": "Logger",
+      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator",
+      "label": "BoxScoreSessionCreator",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": ".Log",
+      "community_name": ".CreateAsync",
       "file_type": "code",
       "metadata": {
-        "namespace": "MP4Tools",
+        "namespace": "MP4ToolsLib",
         "scope_chain": [
-          "s15"
+          "s164"
         ]
       },
-      "norm_label": "logger",
-      "source_file": "MP4Tools/Logger.cs",
-      "source_location": "L5"
+      "norm_label": "boxscoresessioncreator",
+      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "source_location": "L40"
+    },
+    {
+      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_createboxscoresessionrequest",
+      "label": "CreateBoxScoreSessionRequest",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 22,
+      "community_name": ".CreateAsync",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s164"
+        ]
+      },
+      "norm_label": "createboxscoresessionrequest",
+      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "source_location": "L11"
+    },
+    {
+      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_createboxscoresessionresult",
+      "label": "CreateBoxScoreSessionResult",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 22,
+      "community_name": ".CreateAsync",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s164"
+        ]
+      },
+      "norm_label": "createboxscoresessionresult",
+      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "source_location": "L26"
     },
     {
       "id": "mp4tools_services_uibehaviorsettingsruntime_mp4tools_services_uibehaviorsettingsruntime",
@@ -686,6 +646,45 @@
       "source_location": "L17"
     },
     {
+      "id": "mp4toolslib_combinefile_mp4toolslib_combinefile",
+      "label": "CombineFile",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "CombineView",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s114"
+        ]
+      },
+      "norm_label": "combinefile",
+      "source_file": "MP4ToolsLib/CombineFile.cs",
+      "source_location": "L17"
+    },
+    {
+      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel",
+      "label": "OptionsViewModel",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "OptionsViewModel",
+      "file_type": "code",
+      "metadata": {
+        "is_partial": true,
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s280"
+        ]
+      },
+      "norm_label": "optionsviewmodel",
+      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
+      "source_location": "L14"
+    },
+    {
       "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_exporttrimstate",
       "label": "ExportTrimState",
       "_callable": true,
@@ -724,61 +723,42 @@
       "source_location": "L14"
     },
     {
-      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator",
-      "label": "BoxScoreSessionCreator",
+      "id": "mp4toolslib_timerange_mp4toolslib_timerange",
+      "label": "TimeRange",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community": 29,
+      "community_name": "TimeRange",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
         "scope_chain": [
-          "s164"
+          "s125"
         ]
       },
-      "norm_label": "boxscoresessioncreator",
-      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
-      "source_location": "L40"
+      "norm_label": "timerange",
+      "source_file": "MP4ToolsLib/TimeRange.cs",
+      "source_location": "L8"
     },
     {
-      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_createboxscoresessionrequest",
-      "label": "CreateBoxScoreSessionRequest",
+      "id": "mp4toolslib_fileutils_mp4toolslib_fileutils",
+      "label": "FileUtils",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
         "scope_chain": [
-          "s164"
+          "s69"
         ]
       },
-      "norm_label": "createboxscoresessionrequest",
-      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
-      "source_location": "L11"
-    },
-    {
-      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_createboxscoresessionresult",
-      "label": "CreateBoxScoreSessionResult",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s164"
-        ]
-      },
-      "norm_label": "createboxscoresessionresult",
-      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
-      "source_location": "L26"
+      "norm_label": "fileutils",
+      "source_file": "MP4ToolsLib/FileUtils.cs",
+      "source_location": "L7"
     },
     {
       "id": "mp4toolslib_modifiedrecordinguploader_mp4toolslib_modifiedrecordinguploader",
@@ -787,7 +767,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -806,7 +786,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -819,22 +799,22 @@
       "source_location": "L11"
     },
     {
-      "id": "mp4tools_services_folderopener_mp4tools_services_folderopener",
-      "label": "FolderOpener",
+      "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper",
+      "label": "TempPathHelper",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 30,
-      "community_name": "MP4ToolsLib",
+      "community": 3,
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
-        "namespace": "MP4Tools.Services",
+        "namespace": "MP4ToolsLib",
         "scope_chain": [
-          "s58"
+          "s33"
         ]
       },
-      "norm_label": "folderopener",
-      "source_file": "MP4Tools/Services/FolderOpener.cs",
+      "norm_label": "temppathhelper",
+      "source_file": "MP4ToolsLib/TempPathHelper.cs",
       "source_location": "L7"
     },
     {
@@ -878,13 +858,32 @@
       "source_location": "L5"
     },
     {
+      "id": "mp4tools_logger_mp4tools_logger",
+      "label": "Logger",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 32,
+      "community_name": "MP4Tools",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools",
+        "scope_chain": [
+          "s15"
+        ]
+      },
+      "norm_label": "logger",
+      "source_file": "MP4Tools/Logger.cs",
+      "source_location": "L5"
+    },
+    {
       "id": "mp4tools_viewlocator_mp4tools_viewlocator",
       "label": "ViewLocator",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 32,
-      "community_name": "ViewLocator",
+      "community_name": "MP4Tools",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools",
@@ -897,22 +896,62 @@
       "source_location": "L12"
     },
     {
-      "id": "mp4toolslib_fileutils_mp4toolslib_fileutils",
-      "label": "FileUtils",
+      "id": "mp4tools_views_logview_axaml_mp4tools_views_logview",
+      "label": "LogView",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "FileUtils",
+      "community_name": "LogView",
       "file_type": "code",
       "metadata": {
-        "namespace": "MP4ToolsLib",
+        "is_partial": true,
+        "namespace": "MP4Tools.Views",
         "scope_chain": [
-          "s69"
+          "s109"
         ]
       },
-      "norm_label": "fileutils",
-      "source_file": "MP4ToolsLib/FileUtils.cs",
+      "norm_label": "logview",
+      "source_file": "MP4Tools/Views/LogView.axaml.cs",
+      "source_location": "L9"
+    },
+    {
+      "id": "mp4tools_views_optionsview_axaml_mp4tools_views_optionsview",
+      "label": "OptionsView",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "LogView",
+      "file_type": "code",
+      "metadata": {
+        "is_partial": true,
+        "namespace": "MP4Tools.Views",
+        "scope_chain": [
+          "s26"
+        ]
+      },
+      "norm_label": "optionsview",
+      "source_file": "MP4Tools/Views/OptionsView.axaml.cs",
+      "source_location": "L5"
+    },
+    {
+      "id": "mp4tools_services_folderopener_mp4tools_services_folderopener",
+      "label": "FolderOpener",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 35,
+      "community_name": ".OpenContainingFolderIfExists",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.Services",
+        "scope_chain": [
+          "s58"
+        ]
+      },
+      "norm_label": "folderopener",
+      "source_file": "MP4Tools/Services/FolderOpener.cs",
       "source_location": "L7"
     },
     {
@@ -972,25 +1011,6 @@
       "norm_label": "recordingjsonelapsedoffset",
       "source_file": "MP4ToolsLib/RecordingJsonElapsedOffset.cs",
       "source_location": "L20"
-    },
-    {
-      "id": "mp4toolslib_timerange_mp4toolslib_timerange",
-      "label": "TimeRange",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s125"
-        ]
-      },
-      "norm_label": "timerange",
-      "source_file": "MP4ToolsLib/TimeRange.cs",
-      "source_location": "L8"
     },
     {
       "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel",
@@ -1089,216 +1109,6 @@
       "source_location": "L8"
     },
     {
-      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel",
-      "label": "OptionsViewModel",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "metadata": {
-        "is_partial": true,
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s280"
-        ]
-      },
-      "norm_label": "optionsviewmodel",
-      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
-      "source_location": "L14"
-    },
-    {
-      "id": "mp4tools_services_folderopener_mp4tools_services_folderopener_opencontainingfolderifexists",
-      "label": ".OpenContainingFolderIfExists()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": ".PrependIntroAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.Services",
-        "scope_chain": [
-          "s58"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "GetFullPath",
-            "receiver_type": "Path",
-            "lang": "csharp",
-            "line": "L17"
-          },
-          {
-            "callee": "Exists",
-            "receiver_type": "File",
-            "lang": "csharp",
-            "line": "L24"
-          },
-          {
-            "callee": "GetDirectoryName",
-            "receiver_type": "Path",
-            "lang": "csharp",
-            "line": "L25"
-          },
-          {
-            "callee": "IsWindows",
-            "receiver_type": "OperatingSystem",
-            "lang": "csharp",
-            "line": "L32"
-          },
-          {
-            "callee": "Start",
-            "receiver_type": "Process",
-            "lang": "csharp",
-            "line": "L34"
-          },
-          {
-            "callee": "IsMacOS",
-            "receiver_type": "OperatingSystem",
-            "lang": "csharp",
-            "line": "L41"
-          }
-        ]
-      },
-      "norm_label": ".opencontainingfolderifexists()",
-      "source_file": "MP4Tools/Services/FolderOpener.cs",
-      "source_location": "L9"
-    },
-    {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_combineinternal",
-      "label": ".CombineInternal()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": ".PrependIntroAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s433"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Exists",
-            "receiver_type": "File",
-            "lang": "csharp",
-            "line": "L1069"
-          },
-          {
-            "callee": "AddRange",
-            "receiver_type": "List",
-            "lang": "csharp",
-            "line": "L1101"
-          },
-          {
-            "callee": "WhenAll",
-            "receiver_type": "Task",
-            "lang": "csharp",
-            "line": "L1109"
-          },
-          {
-            "callee": "Select",
-            "receiver_type": "List",
-            "lang": "csharp",
-            "line": "L1109"
-          },
-          {
-            "callee": "ThrowIfCancellationRequested",
-            "receiver_type": "CancellationToken",
-            "lang": "csharp",
-            "line": "L1113"
-          },
-          {
-            "callee": "AsInputParameterString",
-            "receiver_type": "StartRange",
-            "lang": "csharp",
-            "line": "L1147"
-          },
-          {
-            "callee": "Trim",
-            "receiver_type": "IntroTitle?",
-            "lang": "csharp",
-            "line": "L1158"
-          },
-          {
-            "callee": "Trim",
-            "receiver_type": "IntroSubtitle?",
-            "lang": "csharp",
-            "line": "L1159"
-          },
-          {
-            "callee": "Trim",
-            "receiver_type": "IntroDetails?",
-            "lang": "csharp",
-            "line": "L1160"
-          },
-          {
-            "callee": "First",
-            "receiver_type": "List",
-            "lang": "csharp",
-            "line": "L1172"
-          },
-          {
-            "callee": "NewGuid",
-            "receiver_type": "Guid",
-            "lang": "csharp",
-            "line": "L1180"
-          },
-          {
-            "callee": "Add",
-            "receiver_type": "List",
-            "lang": "csharp",
-            "line": "L1197"
-          },
-          {
-            "callee": "TryGetValue",
-            "receiver_type": "Dictionary",
-            "lang": "csharp",
-            "line": "L1212"
-          },
-          {
-            "callee": "FromSeconds",
-            "receiver_type": "TimeSpan",
-            "lang": "csharp",
-            "line": "L1216"
-          },
-          {
-            "callee": "Max",
-            "receiver_type": "Math",
-            "lang": "csharp",
-            "line": "L1227"
-          },
-          {
-            "callee": "WriteAllLines",
-            "receiver_type": "File",
-            "lang": "csharp",
-            "line": "L1246"
-          },
-          {
-            "callee": "Delete",
-            "receiver_type": "File",
-            "lang": "csharp",
-            "line": "L1291"
-          },
-          {
-            "callee": "Move",
-            "receiver_type": "File",
-            "lang": "csharp",
-            "line": "L1292"
-          },
-          {
-            "callee": "Remove",
-            "receiver_type": "List",
-            "lang": "csharp",
-            "line": "L1293"
-          }
-        ]
-      },
-      "norm_label": ".combineinternal()",
-      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L1049"
-    },
-    {
       "id": "mp4tools_viewmodels_mp4viewmodelbase_mp4tools_mp4viewmodelbase_runandlogffmpegasync",
       "label": ".RunAndLogFFMpegAsync()",
       "_callable": true,
@@ -1317,8 +1127,8 @@
       "source_location": "L191"
     },
     {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_createtrimoutputpath",
-      "label": ".CreateTrimOutputPath()",
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_reporttrimstep",
+      "label": ".ReportTrimStep()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
@@ -1330,9 +1140,47 @@
           "s376"
         ]
       },
-      "norm_label": ".createtrimoutputpath()",
+      "norm_label": ".reporttrimstep()",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L814"
+      "source_location": "L38"
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_trimandcombineasync",
+      "label": ".TrimAndCombineAsync()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": ".PrependIntroAsync",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s376"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Add",
+            "receiver_type": "List",
+            "lang": "csharp",
+            "line": "L326"
+          },
+          {
+            "callee": "Run",
+            "receiver_type": "Task",
+            "lang": "csharp",
+            "line": "L334"
+          },
+          {
+            "callee": "WriteAllLines",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L354"
+          }
+        ]
+      },
+      "norm_label": ".trimandcombineasync()",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L314"
     },
     {
       "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_trimandcombineasyncinternal",
@@ -1444,13 +1292,13 @@
             "callee": "Add",
             "receiver_type": "List",
             "lang": "csharp",
-            "line": "L710"
+            "line": "L711"
           },
           {
             "callee": "AddRange",
             "receiver_type": "List",
             "lang": "csharp",
-            "line": "L715"
+            "line": "L716"
           }
         ]
       },
@@ -1476,13 +1324,13 @@
             "callee": "Add",
             "receiver_type": "ICollection",
             "lang": "csharp",
-            "line": "L134"
+            "line": "L153"
           }
         ]
       },
       "norm_label": ".appendcolormetadata()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L132"
+      "source_location": "L151"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendmp4outputoptions",
@@ -1502,13 +1350,13 @@
             "callee": "Add",
             "receiver_type": "ICollection",
             "lang": "csharp",
-            "line": "L91"
+            "line": "L99"
           }
         ]
       },
       "norm_label": ".appendmp4outputoptions()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L89"
+      "source_location": "L97"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendpostinputhwoptions",
@@ -1526,7 +1374,7 @@
       },
       "norm_label": ".appendpostinputhwoptions()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L85"
+      "source_location": "L93"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendpreinputhwoptions",
@@ -1546,13 +1394,13 @@
             "callee": "Add",
             "receiver_type": "ICollection",
             "lang": "csharp",
-            "line": "L75"
+            "line": "L83"
           }
         ]
       },
       "norm_label": ".appendpreinputhwoptions()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L69"
+      "source_location": "L77"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendvideoencodeoptions",
@@ -1572,25 +1420,43 @@
             "callee": "Add",
             "receiver_type": "ICollection",
             "lang": "csharp",
-            "line": "L105"
+            "line": "L124"
           },
           {
             "callee": "ToString",
             "receiver_type": "SoftwareCrf",
             "lang": "csharp",
-            "line": "L109"
+            "line": "L128"
           },
           {
             "callee": "ToString",
             "receiver_type": "VaapiAsyncDepth",
             "lang": "csharp",
-            "line": "L121"
+            "line": "L140"
           }
         ]
       },
       "norm_label": ".appendvideoencodeoptions()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L102"
+      "source_location": "L121"
+    },
+    {
+      "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_buildaudiotimestampresetoption",
+      "label": ".BuildAudioTimestampResetOption()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": ".PrependIntroAsync",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s49"
+        ]
+      },
+      "norm_label": ".buildaudiotimestampresetoption()",
+      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
+      "source_location": "L118"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_buildvideofilteroption",
@@ -1610,13 +1476,13 @@
             "callee": "IsLinux",
             "receiver_type": "OperatingSystem",
             "lang": "csharp",
-            "line": "L156"
+            "line": "L176"
           }
         ]
       },
       "norm_label": ".buildvideofilteroption()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L140"
+      "source_location": "L159"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_gethardwareaccelapi",
@@ -1634,7 +1500,7 @@
       },
       "norm_label": ".gethardwareaccelapi()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L49"
+      "source_location": "L57"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_gethevcvideoencoder",
@@ -1652,7 +1518,7 @@
       },
       "norm_label": ".gethevcvideoencoder()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L57"
+      "source_location": "L65"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_getsoftwaretovaapiuploadfiltersuffix",
@@ -1672,13 +1538,13 @@
             "callee": "IsLinux",
             "receiver_type": "OperatingSystem",
             "lang": "csharp",
-            "line": "L98"
+            "line": "L106"
           }
         ]
       },
       "norm_label": ".getsoftwaretovaapiuploadfiltersuffix()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L97"
+      "source_location": "L105"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_getvaapihwuploadfilterchain",
@@ -1696,7 +1562,7 @@
       },
       "norm_label": ".getvaapihwuploadfilterchain()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L94"
+      "source_location": "L102"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_useshardwareacceleration",
@@ -1714,7 +1580,7 @@
       },
       "norm_label": ".useshardwareacceleration()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L43"
+      "source_location": "L51"
     },
     {
       "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_usesvaapi",
@@ -1732,7 +1598,25 @@
       },
       "norm_label": ".usesvaapi()",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L46"
+      "source_location": "L54"
+    },
+    {
+      "id": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_withpresentationtimestampreset",
+      "label": ".WithPresentationTimestampReset()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": ".PrependIntroAsync",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s49"
+        ]
+      },
+      "norm_label": ".withpresentationtimestampreset()",
+      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
+      "source_location": "L110"
     },
     {
       "id": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegcommandline_build",
@@ -1752,13 +1636,13 @@
             "callee": "AddRange",
             "receiver_type": "List",
             "lang": "csharp",
-            "line": "L126"
+            "line": "L127"
           }
         ]
       },
       "norm_label": ".build()",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L117"
+      "source_location": "L118"
     },
     {
       "id": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegcommandline_defaultinputthreadqueue",
@@ -1776,7 +1660,7 @@
       },
       "norm_label": ".defaultinputthreadqueue()",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L131"
+      "source_location": "L132"
     },
     {
       "id": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegcommandline_quoted",
@@ -1794,7 +1678,7 @@
       },
       "norm_label": ".quoted()",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L134"
+      "source_location": "L135"
     },
     {
       "id": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegoption_pair",
@@ -1812,7 +1696,7 @@
       },
       "norm_label": ".pair()",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L93"
+      "source_location": "L94"
     },
     {
       "id": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegoption_positional",
@@ -1830,7 +1714,7 @@
       },
       "norm_label": ".positional()",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L96"
+      "source_location": "L97"
     },
     {
       "id": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegoption_toargvtokens",
@@ -1848,7 +1732,7 @@
       },
       "norm_label": ".toargvtokens()",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L98"
+      "source_location": "L99"
     },
     {
       "id": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegoption_unary",
@@ -1866,7 +1750,7 @@
       },
       "norm_label": ".unary()",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L91"
+      "source_location": "L92"
     },
     {
       "id": "mp4toolslib_ffmpegutils_mp4toolslib_ffmpegutils_getpreferredrenderdevice",
@@ -1928,7 +1812,7 @@
       },
       "norm_label": ".escapedrawtext()",
       "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
-      "source_location": "L269"
+      "source_location": "L271"
     },
     {
       "id": "mp4toolslib_introvideocomposerasync_mp4toolslib_introvideocomposerasync_prependintroasync",
@@ -1996,7 +1880,7 @@
       },
       "norm_label": ".safedelete()",
       "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
-      "source_location": "L272"
+      "source_location": "L274"
     },
     {
       "id": "mp4toolslib_introvideofontscaling_mp4toolslib_introvideofontscaling_getfontscale",
@@ -2237,158 +2121,6 @@
       "source_location": "L13"
     },
     {
-      "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper_deletetemporarydirectoryunlessretained",
-      "label": ".DeleteTemporaryDirectoryUnlessRetained()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": ".PrependIntroAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s33"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Exists",
-            "receiver_type": "Directory",
-            "lang": "csharp",
-            "line": "L57"
-          },
-          {
-            "callee": "Delete",
-            "receiver_type": "Directory",
-            "lang": "csharp",
-            "line": "L58"
-          }
-        ]
-      },
-      "norm_label": ".deletetemporarydirectoryunlessretained()",
-      "source_file": "MP4ToolsLib/TempPathHelper.cs",
-      "source_location": "L51"
-    },
-    {
-      "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper_deletetemporaryfileunlessretained",
-      "label": ".DeleteTemporaryFileUnlessRetained()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": ".PrependIntroAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s33"
-        ]
-      },
-      "norm_label": ".deletetemporaryfileunlessretained()",
-      "source_file": "MP4ToolsLib/TempPathHelper.cs",
-      "source_location": "L44"
-    },
-    {
-      "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper_gettempfilename",
-      "label": ".GetTempFileName()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": ".PrependIntroAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s33"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "NewGuid",
-            "receiver_type": "Guid",
-            "lang": "csharp",
-            "line": "L41"
-          }
-        ]
-      },
-      "norm_label": ".gettempfilename()",
-      "source_file": "MP4ToolsLib/TempPathHelper.cs",
-      "source_location": "L39"
-    },
-    {
-      "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper_gettemppath",
-      "label": ".GetTempPath()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": ".PrependIntroAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s33"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Exists",
-            "receiver_type": "Directory",
-            "lang": "csharp",
-            "line": "L28"
-          },
-          {
-            "callee": "CreateDirectory",
-            "receiver_type": "Directory",
-            "lang": "csharp",
-            "line": "L29"
-          },
-          {
-            "callee": "WriteLine",
-            "receiver_type": "Console",
-            "lang": "csharp",
-            "line": "L33"
-          }
-        ]
-      },
-      "norm_label": ".gettemppath()",
-      "source_file": "MP4ToolsLib/TempPathHelper.cs",
-      "source_location": "L20"
-    },
-    {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_combine",
-      "label": ".Combine()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "MP4ViewModelBase",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s433"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Enqueue",
-            "receiver_type": "ConcurrentQueue",
-            "lang": "csharp",
-            "line": "L1001"
-          },
-          {
-            "callee": "WriteAllLines",
-            "receiver_type": "File",
-            "lang": "csharp",
-            "line": "L1031"
-          },
-          {
-            "callee": "ToArray",
-            "receiver_type": "ConcurrentQueue",
-            "lang": "csharp",
-            "line": "L1031"
-          }
-        ]
-      },
-      "norm_label": ".combine()",
-      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L991"
-    },
-    {
       "id": "mp4tools_viewmodels_mp4viewmodelbase_mp4tools_mp4viewmodelbase_beginffmpegoperation",
       "label": ".BeginFfmpegOperation()",
       "_callable": true,
@@ -2591,6 +2323,50 @@
       "source_location": "L166"
     },
     {
+      "id": "mp4tools_viewmodels_mp4viewmodelbase_mp4tools_mp4viewmodelbase_setfile",
+      "label": ".SetFile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "MP4ViewModelBase",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools",
+        "scope_chain": [
+          "s221"
+        ]
+      },
+      "norm_label": ".setfile()",
+      "source_file": "MP4Tools/ViewModels/MP4ViewModelBase.cs",
+      "source_location": "L143"
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_acceptdroppedvideofile",
+      "label": ".AcceptDroppedVideoFile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "MP4ViewModelBase",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s376"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Exists",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L307"
+          }
+        ]
+      },
+      "norm_label": ".acceptdroppedvideofile()",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L305"
+    },
+    {
       "id": "mp4toolslib_videobitdepthhelper_mp4toolslib_videobitdepthhelper_formatdisplay",
       "label": ".FormatDisplay()",
       "_callable": true,
@@ -2627,12 +2403,30 @@
       "source_location": "L7"
     },
     {
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_acceptdroppedvideofile",
+      "label": ".AcceptDroppedVideoFile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": ".OnInputPathSet",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s433"
+        ]
+      },
+      "norm_label": ".acceptdroppedvideofile()",
+      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L949"
+    },
+    {
       "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_oninputpathset",
       "label": ".OnInputPathSet()",
       "_callable": true,
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
@@ -2659,12 +2453,56 @@
       "source_location": "L888"
     },
     {
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_onsettingsapplied",
+      "label": ".OnSettingsApplied()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": ".OnInputPathSet",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s433"
+        ]
+      },
+      "norm_label": ".onsettingsapplied()",
+      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L788"
+    },
+    {
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_updateoutputpathfromgameinfo",
+      "label": ".UpdateOutputPathFromGameInfo()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": ".OnInputPathSet",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s433"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Exists",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L813"
+          }
+        ]
+      },
+      "norm_label": ".updateoutputpathfromgameinfo()",
+      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L793"
+    },
+    {
       "id": "mp4toolslib_combinefile_mp4toolslib_combinefile_fromfolder",
       "label": ".FromFolder()",
       "_callable": true,
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -2714,7 +2552,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -2740,7 +2578,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -2772,7 +2610,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -2791,24 +2629,6 @@
       "norm_label": ".sort()",
       "source_file": "MP4ToolsLib/CombineFile.cs",
       "source_location": "L103"
-    },
-    {
-      "id": "mp4toolslib_combinefile_mp4toolslib_combinefile_tostring",
-      "label": ".ToString()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "CombineFile",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s114"
-        ]
-      },
-      "norm_label": ".tostring()",
-      "source_file": "MP4ToolsLib/CombineFile.cs",
-      "source_location": "L22"
     },
     {
       "id": "mp4toolslib_drawtextutils_mp4toolslib_drawtextutils_createvideooverlaytext",
@@ -3035,78 +2855,6 @@
       "norm_label": ".trimexcesslines()",
       "source_file": "MP4Tools/ViewModels/LogViewModel.cs",
       "source_location": "L147"
-    },
-    {
-      "id": "mp4tools_views_logview_axaml_mp4tools_views_logview_ondatacontextchanged",
-      "label": ".OnDataContextChanged()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "LogViewModel",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.Views",
-        "scope_chain": [
-          "s109"
-        ]
-      },
-      "norm_label": ".ondatacontextchanged()",
-      "source_file": "MP4Tools/Views/LogView.axaml.cs",
-      "source_location": "L18"
-    },
-    {
-      "id": "mp4tools_views_logview_axaml_mp4tools_views_logview_ondetachedfromvisualtree",
-      "label": ".OnDetachedFromVisualTree()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "LogViewModel",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.Views",
-        "scope_chain": [
-          "s109"
-        ]
-      },
-      "norm_label": ".ondetachedfromvisualtree()",
-      "source_file": "MP4Tools/Views/LogView.axaml.cs",
-      "source_location": "L29"
-    },
-    {
-      "id": "mp4tools_views_logview_axaml_mp4tools_views_logview_onlogcontentupdated",
-      "label": ".OnLogContentUpdated()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "LogViewModel",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.Views",
-        "scope_chain": [
-          "s109"
-        ]
-      },
-      "norm_label": ".onlogcontentupdated()",
-      "source_file": "MP4Tools/Views/LogView.axaml.cs",
-      "source_location": "L40"
-    },
-    {
-      "id": "mp4tools_views_logview_axaml_mp4tools_views_logview_scrolllogtoend",
-      "label": ".ScrollLogToEnd()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "LogViewModel",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.Views",
-        "scope_chain": [
-          "s109"
-        ]
-      },
-      "norm_label": ".scrolllogtoend()",
-      "source_file": "MP4Tools/Views/LogView.axaml.cs",
-      "source_location": "L48"
     },
     {
       "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_clamptimerangetomax",
@@ -3479,8 +3227,8 @@
       "label": ".Apply()",
       "_callable": true,
       "_origin": "ast",
-      "community": 18,
-      "community_name": "EncodingSettingsDto",
+      "community": 17,
+      "community_name": "BaseballLoggerSettingsRuntime",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.Services",
@@ -3508,24 +3256,6 @@
       },
       "norm_label": ".apply()",
       "source_file": "MP4Tools/Services/EncodingSettingsRuntime.cs",
-      "source_location": "L9"
-    },
-    {
-      "id": "mp4tools_services_uibehaviorsettingsruntime_mp4tools_services_uibehaviorsettingsruntime_apply",
-      "label": ".Apply()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 18,
-      "community_name": "EncodingSettingsDto",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.Services",
-        "scope_chain": [
-          "s0"
-        ]
-      },
-      "norm_label": ".apply()",
-      "source_file": "MP4Tools/Services/UiBehaviorSettingsRuntime.cs",
       "source_location": "L9"
     },
     {
@@ -3699,68 +3429,6 @@
       "norm_label": ".acceptdroppedfolder()",
       "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
       "source_location": "L939"
-    },
-    {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_acceptdroppedvideofile",
-      "label": ".AcceptDroppedVideoFile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 2,
-      "community_name": "TrimView",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s433"
-        ]
-      },
-      "norm_label": ".acceptdroppedvideofile()",
-      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L949"
-    },
-    {
-      "id": "mp4tools_viewmodels_mp4viewmodelbase_mp4tools_mp4viewmodelbase_setfile",
-      "label": ".SetFile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 2,
-      "community_name": "TrimView",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools",
-        "scope_chain": [
-          "s221"
-        ]
-      },
-      "norm_label": ".setfile()",
-      "source_file": "MP4Tools/ViewModels/MP4ViewModelBase.cs",
-      "source_location": "L143"
-    },
-    {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_acceptdroppedvideofile",
-      "label": ".AcceptDroppedVideoFile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 2,
-      "community_name": "TrimView",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s376"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Exists",
-            "receiver_type": "File",
-            "lang": "csharp",
-            "line": "L307"
-          }
-        ]
-      },
-      "norm_label": ".acceptdroppedvideofile()",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L305"
     },
     {
       "id": "mp4tools_views_combineview_axaml_mp4tools_views_combineview_ondragover",
@@ -4197,236 +3865,264 @@
       "source_location": "L64"
     },
     {
-      "id": "mp4tools_logger_mp4tools_logger_log",
-      "label": ".Log()",
+      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_contenttypeforextension",
+      "label": ".ContentTypeForExtension()",
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": ".Log",
+      "community_name": ".CreateAsync",
       "file_type": "code",
       "metadata": {
-        "namespace": "MP4Tools",
+        "namespace": "MP4ToolsLib",
         "scope_chain": [
-          "s15"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Invoke",
-            "receiver_type": "LogMessageReceived?",
-            "lang": "csharp",
-            "line": "L11"
-          }
+          "s164"
         ]
       },
-      "norm_label": ".log()",
-      "source_file": "MP4Tools/Logger.cs",
-      "source_location": "L9"
+      "norm_label": ".contenttypeforextension()",
+      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "source_location": "L223"
     },
     {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_clear",
-      "label": ".Clear()",
+      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_createasync",
+      "label": ".CreateAsync()",
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": ".Log",
+      "community_name": ".CreateAsync",
       "file_type": "code",
       "metadata": {
-        "namespace": "MP4Tools.ViewModels",
+        "namespace": "MP4ToolsLib",
         "scope_chain": [
-          "s376"
-        ]
-      },
-      "norm_label": ".clear()",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L47"
-    },
-    {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_cleartimeranges",
-      "label": ".ClearTimeRanges()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 22,
-      "community_name": ".Log",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s376"
-        ]
-      },
-      "norm_label": ".cleartimeranges()",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L779"
-    },
-    {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_importtrimfile",
-      "label": ".ImportTrimFile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 22,
-      "community_name": ".Log",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s376"
+          "s164"
         ],
         "unresolved_calls": [
           {
             "callee": "Exists",
             "receiver_type": "File",
             "lang": "csharp",
-            "line": "L864"
+            "line": "L91"
           },
           {
-            "callee": "Deserialize",
-            "receiver_type": "JsonSerializer",
+            "callee": "IndexOf",
+            "receiver_type": "Array",
             "lang": "csharp",
-            "line": "L868"
+            "line": "L95"
           },
           {
-            "callee": "ReadAllText",
-            "receiver_type": "File",
+            "callee": "Add",
+            "receiver_type": "MultipartFormDataContent",
             "lang": "csharp",
-            "line": "L868"
+            "line": "L111"
           },
-          {
-            "callee": "WriteLine",
-            "receiver_type": "Debug",
-            "lang": "csharp",
-            "line": "L894"
-          }
-        ]
-      },
-      "norm_label": ".importtrimfile()",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L862"
-    },
-    {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_israngewithininputbounds",
-      "label": ".IsRangeWithinInputBounds()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 22,
-      "community_name": ".Log",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s376"
-        ]
-      },
-      "norm_label": ".israngewithininputbounds()",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L834"
-    },
-    {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_oninputpathset",
-      "label": ".OnInputPathSet()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 22,
-      "community_name": ".Log",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s376"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "WriteLine",
-            "receiver_type": "Debug",
-            "lang": "csharp",
-            "line": "L299"
-          }
-        ]
-      },
-      "norm_label": ".oninputpathset()",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L290"
-    },
-    {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_readfileinfoasync",
-      "label": ".ReadFileInfoAsync()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 22,
-      "community_name": ".Log",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s376"
-        ],
-        "unresolved_calls": [
           {
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L933"
+            "line": "L116"
           },
           {
-            "callee": "FromSeconds",
-            "receiver_type": "TimeSpan",
+            "callee": "ReadAllBytesAsync",
+            "receiver_type": "File",
             "lang": "csharp",
-            "line": "L934"
+            "line": "L132"
           },
           {
-            "callee": "Floor",
-            "receiver_type": "Math",
+            "callee": "SendAsync",
+            "receiver_type": "HttpClient",
             "lang": "csharp",
-            "line": "L934"
-          },
-          {
-            "callee": "Range",
-            "receiver_type": "Enumerable",
-            "lang": "csharp",
-            "line": "L942"
-          },
-          {
-            "callee": "Min",
-            "receiver_type": "Math",
-            "lang": "csharp",
-            "line": "L948"
-          },
-          {
-            "callee": "WriteLine",
-            "receiver_type": "Debug",
-            "lang": "csharp",
-            "line": "L954"
+            "line": "L145"
           }
         ]
       },
-      "norm_label": ".readfileinfoasync()",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L912"
+      "norm_label": ".createasync()",
+      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "source_location": "L70"
     },
     {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_refreshtrimavailability",
-      "label": ".RefreshTrimAvailability()",
+      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_getstring",
+      "label": ".GetString()",
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": ".Log",
+      "community_name": ".CreateAsync",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s164"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "TryGetProperty",
+            "receiver_type": "JsonElement",
+            "lang": "csharp",
+            "line": "L254"
+          }
+        ]
+      },
+      "norm_label": ".getstring()",
+      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "source_location": "L252"
+    },
+    {
+      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_normalizebaseuri",
+      "label": ".NormalizeBaseUri()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 22,
+      "community_name": ".CreateAsync",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s164"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "TryCreate",
+            "receiver_type": "Uri",
+            "lang": "csharp",
+            "line": "L213"
+          }
+        ]
+      },
+      "norm_label": ".normalizebaseuri()",
+      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "source_location": "L210"
+    },
+    {
+      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_parsecreateresult",
+      "label": ".ParseCreateResult()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 22,
+      "community_name": ".CreateAsync",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s164"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Parse",
+            "receiver_type": "JsonDocument",
+            "lang": "csharp",
+            "line": "L172"
+          }
+        ]
+      },
+      "norm_label": ".parsecreateresult()",
+      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "source_location": "L165"
+    },
+    {
+      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_tryreaderror",
+      "label": ".TryReadError()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 22,
+      "community_name": ".CreateAsync",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s164"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Parse",
+            "receiver_type": "JsonDocument",
+            "lang": "csharp",
+            "line": "L240"
+          }
+        ]
+      },
+      "norm_label": ".tryreaderror()",
+      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "source_location": "L234"
+    },
+    {
+      "id": "mp4tools_services_uibehaviorsettingsruntime_mp4tools_services_uibehaviorsettingsruntime_apply",
+      "label": ".Apply()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 23,
+      "community_name": "UiBehaviorSettingsRuntime",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.Services",
+        "scope_chain": [
+          "s0"
+        ]
+      },
+      "norm_label": ".apply()",
+      "source_file": "MP4Tools/Services/UiBehaviorSettingsRuntime.cs",
+      "source_location": "L9"
+    },
+    {
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_notifycommandscanexecutechanged",
+      "label": ".NotifyCommandsCanExecuteChanged()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "CombineView",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
         "scope_chain": [
-          "s376"
+          "s433"
         ],
         "unresolved_calls": [
           {
-            "callee": "Exists",
-            "receiver_type": "File",
+            "callee": "NotifyCanExecuteChanged",
+            "receiver_type": "CombineCommand?",
             "lang": "csharp",
-            "line": "L798"
+            "line": "L252"
+          },
+          {
+            "callee": "NotifyCanExecuteChanged",
+            "receiver_type": "RemoveSelectedFileCommand?",
+            "lang": "csharp",
+            "line": "L253"
           }
         ]
       },
-      "norm_label": ".refreshtrimavailability()",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L793"
+      "norm_label": ".notifycommandscanexecutechanged()",
+      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L248"
+    },
+    {
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_syncselectedinputfiles",
+      "label": ".SyncSelectedInputFiles()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "CombineView",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s433"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Clear",
+            "receiver_type": "List",
+            "lang": "csharp",
+            "line": "L149"
+          },
+          {
+            "callee": "Add",
+            "receiver_type": "List",
+            "lang": "csharp",
+            "line": "L155"
+          }
+        ]
+      },
+      "norm_label": ".syncselectedinputfiles()",
+      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L147"
     },
     {
       "id": "mp4tools_views_combineview_axaml_mp4tools_views_combineview_beginreorder",
@@ -4759,6 +4455,24 @@
       "source_location": "L126"
     },
     {
+      "id": "mp4tools_views_combineview_axaml_mp4tools_views_combineview_oninputfilesselectionchanged",
+      "label": ".OnInputFilesSelectionChanged()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "CombineView",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.Views",
+        "scope_chain": [
+          "s315"
+        ]
+      },
+      "norm_label": ".oninputfilesselectionchanged()",
+      "source_file": "MP4Tools/Views/CombineView.axaml.cs",
+      "source_location": "L54"
+    },
+    {
       "id": "mp4tools_views_combineview_axaml_mp4tools_views_combineview_onlistboxitempointerpressed",
       "label": ".OnListBoxItemPointerPressed()",
       "_callable": true,
@@ -5017,86 +4731,148 @@
       "source_location": "L192"
     },
     {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_notifycommandscanexecutechanged",
-      "label": ".NotifyCommandsCanExecuteChanged()",
+      "id": "mp4toolslib_combinefile_mp4toolslib_combinefile_tostring",
+      "label": ".ToString()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "CombineView",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s114"
+        ]
+      },
+      "norm_label": ".tostring()",
+      "source_file": "MP4ToolsLib/CombineFile.cs",
+      "source_location": "L22"
+    },
+    {
+      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_applyfrom",
+      "label": ".ApplyFrom()",
       "_callable": true,
       "_origin": "ast",
       "community": 25,
-      "community_name": ".SyncSelectedInputFiles",
+      "community_name": "OptionsViewModel",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
         "scope_chain": [
-          "s433"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "NotifyCanExecuteChanged",
-            "receiver_type": "CombineCommand?",
-            "lang": "csharp",
-            "line": "L252"
-          },
-          {
-            "callee": "NotifyCanExecuteChanged",
-            "receiver_type": "RemoveSelectedFileCommand?",
-            "lang": "csharp",
-            "line": "L253"
-          }
+          "s280"
         ]
       },
-      "norm_label": ".notifycommandscanexecutechanged()",
-      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L248"
+      "norm_label": ".applyfrom()",
+      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
+      "source_location": "L24"
     },
     {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_syncselectedinputfiles",
-      "label": ".SyncSelectedInputFiles()",
+      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_browsedefaultoutputfolderasync",
+      "label": ".BrowseDefaultOutputFolderAsync()",
       "_callable": true,
       "_origin": "ast",
       "community": 25,
-      "community_name": ".SyncSelectedInputFiles",
+      "community_name": "OptionsViewModel",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
         "scope_chain": [
-          "s433"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Clear",
-            "receiver_type": "List",
-            "lang": "csharp",
-            "line": "L149"
-          },
-          {
-            "callee": "Add",
-            "receiver_type": "List",
-            "lang": "csharp",
-            "line": "L155"
-          }
+          "s280"
         ]
       },
-      "norm_label": ".syncselectedinputfiles()",
-      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L147"
+      "norm_label": ".browsedefaultoutputfolderasync()",
+      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
+      "source_location": "L70"
     },
     {
-      "id": "mp4tools_views_combineview_axaml_mp4tools_views_combineview_oninputfilesselectionchanged",
-      "label": ".OnInputFilesSelectionChanged()",
+      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_browsetempfolderasync",
+      "label": ".BrowseTempFolderAsync()",
       "_callable": true,
       "_origin": "ast",
       "community": 25,
-      "community_name": ".SyncSelectedInputFiles",
+      "community_name": "OptionsViewModel",
       "file_type": "code",
       "metadata": {
-        "namespace": "MP4Tools.Views",
+        "namespace": "MP4Tools.ViewModels",
         "scope_chain": [
-          "s315"
+          "s280"
         ]
       },
-      "norm_label": ".oninputfilesselectionchanged()",
-      "source_file": "MP4Tools/Views/CombineView.axaml.cs",
-      "source_location": "L54"
+      "norm_label": ".browsetempfolderasync()",
+      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
+      "source_location": "L102"
+    },
+    {
+      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_cleardefaultoutputfolderpath",
+      "label": ".ClearDefaultOutputFolderPath()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "OptionsViewModel",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s280"
+        ]
+      },
+      "norm_label": ".cleardefaultoutputfolderpath()",
+      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
+      "source_location": "L96"
+    },
+    {
+      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_cleartempfolderpath",
+      "label": ".ClearTempFolderPath()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "OptionsViewModel",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s280"
+        ]
+      },
+      "norm_label": ".cleartempfolderpath()",
+      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
+      "source_location": "L175"
+    },
+    {
+      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_onsettingschanged",
+      "label": ".OnSettingsChanged()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "OptionsViewModel",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s280"
+        ]
+      },
+      "norm_label": ".onsettingschanged()",
+      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
+      "source_location": "L22"
+    },
+    {
+      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_toggleapikeyvisibility",
+      "label": ".ToggleApiKeyVisibility()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "OptionsViewModel",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s280"
+        ]
+      },
+      "norm_label": ".toggleapikeyvisibility()",
+      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
+      "source_location": "L169"
     },
     {
       "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_evaluatecancombinefiles",
@@ -5242,75 +5018,19 @@
             "callee": "Serialize",
             "receiver_type": "JsonSerializer",
             "lang": "csharp",
-            "line": "L908"
+            "line": "L910"
           },
           {
             "callee": "WriteAllText",
             "receiver_type": "File",
             "lang": "csharp",
-            "line": "L909"
+            "line": "L911"
           }
         ]
       },
       "norm_label": ".exportstate()",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L900"
-    },
-    {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_reporttrimstep",
-      "label": ".ReportTrimStep()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "ExportTrimState",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s376"
-        ]
-      },
-      "norm_label": ".reporttrimstep()",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L38"
-    },
-    {
-      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_trimandcombineasync",
-      "label": ".TrimAndCombineAsync()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "ExportTrimState",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s376"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Add",
-            "receiver_type": "List",
-            "lang": "csharp",
-            "line": "L326"
-          },
-          {
-            "callee": "Run",
-            "receiver_type": "Task",
-            "lang": "csharp",
-            "line": "L334"
-          },
-          {
-            "callee": "WriteAllLines",
-            "receiver_type": "File",
-            "lang": "csharp",
-            "line": "L354"
-          }
-        ]
-      },
-      "norm_label": ".trimandcombineasync()",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L314"
+      "source_location": "L902"
     },
     {
       "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_writetrimexport",
@@ -5328,7 +5048,7 @@
       },
       "norm_label": ".writetrimexport()",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L774"
+      "source_location": "L776"
     },
     {
       "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_isprocessabletrimrange",
@@ -5348,13 +5068,31 @@
             "callee": "Exists",
             "receiver_type": "File",
             "lang": "csharp",
-            "line": "L811"
+            "line": "L813"
           }
         ]
       },
       "norm_label": ".isprocessabletrimrange()",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L806"
+      "source_location": "L808"
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_israngewithininputbounds",
+      "label": ".IsRangeWithinInputBounds()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "StartStopRange",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s376"
+        ]
+      },
+      "norm_label": ".israngewithininputbounds()",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L836"
     },
     {
       "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_resolverangeinputpath",
@@ -5372,7 +5110,7 @@
       },
       "norm_label": ".resolverangeinputpath()",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L801"
+      "source_location": "L803"
     },
     {
       "id": "mp4toolslib_ranges_mp4toolslib_startstoprange_isvalidrange",
@@ -5411,12 +5149,92 @@
       "source_location": "L51"
     },
     {
+      "id": "mp4toolslib_timerange_mp4toolslib_timerange_asinputparameterstring",
+      "label": ".AsInputParameterString()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "TimeRange",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s125"
+        ]
+      },
+      "norm_label": ".asinputparameterstring()",
+      "source_file": "MP4ToolsLib/TimeRange.cs",
+      "source_location": "L50"
+    },
+    {
+      "id": "mp4toolslib_timerange_mp4toolslib_timerange_clone",
+      "label": ".Clone()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "TimeRange",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s125"
+        ]
+      },
+      "norm_label": ".clone()",
+      "source_file": "MP4ToolsLib/TimeRange.cs",
+      "source_location": "L60"
+    },
+    {
+      "id": "mp4toolslib_timerange_mp4toolslib_timerange_tostring",
+      "label": ".ToString()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "TimeRange",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s125"
+        ]
+      },
+      "norm_label": ".tostring()",
+      "source_file": "MP4ToolsLib/TimeRange.cs",
+      "source_location": "L55"
+    },
+    {
+      "id": "mp4tools_logger_mp4tools_logger_log",
+      "label": ".Log()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools",
+        "scope_chain": [
+          "s15"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Invoke",
+            "receiver_type": "LogMessageReceived?",
+            "lang": "csharp",
+            "line": "L11"
+          }
+        ]
+      },
+      "norm_label": ".log()",
+      "source_file": "MP4Tools/Logger.cs",
+      "source_location": "L9"
+    },
+    {
       "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_buildgameinfooutputfilename",
       "label": ".BuildGameInfoOutputFileName()",
       "_callable": true,
       "_origin": "ast",
-      "community": 29,
-      "community_name": ".BuildGameInfoOutputFileName",
+      "community": 3,
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
@@ -5429,30 +5247,50 @@
       "source_location": "L846"
     },
     {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_onsettingsapplied",
-      "label": ".OnSettingsApplied()",
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_combine",
+      "label": ".Combine()",
       "_callable": true,
       "_origin": "ast",
-      "community": 29,
-      "community_name": ".BuildGameInfoOutputFileName",
+      "community": 3,
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
         "scope_chain": [
           "s433"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Enqueue",
+            "receiver_type": "ConcurrentQueue",
+            "lang": "csharp",
+            "line": "L1001"
+          },
+          {
+            "callee": "WriteAllLines",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L1031"
+          },
+          {
+            "callee": "ToArray",
+            "receiver_type": "ConcurrentQueue",
+            "lang": "csharp",
+            "line": "L1031"
+          }
         ]
       },
-      "norm_label": ".onsettingsapplied()",
+      "norm_label": ".combine()",
       "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L788"
+      "source_location": "L991"
     },
     {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_updateoutputpathfromgameinfo",
-      "label": ".UpdateOutputPathFromGameInfo()",
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_combineinternal",
+      "label": ".CombineInternal()",
       "_callable": true,
       "_origin": "ast",
-      "community": 29,
-      "community_name": ".BuildGameInfoOutputFileName",
+      "community": 3,
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
@@ -5464,51 +5302,121 @@
             "callee": "Exists",
             "receiver_type": "File",
             "lang": "csharp",
-            "line": "L813"
-          }
-        ]
-      },
-      "norm_label": ".updateoutputpathfromgameinfo()",
-      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L793"
-    },
-    {
-      "id": "mp4toolslib_fileutils_mp4toolslib_fileutils_buildgameinfooutputfilename",
-      "label": ".BuildGameInfoOutputFileName()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 29,
-      "community_name": ".BuildGameInfoOutputFileName",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s69"
-        ],
-        "unresolved_calls": [
+            "line": "L1069"
+          },
+          {
+            "callee": "AddRange",
+            "receiver_type": "List",
+            "lang": "csharp",
+            "line": "L1101"
+          },
+          {
+            "callee": "WhenAll",
+            "receiver_type": "Task",
+            "lang": "csharp",
+            "line": "L1109"
+          },
+          {
+            "callee": "Select",
+            "receiver_type": "List",
+            "lang": "csharp",
+            "line": "L1109"
+          },
+          {
+            "callee": "ThrowIfCancellationRequested",
+            "receiver_type": "CancellationToken",
+            "lang": "csharp",
+            "line": "L1113"
+          },
+          {
+            "callee": "AsInputParameterString",
+            "receiver_type": "StartRange",
+            "lang": "csharp",
+            "line": "L1147"
+          },
+          {
+            "callee": "Trim",
+            "receiver_type": "IntroTitle?",
+            "lang": "csharp",
+            "line": "L1158"
+          },
+          {
+            "callee": "Trim",
+            "receiver_type": "IntroSubtitle?",
+            "lang": "csharp",
+            "line": "L1159"
+          },
+          {
+            "callee": "Trim",
+            "receiver_type": "IntroDetails?",
+            "lang": "csharp",
+            "line": "L1160"
+          },
+          {
+            "callee": "First",
+            "receiver_type": "List",
+            "lang": "csharp",
+            "line": "L1172"
+          },
+          {
+            "callee": "NewGuid",
+            "receiver_type": "Guid",
+            "lang": "csharp",
+            "line": "L1180"
+          },
           {
             "callee": "Add",
             "receiver_type": "List",
             "lang": "csharp",
-            "line": "L34"
+            "line": "L1197"
+          },
+          {
+            "callee": "TryGetValue",
+            "receiver_type": "Dictionary",
+            "lang": "csharp",
+            "line": "L1212"
+          },
+          {
+            "callee": "FromSeconds",
+            "receiver_type": "TimeSpan",
+            "lang": "csharp",
+            "line": "L1216"
           },
           {
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L47"
+            "line": "L1227"
           },
           {
-            "callee": "Min",
-            "receiver_type": "Math",
+            "callee": "WriteAllLines",
+            "receiver_type": "File",
             "lang": "csharp",
-            "line": "L48"
+            "line": "L1246"
+          },
+          {
+            "callee": "Delete",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L1291"
+          },
+          {
+            "callee": "Move",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L1292"
+          },
+          {
+            "callee": "Remove",
+            "receiver_type": "List",
+            "lang": "csharp",
+            "line": "L1293"
           }
         ]
       },
-      "norm_label": ".buildgameinfooutputfilename()",
-      "source_file": "MP4ToolsLib/FileUtils.cs",
-      "source_location": "L23"
+      "norm_label": ".combineinternal()",
+      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L1049"
     },
     {
       "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_createboxscoresessionifneededasync",
@@ -5516,7 +5424,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
@@ -5548,7 +5456,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
@@ -5566,7 +5474,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
@@ -5592,7 +5500,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
@@ -5630,7 +5538,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
@@ -5648,7 +5556,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools.ViewModels",
@@ -5669,12 +5577,138 @@
       "source_location": "L1539"
     },
     {
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_writeoffsetrecordingjsonifneededasync",
+      "label": ".WriteOffsetRecordingJsonIfNeededAsync()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s433"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Trim",
+            "receiver_type": "RecordingJsonPath?",
+            "lang": "csharp",
+            "line": "L1478"
+          }
+        ]
+      },
+      "norm_label": ".writeoffsetrecordingjsonifneededasync()",
+      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L1473"
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_createtrimoutputpath",
+      "label": ".CreateTrimOutputPath()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s376"
+        ]
+      },
+      "norm_label": ".createtrimoutputpath()",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L816"
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_oninputpathset",
+      "label": ".OnInputPathSet()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s376"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "WriteLine",
+            "receiver_type": "Debug",
+            "lang": "csharp",
+            "line": "L299"
+          }
+        ]
+      },
+      "norm_label": ".oninputpathset()",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L290"
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_readfileinfoasync",
+      "label": ".ReadFileInfoAsync()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s376"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Max",
+            "receiver_type": "Math",
+            "lang": "csharp",
+            "line": "L935"
+          },
+          {
+            "callee": "FromSeconds",
+            "receiver_type": "TimeSpan",
+            "lang": "csharp",
+            "line": "L936"
+          },
+          {
+            "callee": "Floor",
+            "receiver_type": "Math",
+            "lang": "csharp",
+            "line": "L936"
+          },
+          {
+            "callee": "Range",
+            "receiver_type": "Enumerable",
+            "lang": "csharp",
+            "line": "L944"
+          },
+          {
+            "callee": "Min",
+            "receiver_type": "Math",
+            "lang": "csharp",
+            "line": "L950"
+          },
+          {
+            "callee": "WriteLine",
+            "receiver_type": "Debug",
+            "lang": "csharp",
+            "line": "L956"
+          }
+        ]
+      },
+      "norm_label": ".readfileinfoasync()",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L914"
+    },
+    {
       "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_cancreate",
       "label": ".CanCreate()",
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -5687,190 +5721,12 @@
       "source_location": "L48"
     },
     {
-      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_contenttypeforextension",
-      "label": ".ContentTypeForExtension()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s164"
-        ]
-      },
-      "norm_label": ".contenttypeforextension()",
-      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
-      "source_location": "L223"
-    },
-    {
-      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_createasync",
-      "label": ".CreateAsync()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s164"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Exists",
-            "receiver_type": "File",
-            "lang": "csharp",
-            "line": "L91"
-          },
-          {
-            "callee": "IndexOf",
-            "receiver_type": "Array",
-            "lang": "csharp",
-            "line": "L95"
-          },
-          {
-            "callee": "Add",
-            "receiver_type": "MultipartFormDataContent",
-            "lang": "csharp",
-            "line": "L111"
-          },
-          {
-            "callee": "Max",
-            "receiver_type": "Math",
-            "lang": "csharp",
-            "line": "L116"
-          },
-          {
-            "callee": "ReadAllBytesAsync",
-            "receiver_type": "File",
-            "lang": "csharp",
-            "line": "L132"
-          },
-          {
-            "callee": "SendAsync",
-            "receiver_type": "HttpClient",
-            "lang": "csharp",
-            "line": "L145"
-          }
-        ]
-      },
-      "norm_label": ".createasync()",
-      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
-      "source_location": "L70"
-    },
-    {
-      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_getstring",
-      "label": ".GetString()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s164"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "TryGetProperty",
-            "receiver_type": "JsonElement",
-            "lang": "csharp",
-            "line": "L254"
-          }
-        ]
-      },
-      "norm_label": ".getstring()",
-      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
-      "source_location": "L252"
-    },
-    {
-      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_normalizebaseuri",
-      "label": ".NormalizeBaseUri()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s164"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "TryCreate",
-            "receiver_type": "Uri",
-            "lang": "csharp",
-            "line": "L213"
-          }
-        ]
-      },
-      "norm_label": ".normalizebaseuri()",
-      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
-      "source_location": "L210"
-    },
-    {
-      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_parsecreateresult",
-      "label": ".ParseCreateResult()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s164"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Parse",
-            "receiver_type": "JsonDocument",
-            "lang": "csharp",
-            "line": "L172"
-          }
-        ]
-      },
-      "norm_label": ".parsecreateresult()",
-      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
-      "source_location": "L165"
-    },
-    {
-      "id": "mp4toolslib_boxscoresessioncreator_mp4toolslib_boxscoresessioncreator_tryreaderror",
-      "label": ".TryReadError()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s164"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Parse",
-            "receiver_type": "JsonDocument",
-            "lang": "csharp",
-            "line": "L240"
-          }
-        ]
-      },
-      "norm_label": ".tryreaderror()",
-      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
-      "source_location": "L234"
-    },
-    {
       "id": "mp4toolslib_boxscoreuploader_mp4toolslib_boxscoreuploader_canupload",
       "label": ".CanUpload()",
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -5897,12 +5753,82 @@
       "source_location": "L34"
     },
     {
+      "id": "mp4toolslib_fileutils_mp4toolslib_fileutils_buildgameinfooutputfilename",
+      "label": ".BuildGameInfoOutputFileName()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s69"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Add",
+            "receiver_type": "List",
+            "lang": "csharp",
+            "line": "L34"
+          },
+          {
+            "callee": "Max",
+            "receiver_type": "Math",
+            "lang": "csharp",
+            "line": "L47"
+          },
+          {
+            "callee": "Min",
+            "receiver_type": "Math",
+            "lang": "csharp",
+            "line": "L48"
+          }
+        ]
+      },
+      "norm_label": ".buildgameinfooutputfilename()",
+      "source_file": "MP4ToolsLib/FileUtils.cs",
+      "source_location": "L23"
+    },
+    {
+      "id": "mp4toolslib_fileutils_mp4toolslib_fileutils_trydeletefile",
+      "label": ".TryDeleteFile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s69"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Exists",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L13"
+          },
+          {
+            "callee": "Delete",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L15"
+          }
+        ]
+      },
+      "norm_label": ".trydeletefile()",
+      "source_file": "MP4ToolsLib/FileUtils.cs",
+      "source_location": "L9"
+    },
+    {
       "id": "mp4toolslib_modifiedrecordinguploader_mp4toolslib_modifiedrecordinguploader_canuploadfromsource",
       "label": ".CanUploadFromSource()",
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -5928,7 +5854,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -5954,7 +5880,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -5972,7 +5898,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -5998,7 +5924,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -6024,7 +5950,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -6042,7 +5968,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -6074,7 +6000,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -6100,7 +6026,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -6126,7 +6052,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -6145,6 +6071,138 @@
       "norm_label": ".uploadmodifiedasync()",
       "source_file": "MP4ToolsLib/ModifiedRecordingUploader.cs",
       "source_location": "L78"
+    },
+    {
+      "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper_deletetemporarydirectoryunlessretained",
+      "label": ".DeleteTemporaryDirectoryUnlessRetained()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s33"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Exists",
+            "receiver_type": "Directory",
+            "lang": "csharp",
+            "line": "L57"
+          },
+          {
+            "callee": "Delete",
+            "receiver_type": "Directory",
+            "lang": "csharp",
+            "line": "L58"
+          }
+        ]
+      },
+      "norm_label": ".deletetemporarydirectoryunlessretained()",
+      "source_file": "MP4ToolsLib/TempPathHelper.cs",
+      "source_location": "L51"
+    },
+    {
+      "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper_deletetemporaryfileunlessretained",
+      "label": ".DeleteTemporaryFileUnlessRetained()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s33"
+        ]
+      },
+      "norm_label": ".deletetemporaryfileunlessretained()",
+      "source_file": "MP4ToolsLib/TempPathHelper.cs",
+      "source_location": "L44"
+    },
+    {
+      "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper_gettempfilename",
+      "label": ".GetTempFileName()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s33"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "NewGuid",
+            "receiver_type": "Guid",
+            "lang": "csharp",
+            "line": "L41"
+          }
+        ]
+      },
+      "norm_label": ".gettempfilename()",
+      "source_file": "MP4ToolsLib/TempPathHelper.cs",
+      "source_location": "L39"
+    },
+    {
+      "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper_gettemppath",
+      "label": ".GetTempPath()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s33"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Exists",
+            "receiver_type": "Directory",
+            "lang": "csharp",
+            "line": "L28"
+          },
+          {
+            "callee": "CreateDirectory",
+            "receiver_type": "Directory",
+            "lang": "csharp",
+            "line": "L29"
+          },
+          {
+            "callee": "WriteLine",
+            "receiver_type": "Console",
+            "lang": "csharp",
+            "line": "L33"
+          }
+        ]
+      },
+      "norm_label": ".gettemppath()",
+      "source_file": "MP4ToolsLib/TempPathHelper.cs",
+      "source_location": "L20"
+    },
+    {
+      "id": "mp4toolslib_timerange_mp4toolslib_timerange_fromstring",
+      "label": ".FromString()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s125"
+        ]
+      },
+      "norm_label": ".fromstring()",
+      "source_file": "MP4ToolsLib/TimeRange.cs",
+      "source_location": "L70"
     },
     {
       "id": "mp4tools_app_axaml_mp4tools_app_initialize",
@@ -6196,7 +6254,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 32,
-      "community_name": "ViewLocator",
+      "community_name": "MP4Tools",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools",
@@ -6228,7 +6286,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 32,
-      "community_name": "ViewLocator",
+      "community_name": "MP4Tools",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4Tools",
@@ -6241,35 +6299,193 @@
       "source_location": "L33"
     },
     {
-      "id": "mp4toolslib_fileutils_mp4toolslib_fileutils_trydeletefile",
-      "label": ".TryDeleteFile()",
+      "id": "mp4tools_views_logview_axaml_mp4tools_views_logview_ondatacontextchanged",
+      "label": ".OnDataContextChanged()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "FileUtils",
+      "community_name": "LogView",
       "file_type": "code",
       "metadata": {
-        "namespace": "MP4ToolsLib",
+        "namespace": "MP4Tools.Views",
         "scope_chain": [
-          "s69"
+          "s109"
+        ]
+      },
+      "norm_label": ".ondatacontextchanged()",
+      "source_file": "MP4Tools/Views/LogView.axaml.cs",
+      "source_location": "L18"
+    },
+    {
+      "id": "mp4tools_views_logview_axaml_mp4tools_views_logview_ondetachedfromvisualtree",
+      "label": ".OnDetachedFromVisualTree()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "LogView",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.Views",
+        "scope_chain": [
+          "s109"
+        ]
+      },
+      "norm_label": ".ondetachedfromvisualtree()",
+      "source_file": "MP4Tools/Views/LogView.axaml.cs",
+      "source_location": "L29"
+    },
+    {
+      "id": "mp4tools_views_logview_axaml_mp4tools_views_logview_onlogcontentupdated",
+      "label": ".OnLogContentUpdated()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "LogView",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.Views",
+        "scope_chain": [
+          "s109"
+        ]
+      },
+      "norm_label": ".onlogcontentupdated()",
+      "source_file": "MP4Tools/Views/LogView.axaml.cs",
+      "source_location": "L40"
+    },
+    {
+      "id": "mp4tools_views_logview_axaml_mp4tools_views_logview_scrolllogtoend",
+      "label": ".ScrollLogToEnd()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "LogView",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.Views",
+        "scope_chain": [
+          "s109"
+        ]
+      },
+      "norm_label": ".scrolllogtoend()",
+      "source_file": "MP4Tools/Views/LogView.axaml.cs",
+      "source_location": "L48"
+    },
+    {
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_applydefaultskipranges",
+      "label": ".ApplyDefaultSkipRanges()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": ".ApplyDefaultSkipRanges",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s433"
+        ]
+      },
+      "norm_label": ".applydefaultskipranges()",
+      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L539"
+    },
+    {
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_canceledgedurationrefresh",
+      "label": ".CancelEdgeDurationRefresh()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": ".ApplyDefaultSkipRanges",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s433"
+        ]
+      },
+      "norm_label": ".canceledgedurationrefresh()",
+      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L399"
+    },
+    {
+      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_clear",
+      "label": ".Clear()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": ".ApplyDefaultSkipRanges",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s433"
         ],
         "unresolved_calls": [
+          {
+            "callee": "Clear",
+            "receiver_type": "ConcurrentDictionary",
+            "lang": "csharp",
+            "line": "L961"
+          }
+        ]
+      },
+      "norm_label": ".clear()",
+      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L958"
+    },
+    {
+      "id": "mp4tools_services_folderopener_mp4tools_services_folderopener_opencontainingfolderifexists",
+      "label": ".OpenContainingFolderIfExists()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 35,
+      "community_name": ".OpenContainingFolderIfExists",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.Services",
+        "scope_chain": [
+          "s58"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "GetFullPath",
+            "receiver_type": "Path",
+            "lang": "csharp",
+            "line": "L17"
+          },
           {
             "callee": "Exists",
             "receiver_type": "File",
             "lang": "csharp",
-            "line": "L13"
+            "line": "L24"
           },
           {
-            "callee": "Delete",
-            "receiver_type": "File",
+            "callee": "GetDirectoryName",
+            "receiver_type": "Path",
             "lang": "csharp",
-            "line": "L15"
+            "line": "L25"
+          },
+          {
+            "callee": "IsWindows",
+            "receiver_type": "OperatingSystem",
+            "lang": "csharp",
+            "line": "L32"
+          },
+          {
+            "callee": "Start",
+            "receiver_type": "Process",
+            "lang": "csharp",
+            "line": "L34"
+          },
+          {
+            "callee": "IsMacOS",
+            "receiver_type": "OperatingSystem",
+            "lang": "csharp",
+            "line": "L41"
           }
         ]
       },
-      "norm_label": ".trydeletefile()",
-      "source_file": "MP4ToolsLib/FileUtils.cs",
+      "norm_label": ".opencontainingfolderifexists()",
+      "source_file": "MP4Tools/Services/FolderOpener.cs",
       "source_location": "L9"
     },
     {
@@ -6879,68 +7095,6 @@
       "source_location": "L39"
     },
     {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_applydefaultskipranges",
-      "label": ".ApplyDefaultSkipRanges()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "CombineViewModel",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s433"
-        ]
-      },
-      "norm_label": ".applydefaultskipranges()",
-      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L539"
-    },
-    {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_canceledgedurationrefresh",
-      "label": ".CancelEdgeDurationRefresh()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "CombineViewModel",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s433"
-        ]
-      },
-      "norm_label": ".canceledgedurationrefresh()",
-      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L399"
-    },
-    {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_clear",
-      "label": ".Clear()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "CombineViewModel",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s433"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Clear",
-            "receiver_type": "ConcurrentDictionary",
-            "lang": "csharp",
-            "line": "L961"
-          }
-        ]
-      },
-      "norm_label": ".clear()",
-      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L958"
-    },
-    {
       "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_optinintrofromgameinfo",
       "label": ".OptInIntroFromGameInfo()",
       "_callable": true,
@@ -7027,32 +7181,6 @@
       "norm_label": ".updatesubtitlefromeventinfoanddate()",
       "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
       "source_location": "L824"
-    },
-    {
-      "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_writeoffsetrecordingjsonifneededasync",
-      "label": ".WriteOffsetRecordingJsonIfNeededAsync()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s433"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Trim",
-            "receiver_type": "RecordingJsonPath?",
-            "lang": "csharp",
-            "line": "L1478"
-          }
-        ]
-      },
-      "norm_label": ".writeoffsetrecordingjsonifneededasync()",
-      "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
-      "source_location": "L1473"
     },
     {
       "id": "mp4toolslib_recordingjsonelapsedoffset_mp4toolslib_recordingjsonelapsedoffset_addbookmark",
@@ -7537,76 +7665,40 @@
       "source_location": "L155"
     },
     {
-      "id": "mp4toolslib_timerange_mp4toolslib_timerange_asinputparameterstring",
-      "label": ".AsInputParameterString()",
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_clear",
+      "label": ".Clear()",
       "_callable": true,
       "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
+      "community": 7,
+      "community_name": "TrimViewModel",
       "file_type": "code",
       "metadata": {
-        "namespace": "MP4ToolsLib",
+        "namespace": "MP4Tools.ViewModels",
         "scope_chain": [
-          "s125"
+          "s376"
         ]
       },
-      "norm_label": ".asinputparameterstring()",
-      "source_file": "MP4ToolsLib/TimeRange.cs",
-      "source_location": "L50"
+      "norm_label": ".clear()",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L47"
     },
     {
-      "id": "mp4toolslib_timerange_mp4toolslib_timerange_clone",
-      "label": ".Clone()",
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_cleartimeranges",
+      "label": ".ClearTimeRanges()",
       "_callable": true,
       "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
+      "community": 7,
+      "community_name": "TrimViewModel",
       "file_type": "code",
       "metadata": {
-        "namespace": "MP4ToolsLib",
+        "namespace": "MP4Tools.ViewModels",
         "scope_chain": [
-          "s125"
+          "s376"
         ]
       },
-      "norm_label": ".clone()",
-      "source_file": "MP4ToolsLib/TimeRange.cs",
-      "source_location": "L60"
-    },
-    {
-      "id": "mp4toolslib_timerange_mp4toolslib_timerange_fromstring",
-      "label": ".FromString()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s125"
-        ]
-      },
-      "norm_label": ".fromstring()",
-      "source_file": "MP4ToolsLib/TimeRange.cs",
-      "source_location": "L70"
-    },
-    {
-      "id": "mp4toolslib_timerange_mp4toolslib_timerange_tostring",
-      "label": ".ToString()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s125"
-        ]
-      },
-      "norm_label": ".tostring()",
-      "source_file": "MP4ToolsLib/TimeRange.cs",
-      "source_location": "L55"
+      "norm_label": ".cleartimeranges()",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L781"
     },
     {
       "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_ensuretrimsegmentsfolder",
@@ -7633,6 +7725,76 @@
       "norm_label": ".ensuretrimsegmentsfolder()",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
       "source_location": "L638"
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_importtrimfile",
+      "label": ".ImportTrimFile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "TrimViewModel",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s376"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Exists",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L866"
+          },
+          {
+            "callee": "Deserialize",
+            "receiver_type": "JsonSerializer",
+            "lang": "csharp",
+            "line": "L870"
+          },
+          {
+            "callee": "ReadAllText",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L870"
+          },
+          {
+            "callee": "WriteLine",
+            "receiver_type": "Debug",
+            "lang": "csharp",
+            "line": "L896"
+          }
+        ]
+      },
+      "norm_label": ".importtrimfile()",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L864"
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_refreshtrimavailability",
+      "label": ".RefreshTrimAvailability()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "TrimViewModel",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s376"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Exists",
+            "receiver_type": "File",
+            "lang": "csharp",
+            "line": "L800"
+          }
+        ]
+      },
+      "norm_label": ".refreshtrimavailability()",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L795"
     },
     {
       "id": "mp4toolslib_boxscoreuploader_mp4toolslib_boxscoreuploader_contenttypeforextension",
@@ -8079,114 +8241,6 @@
       "source_location": "L98"
     },
     {
-      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_applyfrom",
-      "label": ".ApplyFrom()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s280"
-        ]
-      },
-      "norm_label": ".applyfrom()",
-      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
-      "source_location": "L24"
-    },
-    {
-      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_browsedefaultoutputfolderasync",
-      "label": ".BrowseDefaultOutputFolderAsync()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s280"
-        ]
-      },
-      "norm_label": ".browsedefaultoutputfolderasync()",
-      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
-      "source_location": "L70"
-    },
-    {
-      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_browsetempfolderasync",
-      "label": ".BrowseTempFolderAsync()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s280"
-        ]
-      },
-      "norm_label": ".browsetempfolderasync()",
-      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
-      "source_location": "L102"
-    },
-    {
-      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_cleardefaultoutputfolderpath",
-      "label": ".ClearDefaultOutputFolderPath()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s280"
-        ]
-      },
-      "norm_label": ".cleardefaultoutputfolderpath()",
-      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
-      "source_location": "L96"
-    },
-    {
-      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_cleartempfolderpath",
-      "label": ".ClearTempFolderPath()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s280"
-        ]
-      },
-      "norm_label": ".cleartempfolderpath()",
-      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
-      "source_location": "L175"
-    },
-    {
-      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_onsettingschanged",
-      "label": ".OnSettingsChanged()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s280"
-        ]
-      },
-      "norm_label": ".onsettingschanged()",
-      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
-      "source_location": "L22"
-    },
-    {
       "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_savesettings",
       "label": ".SaveSettings()",
       "_callable": true,
@@ -8231,24 +8285,6 @@
       "source_location": "L128"
     },
     {
-      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_toggleapikeyvisibility",
-      "label": ".ToggleApiKeyVisibility()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s280"
-        ]
-      },
-      "norm_label": ".toggleapikeyvisibility()",
-      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
-      "source_location": "L169"
-    },
-    {
       "id": "mp4toolslib_temppathhelper_mp4toolslib_temppathhelper_applyconfiguration",
       "label": ".ApplyConfiguration()",
       "_callable": true,
@@ -8285,6 +8321,28 @@
       "community_name": ".PrependIntroAsync",
       "file_type": "code",
       "norm_label": "cancellationtoken",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel_cs_list",
+      "label": "List",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": ".PrependIntroAsync",
+      "file_type": "code",
+      "norm_label": "list",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel_cs_task",
+      "label": "Task",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": ".PrependIntroAsync",
+      "file_type": "code",
+      "norm_label": "task",
       "source_file": "",
       "source_location": ""
     },
@@ -8336,18 +8394,7 @@
       },
       "norm_label": "isskipped",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L88"
-    },
-    {
-      "id": "mp4toolslib_introvideocomposerasync",
-      "label": "IntroVideoComposerAsync.cs",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": ".PrependIntroAsync",
-      "file_type": "code",
-      "norm_label": "introvideocomposerasync.cs",
-      "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
-      "source_location": "L1"
+      "source_location": "L89"
     },
     {
       "id": "mp4toolslib_introvideocomposerasync_cs_action",
@@ -8455,28 +8502,6 @@
       "source_location": "L1"
     },
     {
-      "id": "mp4toolslib_temppathhelper",
-      "label": "TempPathHelper.cs",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": ".PrependIntroAsync",
-      "file_type": "code",
-      "norm_label": "temppathhelper.cs",
-      "source_file": "MP4ToolsLib/TempPathHelper.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "concurrentqueue",
-      "label": "ConcurrentQueue",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "MP4ViewModelBase",
-      "file_type": "code",
-      "norm_label": "concurrentqueue",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
       "id": "mp4tools_viewmodels_mp4viewmodelbase_cs_cancellationtoken",
       "label": "CancellationToken",
       "_origin": "ast",
@@ -8517,6 +8542,17 @@
       "community_name": "MP4ViewModelBase",
       "file_type": "code",
       "norm_label": "process",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4tools_viewmodels_mp4viewmodelbase_cs_relaycommand",
+      "label": "RelayCommand",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "MP4ViewModelBase",
+      "file_type": "code",
+      "norm_label": "relaycommand",
       "source_file": "",
       "source_location": ""
     },
@@ -8864,7 +8900,7 @@
       "label": "CombineFile.cs",
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "norm_label": "combinefile.cs",
       "source_file": "MP4ToolsLib/CombineFile.cs",
@@ -8875,7 +8911,7 @@
       "label": "IEnumerable",
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "norm_label": "ienumerable",
       "source_file": "",
@@ -8886,7 +8922,7 @@
       "label": "IReadOnlyList",
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "norm_label": "ireadonlylist",
       "source_file": "",
@@ -8897,52 +8933,18 @@
       "label": "List",
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "norm_label": "list",
       "source_file": "",
       "source_location": ""
     },
     {
-      "id": "mp4toolslib_combinefile_mp4toolslib_combinefile_name",
-      "label": "Name",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "CombineFile",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s114"
-        ]
-      },
-      "norm_label": "name",
-      "source_file": "MP4ToolsLib/CombineFile.cs",
-      "source_location": "L19"
-    },
-    {
-      "id": "mp4toolslib_combinefile_mp4toolslib_combinefile_path",
-      "label": "Path",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "CombineFile",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s114"
-        ]
-      },
-      "norm_label": "path",
-      "source_file": "MP4ToolsLib/CombineFile.cs",
-      "source_location": "L20"
-    },
-    {
       "id": "mp4toolslib_combinefile_mp4toolslib_combinefilesortmode_creation",
       "label": "Creation",
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -8959,7 +8961,7 @@
       "label": "FileName",
       "_origin": "ast",
       "community": 10,
-      "community_name": "CombineFile",
+      "community_name": ".OnInputPathSet",
       "file_type": "code",
       "metadata": {
         "namespace": "MP4ToolsLib",
@@ -9306,15 +9308,15 @@
       "source_location": null
     },
     {
-      "id": "mp4tools_viewmodels_logviewmodel",
-      "label": "LogViewModel.cs",
+      "id": "concurrentqueue",
+      "label": "ConcurrentQueue",
       "_origin": "ast",
       "community": 14,
       "community_name": "LogViewModel",
       "file_type": "code",
-      "norm_label": "logviewmodel.cs",
-      "source_file": "MP4Tools/ViewModels/LogViewModel.cs",
-      "source_location": "L1"
+      "norm_label": "concurrentqueue",
+      "source_file": "",
+      "source_location": ""
     },
     {
       "id": "mp4tools_viewmodels_logviewmodel_cs_relaycommand",
@@ -9401,28 +9403,6 @@
       "source_location": "L39"
     },
     {
-      "id": "mp4tools_views_logview_axaml_cs_eventargs",
-      "label": "EventArgs",
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "LogViewModel",
-      "file_type": "code",
-      "norm_label": "eventargs",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4tools_views_optionsview_axaml",
-      "label": "OptionsView.axaml.cs",
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "LogViewModel",
-      "file_type": "code",
-      "norm_label": "optionsview.axaml.cs",
-      "source_file": "MP4Tools/Views/OptionsView.axaml.cs",
-      "source_location": "L1"
-    },
-    {
       "id": "mp4viewmodelbase",
       "label": "MP4ViewModelBase",
       "_origin": "ast",
@@ -9443,39 +9423,6 @@
       "norm_label": "stringbuilder",
       "source_file": "",
       "source_location": ""
-    },
-    {
-      "id": "usercontrol",
-      "label": "UserControl",
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "LogViewModel",
-      "file_type": "code",
-      "norm_label": "usercontrol",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "visualtreeattachmenteventargs",
-      "label": "VisualTreeAttachmentEventArgs",
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "LogViewModel",
-      "file_type": "code",
-      "norm_label": "visualtreeattachmenteventargs",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4tools_viewmodels_mainwindowviewmodel",
-      "label": "MainWindowViewModel.cs",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "MainWindowViewModel",
-      "file_type": "code",
-      "norm_label": "mainwindowviewmodel.cs",
-      "source_file": "MP4Tools/ViewModels/MainWindowViewModel.cs",
-      "source_location": "L1"
     },
     {
       "id": "mp4tools_viewmodels_mainwindowviewmodel_mp4tools_viewmodels_mainwindowviewmodel_combineviewmodel",
@@ -9803,17 +9750,6 @@
       "source_location": ""
     },
     {
-      "id": "mp4tools_viewmodels_mp4viewmodelbase_cs_relaycommand",
-      "label": "RelayCommand",
-      "_origin": "ast",
-      "community": 2,
-      "community_name": "TrimView",
-      "file_type": "code",
-      "norm_label": "relaycommand",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
       "id": "mp4tools_views_combineview_axaml_cs_drageventargs",
       "label": "DragEventArgs",
       "_origin": "ast",
@@ -9969,6 +9905,17 @@
       "source_location": ""
     },
     {
+      "id": "mp4tools_program",
+      "label": "Program.cs",
+      "_origin": "ast",
+      "community": 21,
+      "community_name": ".BuildAvaloniaApp",
+      "file_type": "code",
+      "norm_label": "program.cs",
+      "source_file": "MP4Tools/Program.cs",
+      "source_location": "L1"
+    },
+    {
       "id": "stathread",
       "label": "STAThread",
       "_origin": "ast",
@@ -9991,35 +9938,68 @@
       "source_location": ""
     },
     {
-      "id": "exception",
-      "label": "Exception",
+      "id": "mp4toolslib_boxscoresessioncreator",
+      "label": "BoxScoreSessionCreator.cs",
       "_origin": "ast",
       "community": 22,
-      "community_name": ".Log",
+      "community_name": ".CreateAsync",
       "file_type": "code",
-      "norm_label": "exception",
+      "norm_label": "boxscoresessioncreator.cs",
+      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "mp4toolslib_boxscoresessioncreator_cs_action",
+      "label": "Action",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": ".CreateAsync",
+      "file_type": "code",
+      "norm_label": "action",
       "source_file": "",
       "source_location": ""
     },
     {
-      "id": "mp4tools_logger",
-      "label": "Logger.cs",
+      "id": "mp4toolslib_boxscoresessioncreator_cs_cancellationtoken",
+      "label": "CancellationToken",
       "_origin": "ast",
       "community": 22,
-      "community_name": ".Log",
+      "community_name": ".CreateAsync",
       "file_type": "code",
-      "norm_label": "logger.cs",
-      "source_file": "MP4Tools/Logger.cs",
-      "source_location": "L1"
+      "norm_label": "cancellationtoken",
+      "source_file": "",
+      "source_location": ""
     },
     {
-      "id": "mp4tools_viewmodels_trimviewmodel_cs_task",
+      "id": "mp4toolslib_boxscoresessioncreator_cs_jsonelement",
+      "label": "JsonElement",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": ".CreateAsync",
+      "file_type": "code",
+      "norm_label": "jsonelement",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4toolslib_boxscoresessioncreator_cs_task",
       "label": "Task",
       "_origin": "ast",
       "community": 22,
-      "community_name": ".Log",
+      "community_name": ".CreateAsync",
       "file_type": "code",
       "norm_label": "task",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4toolslib_boxscoresessioncreator_cs_uri",
+      "label": "Uri",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": ".CreateAsync",
+      "file_type": "code",
+      "norm_label": "uri",
       "source_file": "",
       "source_location": ""
     },
@@ -10102,6 +10082,17 @@
       "source_location": ""
     },
     {
+      "id": "mp4tools_viewmodels_combineviewmodel_cs_ienumerable",
+      "label": "IEnumerable",
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "CombineView",
+      "file_type": "code",
+      "norm_label": "ienumerable",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
       "id": "mp4tools_views_combineview_axaml_cs_eventargs",
       "label": "EventArgs",
       "_origin": "ast",
@@ -10155,6 +10146,40 @@
       "norm_label": "routedeventargs",
       "source_file": "",
       "source_location": ""
+    },
+    {
+      "id": "mp4toolslib_combinefile_mp4toolslib_combinefile_name",
+      "label": "Name",
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "CombineView",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s114"
+        ]
+      },
+      "norm_label": "name",
+      "source_file": "MP4ToolsLib/CombineFile.cs",
+      "source_location": "L19"
+    },
+    {
+      "id": "mp4toolslib_combinefile_mp4toolslib_combinefile_path",
+      "label": "Path",
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "CombineView",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s114"
+        ]
+      },
+      "norm_label": "path",
+      "source_file": "MP4ToolsLib/CombineFile.cs",
+      "source_location": "L20"
     },
     {
       "id": "point",
@@ -10212,37 +10237,93 @@
       "source_location": ""
     },
     {
-      "id": "mp4tools_viewmodels_combineviewmodel_cs_ienumerable",
-      "label": "IEnumerable",
-      "_origin": "ast",
-      "community": 25,
-      "community_name": ".SyncSelectedInputFiles",
-      "file_type": "code",
-      "norm_label": "ienumerable",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
       "id": "selectionchangedeventargs",
       "label": "SelectionChangedEventArgs",
       "_origin": "ast",
-      "community": 25,
-      "community_name": ".SyncSelectedInputFiles",
+      "community": 24,
+      "community_name": "CombineView",
       "file_type": "code",
       "norm_label": "selectionchangedeventargs",
       "source_file": "",
       "source_location": ""
     },
     {
-      "id": "mp4tools_viewmodels_trimviewmodel_cs_list",
-      "label": "List",
+      "id": "mp4tools_viewmodels_optionsviewmodel_cs_eventargs",
+      "label": "EventArgs",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "OptionsViewModel",
+      "file_type": "code",
+      "norm_label": "eventargs",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4tools_viewmodels_optionsviewmodel_cs_relaycommand",
+      "label": "RelayCommand",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "OptionsViewModel",
+      "file_type": "code",
+      "norm_label": "relaycommand",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4tools_viewmodels_optionsviewmodel_cs_task",
+      "label": "Task",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "OptionsViewModel",
+      "file_type": "code",
+      "norm_label": "task",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_apikeypasswordchar",
+      "label": "ApiKeyPasswordChar",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "OptionsViewModel",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s280"
+        ]
+      },
+      "norm_label": "apikeypasswordchar",
+      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
+      "source_location": "L66"
+    },
+    {
+      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_settingsfilepathdisplay",
+      "label": "SettingsFilePathDisplay",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "OptionsViewModel",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4Tools.ViewModels",
+        "scope_chain": [
+          "s280"
+        ]
+      },
+      "norm_label": "settingsfilepathdisplay",
+      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
+      "source_location": "L68"
+    },
+    {
+      "id": "mp4tools_viewmodels_trimviewmodel",
+      "label": "TrimViewModel.cs",
       "_origin": "ast",
       "community": 27,
       "community_name": "ExportTrimState",
       "file_type": "code",
-      "norm_label": "list",
-      "source_file": "",
-      "source_location": ""
+      "norm_label": "trimviewmodel.cs",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L1"
     },
     {
       "id": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_exporttrimstate_inputfile",
@@ -10432,13 +10513,114 @@
       "source_location": "L33"
     },
     {
-      "id": "mp4toolslib_fileutils_cs_datetime",
-      "label": "DateTime",
+      "id": "inotifypropertychanged",
+      "label": "INotifyPropertyChanged",
       "_origin": "ast",
       "community": 29,
-      "community_name": ".BuildGameInfoOutputFileName",
+      "community_name": "TimeRange",
       "file_type": "code",
-      "norm_label": "datetime",
+      "norm_label": "inotifypropertychanged",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4toolslib_timerange",
+      "label": "TimeRange.cs",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "TimeRange",
+      "file_type": "code",
+      "norm_label": "timerange.cs",
+      "source_file": "MP4ToolsLib/TimeRange.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "mp4toolslib_timerange_cs_ireadonlylist",
+      "label": "IReadOnlyList",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "TimeRange",
+      "file_type": "code",
+      "norm_label": "ireadonlylist",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4toolslib_timerange_mp4toolslib_timerange_hours",
+      "label": "Hours",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "TimeRange",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s125"
+        ]
+      },
+      "norm_label": "hours",
+      "source_file": "MP4ToolsLib/TimeRange.cs",
+      "source_location": "L19"
+    },
+    {
+      "id": "mp4toolslib_timerange_mp4toolslib_timerange_minutes",
+      "label": "Minutes",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "TimeRange",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s125"
+        ]
+      },
+      "norm_label": "minutes",
+      "source_file": "MP4ToolsLib/TimeRange.cs",
+      "source_location": "L28"
+    },
+    {
+      "id": "mp4toolslib_timerange_mp4toolslib_timerange_range",
+      "label": "Range",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "TimeRange",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s125"
+        ]
+      },
+      "norm_label": "range",
+      "source_file": "MP4ToolsLib/TimeRange.cs",
+      "source_location": "L10"
+    },
+    {
+      "id": "mp4toolslib_timerange_mp4toolslib_timerange_totalseconds",
+      "label": "TotalSeconds",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "TimeRange",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "MP4ToolsLib",
+        "scope_chain": [
+          "s125"
+        ]
+      },
+      "norm_label": "totalseconds",
+      "source_file": "MP4ToolsLib/TimeRange.cs",
+      "source_location": "L48"
+    },
+    {
+      "id": "exception",
+      "label": "Exception",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "norm_label": "exception",
       "source_file": "",
       "source_location": ""
     },
@@ -10447,7 +10629,7 @@
       "label": "CancellationToken",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "norm_label": "cancellationtoken",
       "source_file": "",
@@ -10458,7 +10640,7 @@
       "label": "JsonNode",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "norm_label": "jsonnode",
       "source_file": "",
@@ -10469,75 +10651,31 @@
       "label": "Task",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "norm_label": "task",
       "source_file": "",
       "source_location": ""
     },
     {
-      "id": "mp4toolslib_boxscoresessioncreator",
-      "label": "BoxScoreSessionCreator.cs",
+      "id": "mp4toolslib_fileutils",
+      "label": "FileUtils.cs",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
-      "norm_label": "boxscoresessioncreator.cs",
-      "source_file": "MP4ToolsLib/BoxScoreSessionCreator.cs",
+      "norm_label": "fileutils.cs",
+      "source_file": "MP4ToolsLib/FileUtils.cs",
       "source_location": "L1"
     },
     {
-      "id": "mp4toolslib_boxscoresessioncreator_cs_action",
-      "label": "Action",
+      "id": "mp4toolslib_fileutils_cs_datetime",
+      "label": "DateTime",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
-      "norm_label": "action",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4toolslib_boxscoresessioncreator_cs_cancellationtoken",
-      "label": "CancellationToken",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "norm_label": "cancellationtoken",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4toolslib_boxscoresessioncreator_cs_jsonelement",
-      "label": "JsonElement",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "norm_label": "jsonelement",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4toolslib_boxscoresessioncreator_cs_task",
-      "label": "Task",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "norm_label": "task",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4toolslib_boxscoresessioncreator_cs_uri",
-      "label": "Uri",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
-      "file_type": "code",
-      "norm_label": "uri",
+      "norm_label": "datetime",
       "source_file": "",
       "source_location": ""
     },
@@ -10546,7 +10684,7 @@
       "label": "ModifiedRecordingUploader.cs",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "norm_label": "modifiedrecordinguploader.cs",
       "source_file": "MP4ToolsLib/ModifiedRecordingUploader.cs",
@@ -10557,7 +10695,7 @@
       "label": "Action",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "norm_label": "action",
       "source_file": "",
@@ -10568,7 +10706,7 @@
       "label": "CancellationToken",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "norm_label": "cancellationtoken",
       "source_file": "",
@@ -10579,7 +10717,7 @@
       "label": "JsonElement",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "norm_label": "jsonelement",
       "source_file": "",
@@ -10590,7 +10728,7 @@
       "label": "Task",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "norm_label": "task",
       "source_file": "",
@@ -10601,11 +10739,22 @@
       "label": "Uri",
       "_origin": "ast",
       "community": 3,
-      "community_name": ".CreateBoxScoreSessionIfNeededAsync",
+      "community_name": ".CombineInternal",
       "file_type": "code",
       "norm_label": "uri",
       "source_file": "",
       "source_location": ""
+    },
+    {
+      "id": "mp4toolslib_temppathhelper",
+      "label": "TempPathHelper.cs",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": ".CombineInternal",
+      "file_type": "code",
+      "norm_label": "temppathhelper.cs",
+      "source_file": "MP4ToolsLib/TempPathHelper.cs",
+      "source_location": "L1"
     },
     {
       "id": "csharp_namespace:188b23733fcafb4f",
@@ -10656,22 +10805,6 @@
       "type": "namespace"
     },
     {
-      "id": "csharp_namespace:bd82a23d174e62c4",
-      "label": "MP4Tools",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "MP4ToolsLib",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "MP4Tools"
-      },
-      "norm_label": "mp4tools",
-      "source_file": "MP4Tools/App.axaml.cs",
-      "source_location": "L10",
-      "type": "namespace"
-    },
-    {
       "id": "csharp_namespace:dea0eb14f53c6479",
       "label": "MP4ToolsLib",
       "_origin": "ast",
@@ -10699,39 +10832,6 @@
       "source_location": "L1"
     },
     {
-      "id": "mp4tools_program",
-      "label": "Program.cs",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "MP4ToolsLib",
-      "file_type": "code",
-      "norm_label": "program.cs",
-      "source_file": "MP4Tools/Program.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "mp4tools_services_appsettingsstore",
-      "label": "AppSettingsStore.cs",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "MP4ToolsLib",
-      "file_type": "code",
-      "norm_label": "appsettingsstore.cs",
-      "source_file": "MP4Tools/Services/AppSettingsStore.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "mp4tools_services_folderopener",
-      "label": "FolderOpener.cs",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "MP4ToolsLib",
-      "file_type": "code",
-      "norm_label": "folderopener.cs",
-      "source_file": "MP4Tools/Services/FolderOpener.cs",
-      "source_location": "L1"
-    },
-    {
       "id": "mp4tools_viewmodels_combineviewmodel",
       "label": "CombineViewModel.cs",
       "_origin": "ast",
@@ -10740,6 +10840,28 @@
       "file_type": "code",
       "norm_label": "combineviewmodel.cs",
       "source_file": "MP4Tools/ViewModels/CombineViewModel.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "mp4tools_viewmodels_logviewmodel",
+      "label": "LogViewModel.cs",
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "MP4ToolsLib",
+      "file_type": "code",
+      "norm_label": "logviewmodel.cs",
+      "source_file": "MP4Tools/ViewModels/LogViewModel.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "mp4tools_viewmodels_mainwindowviewmodel",
+      "label": "MainWindowViewModel.cs",
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "MP4ToolsLib",
+      "file_type": "code",
+      "norm_label": "mainwindowviewmodel.cs",
+      "source_file": "MP4Tools/ViewModels/MainWindowViewModel.cs",
       "source_location": "L1"
     },
     {
@@ -10765,17 +10887,6 @@
       "source_location": "L1"
     },
     {
-      "id": "mp4tools_viewmodels_trimviewmodel",
-      "label": "TrimViewModel.cs",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "MP4ToolsLib",
-      "file_type": "code",
-      "norm_label": "trimviewmodel.cs",
-      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L1"
-    },
-    {
       "id": "mp4tools_views_combineview_axaml",
       "label": "CombineView.axaml.cs",
       "_origin": "ast",
@@ -10784,17 +10895,6 @@
       "file_type": "code",
       "norm_label": "combineview.axaml.cs",
       "source_file": "MP4Tools/Views/CombineView.axaml.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "mp4tools_views_logview_axaml",
-      "label": "LogView.axaml.cs",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "MP4ToolsLib",
-      "file_type": "code",
-      "norm_label": "logview.axaml.cs",
-      "source_file": "MP4Tools/Views/LogView.axaml.cs",
       "source_location": "L1"
     },
     {
@@ -10831,6 +10931,28 @@
       "source_location": "L1"
     },
     {
+      "id": "mp4toolslib_ffmpegutils",
+      "label": "FFMpegUtils.cs",
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "MP4ToolsLib",
+      "file_type": "code",
+      "norm_label": "ffmpegutils.cs",
+      "source_file": "MP4ToolsLib/FFMpegUtils.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "mp4toolslib_introvideocomposerasync",
+      "label": "IntroVideoComposerAsync.cs",
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "MP4ToolsLib",
+      "file_type": "code",
+      "norm_label": "introvideocomposerasync.cs",
+      "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
+      "source_location": "L1"
+    },
+    {
       "id": "mp4toolslib_legacyfastencoding",
       "label": "LegacyFastEncoding.cs",
       "_origin": "ast",
@@ -10839,6 +10961,17 @@
       "file_type": "code",
       "norm_label": "legacyfastencoding.cs",
       "source_file": "MP4ToolsLib/LegacyFastEncoding.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "mp4toolslib_recordingjsonelapsedoffset",
+      "label": "RecordingJsonElapsedOffset.cs",
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "MP4ToolsLib",
+      "file_type": "code",
+      "norm_label": "recordingjsonelapsedoffset.cs",
+      "source_file": "MP4ToolsLib/RecordingJsonElapsedOffset.cs",
       "source_location": "L1"
     },
     {
@@ -10879,43 +11012,136 @@
       "label": "Control",
       "_origin": "ast",
       "community": 32,
-      "community_name": "ViewLocator",
+      "community_name": "MP4Tools",
       "file_type": "code",
       "norm_label": "control",
       "source_file": "",
       "source_location": ""
     },
     {
+      "id": "csharp_namespace:bd82a23d174e62c4",
+      "label": "MP4Tools",
+      "_origin": "ast",
+      "community": 32,
+      "community_name": "MP4Tools",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "MP4Tools"
+      },
+      "norm_label": "mp4tools",
+      "source_file": "MP4Tools/App.axaml.cs",
+      "source_location": "L10",
+      "type": "namespace"
+    },
+    {
       "id": "idatatemplate",
       "label": "IDataTemplate",
       "_origin": "ast",
       "community": 32,
-      "community_name": "ViewLocator",
+      "community_name": "MP4Tools",
       "file_type": "code",
       "norm_label": "idatatemplate",
       "source_file": "",
       "source_location": ""
     },
     {
+      "id": "mp4tools_logger",
+      "label": "Logger.cs",
+      "_origin": "ast",
+      "community": 32,
+      "community_name": "MP4Tools",
+      "file_type": "code",
+      "norm_label": "logger.cs",
+      "source_file": "MP4Tools/Logger.cs",
+      "source_location": "L1"
+    },
+    {
       "id": "mp4tools_viewlocator",
       "label": "ViewLocator.cs",
       "_origin": "ast",
       "community": 32,
-      "community_name": "ViewLocator",
+      "community_name": "MP4Tools",
       "file_type": "code",
       "norm_label": "viewlocator.cs",
       "source_file": "MP4Tools/ViewLocator.cs",
       "source_location": "L1"
     },
     {
-      "id": "mp4toolslib_fileutils",
-      "label": "FileUtils.cs",
+      "id": "mp4tools_views_logview_axaml",
+      "label": "LogView.axaml.cs",
       "_origin": "ast",
       "community": 33,
-      "community_name": "FileUtils",
+      "community_name": "LogView",
       "file_type": "code",
-      "norm_label": "fileutils.cs",
-      "source_file": "MP4ToolsLib/FileUtils.cs",
+      "norm_label": "logview.axaml.cs",
+      "source_file": "MP4Tools/Views/LogView.axaml.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "mp4tools_views_logview_axaml_cs_eventargs",
+      "label": "EventArgs",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "LogView",
+      "file_type": "code",
+      "norm_label": "eventargs",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4tools_views_optionsview_axaml",
+      "label": "OptionsView.axaml.cs",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "LogView",
+      "file_type": "code",
+      "norm_label": "optionsview.axaml.cs",
+      "source_file": "MP4Tools/Views/OptionsView.axaml.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "usercontrol",
+      "label": "UserControl",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "LogView",
+      "file_type": "code",
+      "norm_label": "usercontrol",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "visualtreeattachmenteventargs",
+      "label": "VisualTreeAttachmentEventArgs",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "LogView",
+      "file_type": "code",
+      "norm_label": "visualtreeattachmenteventargs",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4tools_viewmodels_combineviewmodel_cs_list",
+      "label": "List",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": ".ApplyDefaultSkipRanges",
+      "file_type": "code",
+      "norm_label": "list",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "mp4tools_services_folderopener",
+      "label": "FolderOpener.cs",
+      "_origin": "ast",
+      "community": 35,
+      "community_name": ".OpenContainingFolderIfExists",
+      "file_type": "code",
+      "norm_label": "folderopener.cs",
+      "source_file": "MP4Tools/Services/FolderOpener.cs",
       "source_location": "L1"
     },
     {
@@ -10950,17 +11176,6 @@
       "norm_label": "lazy",
       "source_file": "",
       "source_location": ""
-    },
-    {
-      "id": "mp4toolslib_ffmpegutils",
-      "label": "FFMpegUtils.cs",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "FFMpegUtils",
-      "file_type": "code",
-      "norm_label": "ffmpegutils.cs",
-      "source_file": "MP4ToolsLib/FFMpegUtils.cs",
-      "source_location": "L1"
     },
     {
       "id": "mp4toolslib_ffmpegutils_cs_action",
@@ -11153,17 +11368,6 @@
       "community_name": "CombineViewModel",
       "file_type": "code",
       "norm_label": "datetime",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4tools_viewmodels_combineviewmodel_cs_list",
-      "label": "List",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "CombineViewModel",
-      "file_type": "code",
-      "norm_label": "list",
       "source_file": "",
       "source_location": ""
     },
@@ -11592,17 +11796,6 @@
       "source_location": ""
     },
     {
-      "id": "inotifypropertychanged",
-      "label": "INotifyPropertyChanged",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "norm_label": "inotifypropertychanged",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
       "id": "jsonobject",
       "label": "JsonObject",
       "_origin": "ast",
@@ -11612,17 +11805,6 @@
       "norm_label": "jsonobject",
       "source_file": "",
       "source_location": ""
-    },
-    {
-      "id": "mp4toolslib_recordingjsonelapsedoffset",
-      "label": "RecordingJsonElapsedOffset.cs",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "norm_label": "recordingjsonelapsedoffset.cs",
-      "source_file": "MP4ToolsLib/RecordingJsonElapsedOffset.cs",
-      "source_location": "L1"
     },
     {
       "id": "mp4toolslib_recordingjsonelapsedoffset_cs_action",
@@ -11713,79 +11895,6 @@
       "source_location": ""
     },
     {
-      "id": "mp4toolslib_timerange",
-      "label": "TimeRange.cs",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "norm_label": "timerange.cs",
-      "source_file": "MP4ToolsLib/TimeRange.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "mp4toolslib_timerange_cs_ireadonlylist",
-      "label": "IReadOnlyList",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "norm_label": "ireadonlylist",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4toolslib_timerange_mp4toolslib_timerange_hours",
-      "label": "Hours",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s125"
-        ]
-      },
-      "norm_label": "hours",
-      "source_file": "MP4ToolsLib/TimeRange.cs",
-      "source_location": "L19"
-    },
-    {
-      "id": "mp4toolslib_timerange_mp4toolslib_timerange_minutes",
-      "label": "Minutes",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s125"
-        ]
-      },
-      "norm_label": "minutes",
-      "source_file": "MP4ToolsLib/TimeRange.cs",
-      "source_location": "L28"
-    },
-    {
-      "id": "mp4toolslib_timerange_mp4toolslib_timerange_range",
-      "label": "Range",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s125"
-        ]
-      },
-      "norm_label": "range",
-      "source_file": "MP4ToolsLib/TimeRange.cs",
-      "source_location": "L10"
-    },
-    {
       "id": "mp4toolslib_timerange_mp4toolslib_timerange_seconds",
       "label": "Seconds",
       "_origin": "ast",
@@ -11801,23 +11910,6 @@
       "norm_label": "seconds",
       "source_file": "MP4ToolsLib/TimeRange.cs",
       "source_location": "L38"
-    },
-    {
-      "id": "mp4toolslib_timerange_mp4toolslib_timerange_totalseconds",
-      "label": "TotalSeconds",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "RecordingJsonElapsedOffset",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4ToolsLib",
-        "scope_chain": [
-          "s125"
-        ]
-      },
-      "norm_label": "totalseconds",
-      "source_file": "MP4ToolsLib/TimeRange.cs",
-      "source_location": "L48"
     },
     {
       "id": "text",
@@ -12337,6 +12429,17 @@
       "source_location": ""
     },
     {
+      "id": "mp4tools_services_appsettingsstore",
+      "label": "AppSettingsStore.cs",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "AppUserSettings",
+      "file_type": "code",
+      "norm_label": "appsettingsstore.cs",
+      "source_file": "MP4Tools/Services/AppSettingsStore.cs",
+      "source_location": "L1"
+    },
+    {
       "id": "mp4tools_services_appsettingsstore_cs_jsonserializeroptions",
       "label": "JsonSerializerOptions",
       "_origin": "ast",
@@ -12516,73 +12619,6 @@
       "norm_label": "useresolvesafeencoding",
       "source_file": "MP4Tools/Services/AppSettingsStore.cs",
       "source_location": "L28"
-    },
-    {
-      "id": "mp4tools_viewmodels_optionsviewmodel_cs_eventargs",
-      "label": "EventArgs",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "norm_label": "eventargs",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4tools_viewmodels_optionsviewmodel_cs_relaycommand",
-      "label": "RelayCommand",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "norm_label": "relaycommand",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4tools_viewmodels_optionsviewmodel_cs_task",
-      "label": "Task",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "norm_label": "task",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_apikeypasswordchar",
-      "label": "ApiKeyPasswordChar",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s280"
-        ]
-      },
-      "norm_label": "apikeypasswordchar",
-      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
-      "source_location": "L66"
-    },
-    {
-      "id": "mp4tools_viewmodels_optionsviewmodel_mp4tools_viewmodels_optionsviewmodel_settingsfilepathdisplay",
-      "label": "SettingsFilePathDisplay",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "AppUserSettings",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "MP4Tools.ViewModels",
-        "scope_chain": [
-          "s280"
-        ]
-      },
-      "norm_label": "settingsfilepathdisplay",
-      "source_file": "MP4Tools/ViewModels/OptionsViewModel.cs",
-      "source_location": "L68"
     },
     {
       "id": "mp4tools_notes_1_vs_1_working_analysis_1_mp4",
@@ -14648,7 +14684,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L788",
+      "source_location": "L790",
       "weight": 1.0
     },
     {
@@ -14660,7 +14696,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L790",
+      "source_location": "L792",
       "weight": 1.0
     },
     {
@@ -14672,7 +14708,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L828",
+      "source_location": "L830",
       "weight": 1.0
     },
     {
@@ -14684,7 +14720,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L830",
+      "source_location": "L832",
       "weight": 1.0
     },
     {
@@ -14696,7 +14732,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L902",
+      "source_location": "L904",
       "weight": 1.0
     },
     {
@@ -14708,7 +14744,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L890",
+      "source_location": "L892",
       "weight": 1.0
     },
     {
@@ -14720,7 +14756,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L895",
+      "source_location": "L897",
       "weight": 1.0
     },
     {
@@ -14732,7 +14768,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L810",
+      "source_location": "L812",
       "weight": 1.0
     },
     {
@@ -14744,7 +14780,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L857",
+      "source_location": "L859",
       "weight": 1.0
     },
     {
@@ -14780,7 +14816,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L923",
+      "source_location": "L925",
       "weight": 1.0
     },
     {
@@ -14792,7 +14828,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L930",
+      "source_location": "L932",
       "weight": 1.0
     },
     {
@@ -14804,7 +14840,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L955",
+      "source_location": "L957",
       "weight": 1.0
     },
     {
@@ -15205,7 +15241,7 @@
     },
     {
       "source": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_trimrangeasync",
-      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendvideoencodeoptions",
+      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_buildaudiotimestampresetoption",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -15217,7 +15253,7 @@
     },
     {
       "source": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_trimrangeasync",
-      "target": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegoption_pair",
+      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendvideoencodeoptions",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -15229,6 +15265,18 @@
     },
     {
       "source": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_trimrangeasync",
+      "target": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegoption_pair",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
+      "source_location": "L711",
+      "weight": 1.0
+    },
+    {
+      "source": "mp4tools_viewmodels_trimviewmodel_mp4tools_viewmodels_trimviewmodel_trimrangeasync",
       "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendpreinputhwoptions",
       "relation": "calls",
       "_origin": "ast",
@@ -15236,7 +15284,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L714",
+      "source_location": "L715",
       "weight": 1.0
     },
     {
@@ -15248,7 +15296,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L717",
+      "source_location": "L718",
       "weight": 1.0
     },
     {
@@ -15260,7 +15308,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L724",
+      "source_location": "L726",
       "weight": 1.0
     },
     {
@@ -15272,7 +15320,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L731",
+      "source_location": "L733",
       "weight": 1.0
     },
     {
@@ -15284,7 +15332,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L744",
+      "source_location": "L746",
       "weight": 1.0
     },
     {
@@ -15296,7 +15344,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L745",
+      "source_location": "L747",
       "weight": 1.0
     },
     {
@@ -15308,7 +15356,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L747",
+      "source_location": "L749",
       "weight": 1.0
     },
     {
@@ -15320,7 +15368,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L776",
+      "source_location": "L778",
       "weight": 1.0
     },
     {
@@ -16112,7 +16160,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L134",
+      "source_location": "L153",
       "weight": 1.0
     },
     {
@@ -16124,7 +16172,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L91",
+      "source_location": "L99",
       "weight": 1.0
     },
     {
@@ -16136,7 +16184,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L71",
+      "source_location": "L79",
       "weight": 1.0
     },
     {
@@ -16148,7 +16196,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L73",
+      "source_location": "L81",
       "weight": 1.0
     },
     {
@@ -16160,7 +16208,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L75",
+      "source_location": "L83",
       "weight": 1.0
     },
     {
@@ -16172,7 +16220,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L81",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -16184,7 +16232,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L104",
+      "source_location": "L123",
       "weight": 1.0
     },
     {
@@ -16196,7 +16244,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L105",
+      "source_location": "L124",
       "weight": 1.0
     },
     {
@@ -16208,7 +16256,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L114",
+      "source_location": "L133",
+      "weight": 1.0
+    },
+    {
+      "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_buildaudiotimestampresetoption",
+      "target": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegoption_pair",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
+      "source_location": "L119",
       "weight": 1.0
     },
     {
@@ -16220,7 +16280,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L148",
+      "source_location": "L168",
       "weight": 1.0
     },
     {
@@ -16232,7 +16292,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L150",
+      "source_location": "L170",
       "weight": 1.0
     },
     {
@@ -16244,7 +16304,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L156",
+      "source_location": "L176",
       "weight": 1.0
     },
     {
@@ -16256,7 +16316,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L158",
+      "source_location": "L178",
+      "weight": 1.0
+    },
+    {
+      "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_buildvideofilteroption",
+      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_withpresentationtimestampreset",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
+      "source_location": "L182",
       "weight": 1.0
     },
     {
@@ -16268,7 +16340,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L98",
+      "source_location": "L106",
       "weight": 1.0
     },
     {
@@ -16280,7 +16352,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L99",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
@@ -16304,7 +16376,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L117",
+      "source_location": "L118",
       "weight": 1.0
     },
     {
@@ -16316,7 +16388,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L132",
+      "source_location": "L133",
       "weight": 1.0
     },
     {
@@ -16873,6 +16945,18 @@
     },
     {
       "source": "mp4toolslib_introvideocomposerasync_mp4toolslib_introvideocomposerasync_prependintroasync",
+      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_buildaudiotimestampresetoption",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
+      "source_location": "L217",
+      "weight": 1.0
+    },
+    {
+      "source": "mp4toolslib_introvideocomposerasync_mp4toolslib_introvideocomposerasync_prependintroasync",
       "target": "mp4toolslib_mpegtsconcataudio_mp4toolslib_mpegtsconcataudio_intermediatetsaudioisaac",
       "relation": "calls",
       "_origin": "ast",
@@ -16880,7 +16964,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
-      "source_location": "L238",
+      "source_location": "L240",
       "weight": 1.0
     },
     {
@@ -16892,7 +16976,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
-      "source_location": "L253",
+      "source_location": "L255",
       "weight": 1.0
     },
     {
@@ -16904,7 +16988,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
-      "source_location": "L264",
+      "source_location": "L266",
       "weight": 1.0
     },
     {
@@ -16952,7 +17036,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
-      "source_location": "L274",
+      "source_location": "L276",
       "weight": 1.0
     },
     {
@@ -19304,7 +19388,7 @@
       "confidence_score": 1.0,
       "context": "field",
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L88",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -19868,7 +19952,7 @@
         "ref_token": "ExportTrimState"
       },
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L868",
+      "source_location": "L870",
       "weight": 1.0
     },
     {
@@ -19883,7 +19967,7 @@
         "ref_token": "FfmpegOption"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L132",
+      "source_location": "L151",
       "weight": 1.0
     },
     {
@@ -19898,7 +19982,7 @@
         "ref_token": "FfmpegOption"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L89",
+      "source_location": "L97",
       "weight": 1.0
     },
     {
@@ -19913,7 +19997,7 @@
         "ref_token": "FfmpegOption"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L85",
+      "source_location": "L93",
       "weight": 1.0
     },
     {
@@ -19928,7 +20012,7 @@
         "ref_token": "FfmpegOption"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L69",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -19943,7 +20027,7 @@
         "ref_token": "FfmpegOption"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L102",
+      "source_location": "L121",
       "weight": 1.0
     },
     {
@@ -19958,7 +20042,7 @@
         "ref_token": "FfmpegOption"
       },
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L119",
+      "source_location": "L120",
       "weight": 1.0
     },
     {
@@ -22074,7 +22158,7 @@
         "ref_token": "ICollection"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L132",
+      "source_location": "L151",
       "weight": 1.0
     },
     {
@@ -22089,7 +22173,7 @@
         "ref_token": "ICollection"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L89",
+      "source_location": "L97",
       "weight": 1.0
     },
     {
@@ -22104,7 +22188,7 @@
         "ref_token": "ICollection"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L85",
+      "source_location": "L93",
       "weight": 1.0
     },
     {
@@ -22119,7 +22203,7 @@
         "ref_token": "ICollection"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L69",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -22134,7 +22218,7 @@
         "ref_token": "ICollection"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L102",
+      "source_location": "L121",
       "weight": 1.0
     },
     {
@@ -22254,7 +22338,7 @@
         "ref_token": "IEnumerable"
       },
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L119",
+      "source_location": "L120",
       "weight": 1.0
     },
     {
@@ -22824,7 +22908,7 @@
         "ref_token": "StartStopRange"
       },
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L814",
+      "source_location": "L816",
       "weight": 1.0
     },
     {
@@ -22839,7 +22923,7 @@
         "ref_token": "StartStopRange"
       },
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L806",
+      "source_location": "L808",
       "weight": 1.0
     },
     {
@@ -22854,7 +22938,7 @@
         "ref_token": "StartStopRange"
       },
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L834",
+      "source_location": "L836",
       "weight": 1.0
     },
     {
@@ -22869,7 +22953,7 @@
         "ref_token": "StartStopRange"
       },
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L801",
+      "source_location": "L803",
       "weight": 1.0
     },
     {
@@ -23053,6 +23137,21 @@
       "weight": 1.0
     },
     {
+      "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_buildaudiotimestampresetoption",
+      "target": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegoption",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "return_type",
+      "metadata": {
+        "ref_token": "FfmpegOption"
+      },
+      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
+      "source_location": "L118",
+      "weight": 1.0
+    },
+    {
       "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_buildvideofilteroption",
       "target": "mp4toolslib_ffmpegcli_mp4toolslib_ffmpegoption",
       "relation": "references",
@@ -23064,7 +23163,7 @@
         "ref_token": "FfmpegOption"
       },
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L140",
+      "source_location": "L159",
       "weight": 1.0
     },
     {
@@ -23079,7 +23178,7 @@
         "ref_token": "FfmpegOption"
       },
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L131",
+      "source_location": "L132",
       "weight": 1.0
     },
     {
@@ -23109,7 +23208,7 @@
         "ref_token": "IEnumerable"
       },
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L98",
+      "source_location": "L99",
       "weight": 1.0
     },
     {
@@ -23409,7 +23508,7 @@
         "ref_token": "Task"
       },
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L912",
+      "source_location": "L914",
       "weight": 1.0
     },
     {
@@ -24896,7 +24995,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L115",
+      "source_location": "L116",
       "weight": 1.0
     },
     {
@@ -24918,7 +25017,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L86",
+      "source_location": "L87",
       "weight": 1.0
     },
     {
@@ -26493,7 +26592,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L774",
+      "source_location": "L776",
       "weight": 1.0
     },
     {
@@ -26504,7 +26603,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L779",
+      "source_location": "L781",
       "weight": 1.0
     },
     {
@@ -26515,7 +26614,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L793",
+      "source_location": "L795",
       "weight": 1.0
     },
     {
@@ -26526,7 +26625,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L801",
+      "source_location": "L803",
       "weight": 1.0
     },
     {
@@ -26537,7 +26636,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L806",
+      "source_location": "L808",
       "weight": 1.0
     },
     {
@@ -26548,7 +26647,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L814",
+      "source_location": "L816",
       "weight": 1.0
     },
     {
@@ -26559,7 +26658,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L834",
+      "source_location": "L836",
       "weight": 1.0
     },
     {
@@ -26570,7 +26669,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L862",
+      "source_location": "L864",
       "weight": 1.0
     },
     {
@@ -26581,7 +26680,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L900",
+      "source_location": "L902",
       "weight": 1.0
     },
     {
@@ -26592,7 +26691,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L912",
+      "source_location": "L914",
       "weight": 1.0
     },
     {
@@ -27279,7 +27378,7 @@
     },
     {
       "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding",
-      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendvideoencodeoptions",
+      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_getvaapihwuploadfilterchain",
       "relation": "method",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -27290,13 +27389,57 @@
     },
     {
       "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding",
+      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_getsoftwaretovaapiuploadfiltersuffix",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
+      "source_location": "L105",
+      "weight": 1.0
+    },
+    {
+      "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding",
+      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_withpresentationtimestampreset",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
+      "source_location": "L110",
+      "weight": 1.0
+    },
+    {
+      "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding",
+      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_buildaudiotimestampresetoption",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
+      "source_location": "L118",
+      "weight": 1.0
+    },
+    {
+      "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding",
+      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendvideoencodeoptions",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
+      "source_location": "L121",
+      "weight": 1.0
+    },
+    {
+      "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding",
       "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendcolormetadata",
       "relation": "method",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L132",
+      "source_location": "L151",
       "weight": 1.0
     },
     {
@@ -27307,7 +27450,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L140",
+      "source_location": "L159",
       "weight": 1.0
     },
     {
@@ -27318,7 +27461,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L43",
+      "source_location": "L51",
       "weight": 1.0
     },
     {
@@ -27329,7 +27472,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L46",
+      "source_location": "L54",
       "weight": 1.0
     },
     {
@@ -27340,7 +27483,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L49",
+      "source_location": "L57",
       "weight": 1.0
     },
     {
@@ -27351,7 +27494,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L57",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -27362,7 +27505,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L69",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -27373,34 +27516,12 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L85",
+      "source_location": "L93",
       "weight": 1.0
     },
     {
       "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding",
       "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_appendmp4outputoptions",
-      "relation": "method",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L89",
-      "weight": 1.0
-    },
-    {
-      "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding",
-      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_getvaapihwuploadfilterchain",
-      "relation": "method",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "MP4ToolsLib/DaVinciOutputEncoding.cs",
-      "source_location": "L94",
-      "weight": 1.0
-    },
-    {
-      "source": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding",
-      "target": "mp4toolslib_davincioutputencoding_mp4toolslib_davincioutputencoding_getsoftwaretovaapiuploadfiltersuffix",
       "relation": "method",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -27439,7 +27560,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L119",
+      "source_location": "L120",
       "weight": 1.0
     },
     {
@@ -27450,7 +27571,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L131",
+      "source_location": "L132",
       "weight": 1.0
     },
     {
@@ -27461,7 +27582,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L134",
+      "source_location": "L135",
       "weight": 1.0
     },
     {
@@ -27472,7 +27593,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L91",
+      "source_location": "L92",
       "weight": 1.0
     },
     {
@@ -27483,7 +27604,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L93",
+      "source_location": "L94",
       "weight": 1.0
     },
     {
@@ -27494,7 +27615,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L96",
+      "source_location": "L97",
       "weight": 1.0
     },
     {
@@ -27505,7 +27626,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/FfmpegCli.cs",
-      "source_location": "L98",
+      "source_location": "L99",
       "weight": 1.0
     },
     {
@@ -27747,7 +27868,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
-      "source_location": "L269",
+      "source_location": "L271",
       "weight": 1.0
     },
     {
@@ -27758,7 +27879,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/IntroVideoComposerAsync.cs",
-      "source_location": "L272",
+      "source_location": "L274",
       "weight": 1.0
     },
     {
@@ -28338,7 +28459,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L808",
+      "source_location": "L810",
       "weight": 1.0
     },
     {
@@ -28674,7 +28795,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "MP4Tools/ViewModels/TrimViewModel.cs",
-      "source_location": "L749",
+      "source_location": "L751",
       "weight": 1.0
     },
     {
@@ -29096,5 +29217,5 @@
       "source_file": "MP4Tools/Notes/1_vs_1_working_analysis.md"
     }
   ],
-  "built_at_commit": "47c64998c6c333ffda6ece96ec4f9b376c1441e5"
+  "built_at_commit": "9690b2e6fb55c893328dcfe2f747903f61812518"
 }

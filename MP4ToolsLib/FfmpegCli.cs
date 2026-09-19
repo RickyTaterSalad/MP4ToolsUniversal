@@ -46,6 +46,7 @@ public static class FfmpegArguments
 	public const string BitstreamFilterAacAdtsToAsc = "aac_adtstoasc";
 
 	public const string VideoFilter = "-vf";
+	public const string AudioFilter = "-af";
 
 	public const string AudioSampleRate = "-ar";
 	public const string AudioChannels = "-ac";
