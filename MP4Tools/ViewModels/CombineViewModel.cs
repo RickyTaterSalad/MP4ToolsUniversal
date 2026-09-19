@@ -117,6 +117,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 	private CancellationTokenSource _edgeDurationRefreshCts;
 	private double? _firstClipDurationSeconds;
 	private double? _lastClipDurationSeconds;
+	private string _trackedFirstPath;
+	private string _trackedLastPath;
+	private int _edgeRefreshSuspendCount;
+	private readonly ConcurrentDictionary<string, double> _clipDurationCache =
+		new(StringComparer.OrdinalIgnoreCase);
 
 	private List<int> _startVideoMinuteRange = new List<int>(TimeRange.Range);
 	private List<int> _startVideoSecondRange = new List<int>(TimeRange.Range);
@@ -169,20 +174,28 @@ public partial class CombineViewModel : MP4ViewModelBase
 		if (ordered.Count == 0)
 			return;
 
-		insertIndex = Math.Clamp(insertIndex, 0, InputFiles.Count);
-		foreach (var source in ordered)
+		BeginEdgeRefreshSuspend();
+		try
 		{
-			var sourceIndex = InputFiles.IndexOf(source);
-			if (sourceIndex < 0)
-				continue;
-			if (sourceIndex < insertIndex)
-				insertIndex--;
-			InputFiles.Remove(source);
-		}
+			insertIndex = Math.Clamp(insertIndex, 0, InputFiles.Count);
+			foreach (var source in ordered)
+			{
+				var sourceIndex = InputFiles.IndexOf(source);
+				if (sourceIndex < 0)
+					continue;
+				if (sourceIndex < insertIndex)
+					insertIndex--;
+				InputFiles.Remove(source);
+			}
 
-		insertIndex = Math.Clamp(insertIndex, 0, InputFiles.Count);
-		for (var i = 0; i < ordered.Count; i++)
-			InputFiles.Insert(insertIndex + i, ordered[i]);
+			insertIndex = Math.Clamp(insertIndex, 0, InputFiles.Count);
+			for (var i = 0; i < ordered.Count; i++)
+				InputFiles.Insert(insertIndex + i, ordered[i]);
+		}
+		finally
+		{
+			EndEdgeRefreshSuspend();
+		}
 
 		SelectedInputFile = ordered[^1];
 		SyncSelectedInputFiles(ordered);
@@ -297,8 +310,16 @@ public partial class CombineViewModel : MP4ViewModelBase
 		if (toRemove.Count == 0)
 			return;
 
-		foreach (var file in toRemove)
-			InputFiles.Remove(file);
+		BeginEdgeRefreshSuspend();
+		try
+		{
+			foreach (var file in toRemove)
+				InputFiles.Remove(file);
+		}
+		finally
+		{
+			EndEdgeRefreshSuspend();
+		}
 
 		_selectedInputFiles.Clear();
 		SelectedInputFile = null;
@@ -343,7 +364,20 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 	private void OnInputFilesCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 	{
+		if (_edgeRefreshSuspendCount > 0)
+			return;
+
 		ScheduleEdgeDurationRefresh();
+	}
+
+	private void BeginEdgeRefreshSuspend() => _edgeRefreshSuspendCount++;
+
+	private void EndEdgeRefreshSuspend()
+	{
+		if (_edgeRefreshSuspendCount > 0)
+			_edgeRefreshSuspendCount--;
+		if (_edgeRefreshSuspendCount == 0)
+			ScheduleEdgeDurationRefresh();
 	}
 
 	private void OnStartRangeTimePartChanged(object sender, PropertyChangedEventArgs e)
@@ -379,6 +413,9 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 	private void ScheduleEdgeDurationRefresh()
 	{
+		if (_edgeRefreshSuspendCount > 0)
+			return;
+
 		try
 		{
 			_edgeDurationRefreshCts?.Cancel();
@@ -392,6 +429,34 @@ public partial class CombineViewModel : MP4ViewModelBase
 		_edgeDurationRefreshCts = new CancellationTokenSource();
 		var token = _edgeDurationRefreshCts.Token;
 		_ = RunEdgeRefreshAsync(token);
+	}
+
+	private async Task<double?> ResolveClipDurationSecondsAsync(string path, CancellationToken ct)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+			return null;
+
+		if (_clipDurationCache.TryGetValue(path, out var cached))
+			return cached;
+
+		try
+		{
+			var durStr = await FFMpegUtils.Instance.GetFileDurationAsync(path, ct, Logger.Log).ConfigureAwait(false);
+			var tr = TimeRange.FromString(durStr ?? string.Empty);
+			if (tr == null)
+				return null;
+
+			_clipDurationCache[path] = tr.TotalSeconds;
+			return tr.TotalSeconds;
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch
+		{
+			return null;
+		}
 	}
 
 	private async Task RunEdgeRefreshAsync(CancellationToken ct)
@@ -411,6 +476,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 					{
 						_firstClipDurationSeconds = null;
 						_lastClipDurationSeconds = null;
+						_trackedFirstPath = null;
+						_trackedLastPath = null;
 						ApplyDefaultSkipRanges();
 					}
 				});
@@ -420,49 +487,46 @@ public partial class CombineViewModel : MP4ViewModelBase
 			string firstPath = pathsSnapshot[0];
 			string lastPath = pathsSnapshot[^1];
 
-			double? firstDur = null;
-			double? lastDur = null;
-
-			try
+			double? firstDur;
+			double? lastDur;
+			if (string.Equals(firstPath, lastPath, StringComparison.OrdinalIgnoreCase))
 			{
-				if (string.Equals(firstPath, lastPath, StringComparison.OrdinalIgnoreCase))
-				{
-					var durStr = await FFMpegUtils.Instance.GetFileDurationAsync(firstPath, ct, Logger.Log).ConfigureAwait(false);
-					var tr = TimeRange.FromString(durStr ?? string.Empty);
-					if (tr != null)
-						firstDur = lastDur = tr.TotalSeconds;
-				}
-				else
-				{
-					var firstTask = FFMpegUtils.Instance.GetFileDurationAsync(firstPath, ct, Logger.Log);
-					var lastTask = FFMpegUtils.Instance.GetFileDurationAsync(lastPath, ct, Logger.Log);
-					await Task.WhenAll(firstTask, lastTask).ConfigureAwait(false);
-					var firstTr = TimeRange.FromString((await firstTask.ConfigureAwait(false)) ?? string.Empty);
-					var lastTr = TimeRange.FromString((await lastTask.ConfigureAwait(false)) ?? string.Empty);
-					if (firstTr != null)
-						firstDur = firstTr.TotalSeconds;
-					if (lastTr != null)
-						lastDur = lastTr.TotalSeconds;
-				}
+				firstDur = lastDur = await ResolveClipDurationSecondsAsync(firstPath, ct).ConfigureAwait(false);
 			}
-			catch (OperationCanceledException)
+			else
 			{
-				throw;
-			}
-			catch
-			{
-				// keep null — fall back to full combo ranges
+				var firstTask = ResolveClipDurationSecondsAsync(firstPath, ct);
+				var lastTask = ResolveClipDurationSecondsAsync(lastPath, ct);
+				await Task.WhenAll(firstTask, lastTask).ConfigureAwait(false);
+				firstDur = await firstTask.ConfigureAwait(false);
+				lastDur = await lastTask.ConfigureAwait(false);
 			}
 
 			await Dispatcher.UIThread.InvokeAsync(() =>
 			{
 				if (ct.IsCancellationRequested)
-				{
 					return;
+
+				var firstChanged = !string.Equals(_trackedFirstPath, firstPath, StringComparison.OrdinalIgnoreCase);
+				var lastChanged = !string.Equals(_trackedLastPath, lastPath, StringComparison.OrdinalIgnoreCase);
+
+				if (firstChanged)
+				{
+					StartRange.Minutes = 0;
+					StartRange.Seconds = 0;
+					_trackedFirstPath = firstPath;
+				}
+
+				if (lastChanged)
+				{
+					EndRange.Minutes = 0;
+					EndRange.Seconds = 0;
+					_trackedLastPath = lastPath;
 				}
 
 				_firstClipDurationSeconds = firstDur;
 				_lastClipDurationSeconds = lastDur;
+				// Always rebuild combo ItemsSources from probed/cached duration — independent of TrimFirst/TrimLast toggles.
 				RebuildAllEdgeSkipRanges();
 			});
 		}
@@ -832,10 +896,19 @@ public partial class CombineViewModel : MP4ViewModelBase
 			fileListResult = Array.Empty<CombineFile>();
 
 		UpdateOutputPathFromGameInfo();
-		InputFiles.Clear();
-		foreach (var file in fileListResult)
+		_clipDurationCache.Clear();
+		_trackedFirstPath = null;
+		_trackedLastPath = null;
+		BeginEdgeRefreshSuspend();
+		try
 		{
-			InputFiles.Add(file);
+			InputFiles.Clear();
+			foreach (var file in fileListResult)
+				InputFiles.Add(file);
+		}
+		finally
+		{
+			EndEdgeRefreshSuspend();
 		}
 		RefreshCanCombineFromInputs();
 	}
@@ -847,9 +920,17 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 		var sorted = CombineFile.Sort(InputFiles, CurrentInputFileSortMode);
 		var selected = SelectedInputFile;
-		InputFiles.Clear();
-		foreach (var file in sorted)
-			InputFiles.Add(file);
+		BeginEdgeRefreshSuspend();
+		try
+		{
+			InputFiles.Clear();
+			foreach (var file in sorted)
+				InputFiles.Add(file);
+		}
+		finally
+		{
+			EndEdgeRefreshSuspend();
+		}
 		if (selected != null && InputFiles.Contains(selected))
 			SelectedInputFile = selected;
 	}
@@ -877,6 +958,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 	protected override Task Clear()
 	{
 		CancelEdgeDurationRefresh();
+		_clipDurationCache.Clear();
+		_firstClipDurationSeconds = null;
+		_lastClipDurationSeconds = null;
+		_trackedFirstPath = null;
+		_trackedLastPath = null;
 		OperationStatus = string.Empty;
 		OutputPath = string.Empty;
 		RecordingJsonPath = string.Empty;
@@ -898,6 +984,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 		EndRange.Minutes = 0;
 		EndRange.Seconds = 0;
+		ApplyDefaultSkipRanges();
 		return base.Clear();
 	}
 

@@ -93,7 +93,8 @@
 						<TextBlock Text="Start Video Skip" Opacity="0.85"/>
 						<StackPanel Orientation="Horizontal" Spacing="10">
 							<ToggleSwitch IsChecked="{Binding TrimFirstVideo}" OffContent="" OnContent="" VerticalAlignment="Center" />
-							<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimFirstVideo}" VerticalAlignment="Center">
+							<!-- Combo ItemsSources always refresh from first-clip duration; TrimFirstVideo only gates apply-at-combine. -->
+							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 								<ComboBox ItemsSource="{Binding StartVideoMinuteRange}" SelectedValue="{Binding StartRange.Minutes}" Width="50" VerticalAlignment="Center"/>
 								<TextBlock Text=" m " VerticalAlignment="Center"/>
 								<ComboBox ItemsSource="{Binding StartVideoSecondRange}" SelectedValue="{Binding StartRange.Seconds}" Width="50" VerticalAlignment="Center"/>
@@ -105,7 +106,8 @@
 						<TextBlock Text="End Video Duration" Opacity="0.85"/>
 						<StackPanel Orientation="Horizontal" Spacing="10">
 							<ToggleSwitch IsChecked="{Binding TrimLastVideo}" OffContent="" OnContent="" VerticalAlignment="Center" />
-							<StackPanel Orientation="Horizontal" IsEnabled="{Binding TrimLastVideo}" VerticalAlignment="Center">
+							<!-- Combo ItemsSources always refresh from last-clip duration; TrimLastVideo only gates apply-at-combine. -->
+							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 								<ComboBox ItemsSource="{Binding EndVideoMinuteRange}" SelectedValue="{Binding EndRange.Minutes}" Width="50" VerticalAlignment="Center"/>
 								<TextBlock Text=" m " VerticalAlignment="Center"/>
 								<ComboBox ItemsSource="{Binding EndVideoSecondRange}" SelectedValue="{Binding EndRange.Seconds}" Width="50" VerticalAlignment="Center"/>
