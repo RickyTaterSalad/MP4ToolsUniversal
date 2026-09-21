@@ -59,11 +59,11 @@
 											  ToolTip.Tip="Trim from start time. Turn off to keep from the beginning of the video."/>
 								<StackPanel Orientation="Horizontal" IsEnabled="{Binding IsStartRangeEnabled}" VerticalAlignment="Center">
 									<materialIcons:MaterialIcon Kind="Play" VerticalAlignment="Center" Margin="0,0,10,0"/>
-									<ComboBox ItemsSource="{Binding VideoHourRange}" Width="50" SelectedValue="{Binding StartRange.Hours}" IsEnabled="{Binding IsHoursRangeEnabled}"/>
+									<ComboBox Classes="twoDigitTime" ItemsSource="{Binding VideoHourRange}" Width="50" SelectedValue="{Binding StartRange.Hours}" IsEnabled="{Binding IsHoursRangeEnabled}"/>
 									<Label Content=" h " VerticalAlignment="Bottom"/>
-									<ComboBox ItemsSource="{Binding VideoMinuteRange}" Width="50" SelectedValue="{Binding StartRange.Minutes}"/>
+									<ComboBox Classes="twoDigitTime" ItemsSource="{Binding VideoMinuteRange}" Width="50" SelectedValue="{Binding StartRange.Minutes}"/>
 									<Label Content=" m " VerticalAlignment="Bottom"/>
-									<ComboBox ItemsSource="{Binding Range}" Width="50" SelectedValue="{Binding StartRange.Seconds}"/>
+									<ComboBox Classes="twoDigitTime" ItemsSource="{Binding Range}" Width="50" SelectedValue="{Binding StartRange.Seconds}"/>
 									<Label Content=" s " VerticalAlignment="Bottom"/>
 								</StackPanel>
 							</StackPanel>
@@ -75,11 +75,11 @@
 											  ToolTip.Tip="Trim to end time. Turn off to keep through the end of the video."/>
 								<StackPanel Orientation="Horizontal" IsEnabled="{Binding IsEndRangeEnabled}" VerticalAlignment="Center">
 									<materialIcons:MaterialIcon Kind="Stop" VerticalAlignment="Center" Margin="0,0,10,0"/>
-									<ComboBox ItemsSource="{Binding VideoHourRange}" Width="50" SelectedValue="{Binding EndRange.Hours}" IsEnabled="{Binding IsHoursRangeEnabled}"/>
+									<ComboBox Classes="twoDigitTime" ItemsSource="{Binding VideoHourRange}" Width="50" SelectedValue="{Binding EndRange.Hours}" IsEnabled="{Binding IsHoursRangeEnabled}"/>
 									<Label Content=" h " VerticalAlignment="Bottom"/>
-									<ComboBox ItemsSource="{Binding VideoMinuteRange}" Width="50" SelectedValue="{Binding EndRange.Minutes}"/>
+									<ComboBox Classes="twoDigitTime" ItemsSource="{Binding VideoMinuteRange}" Width="50" SelectedValue="{Binding EndRange.Minutes}"/>
 									<Label Content=" m " VerticalAlignment="Bottom"/>
-									<ComboBox ItemsSource="{Binding Range}" Width="50" SelectedValue="{Binding EndRange.Seconds}"/>
+									<ComboBox Classes="twoDigitTime" ItemsSource="{Binding Range}" Width="50" SelectedValue="{Binding EndRange.Seconds}"/>
 									<Label Content=" s " VerticalAlignment="Bottom"/>
 								</StackPanel>
 							</StackPanel>

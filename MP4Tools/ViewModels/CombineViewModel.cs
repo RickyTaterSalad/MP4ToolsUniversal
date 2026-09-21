@@ -756,6 +756,11 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 	public IReadOnlyList<int> EndVideoSecondRange => _endVideoSecondRange;
 
+	public static IReadOnlyList<string> EventInfoDefaults { get; } =
+	[
+		"SB Senior League",
+	];
+
 	private string _eventInfo = string.Empty;
 	public string EventInfo
 	{

@@ -553,4 +553,18 @@ public partial class CombineView : UserControl
 			vm.BoxScoreImagePath = files[0].Path.LocalPath;
 		}
 	}
+
+	private async void EventInfoDefaultsButton_OnClick(object sender, RoutedEventArgs e)
+	{
+		if (DataContext is not CombineViewModel vm)
+			return;
+
+		if (TopLevel.GetTopLevel(this) is not Window owner)
+			return;
+
+		var dialog = new EventInfoDefaultsWindow(CombineViewModel.EventInfoDefaults);
+		var selected = await dialog.ShowDialog<string>(owner);
+		if (!string.IsNullOrWhiteSpace(selected))
+			vm.EventInfo = selected;
+	}
 }

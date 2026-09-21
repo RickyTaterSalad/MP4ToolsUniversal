@@ -87,5 +87,19 @@
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccentBrush}"/>
 		</Style>
+
+		<!-- Two-digit (00–59) display for time part ComboBoxes -->
+		<Style Selector="ComboBox.twoDigitTime">
+			<Setter Property="ItemTemplate">
+				<DataTemplate x:DataType="x:Int32">
+					<TextBlock Text="{Binding StringFormat={}{0:D2}}"/>
+				</DataTemplate>
+			</Setter>
+			<Setter Property="SelectionBoxItemTemplate">
+				<DataTemplate x:DataType="x:Int32">
+					<TextBlock Text="{Binding StringFormat={}{0:D2}}"/>
+				</DataTemplate>
+			</Setter>
+		</Style>
 	</Application.Styles>
 </Application>

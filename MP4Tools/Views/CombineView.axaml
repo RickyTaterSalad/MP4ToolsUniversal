@@ -95,9 +95,9 @@
 							<ToggleSwitch IsChecked="{Binding TrimFirstVideo}" OffContent="" OnContent="" VerticalAlignment="Center" />
 							<!-- Combo ItemsSources always refresh from first-clip duration; TrimFirstVideo only gates apply-at-combine. -->
 							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-								<ComboBox ItemsSource="{Binding StartVideoMinuteRange}" SelectedValue="{Binding StartRange.Minutes}" Width="50" VerticalAlignment="Center"/>
+								<ComboBox Classes="twoDigitTime" ItemsSource="{Binding StartVideoMinuteRange}" SelectedValue="{Binding StartRange.Minutes}" Width="50" VerticalAlignment="Center"/>
 								<TextBlock Text=" m " VerticalAlignment="Center"/>
-								<ComboBox ItemsSource="{Binding StartVideoSecondRange}" SelectedValue="{Binding StartRange.Seconds}" Width="50" VerticalAlignment="Center"/>
+								<ComboBox Classes="twoDigitTime" ItemsSource="{Binding StartVideoSecondRange}" SelectedValue="{Binding StartRange.Seconds}" Width="50" VerticalAlignment="Center"/>
 								<TextBlock Text=" s " VerticalAlignment="Center"/>
 							</StackPanel>
 						</StackPanel>
@@ -108,15 +108,15 @@
 							<ToggleSwitch IsChecked="{Binding TrimLastVideo}" OffContent="" OnContent="" VerticalAlignment="Center" />
 							<!-- Combo ItemsSources always refresh from last-clip duration; TrimLastVideo only gates apply-at-combine. -->
 							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-								<ComboBox ItemsSource="{Binding EndVideoMinuteRange}" SelectedValue="{Binding EndRange.Minutes}" Width="50" VerticalAlignment="Center"/>
+								<ComboBox Classes="twoDigitTime" ItemsSource="{Binding EndVideoMinuteRange}" SelectedValue="{Binding EndRange.Minutes}" Width="50" VerticalAlignment="Center"/>
 								<TextBlock Text=" m " VerticalAlignment="Center"/>
-								<ComboBox ItemsSource="{Binding EndVideoSecondRange}" SelectedValue="{Binding EndRange.Seconds}" Width="50" VerticalAlignment="Center"/>
+								<ComboBox Classes="twoDigitTime" ItemsSource="{Binding EndVideoSecondRange}" SelectedValue="{Binding EndRange.Seconds}" Width="50" VerticalAlignment="Center"/>
 								<TextBlock Text=" s " VerticalAlignment="Center"/>
 							</StackPanel>
 						</StackPanel>
 					</StackPanel>
 				</StackPanel>
-				<Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+				<Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
 					<CalendarDatePicker Grid.Row="0" Grid.Column="0"
 										SelectedDate="{Binding EventDate}"
 										MinWidth="150"
@@ -125,7 +125,14 @@
 							 PlaceholderText="Event Info"
 							 HorizontalAlignment="Stretch"
 							 Text="{Binding EventInfo, UpdateSourceTrigger=PropertyChanged}"/>
-					<Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="*,48,*,48" ColumnSpacing="8">
+					<Button Grid.Row="0" Grid.Column="2"
+							Padding="6,4"
+							VerticalAlignment="Stretch"
+							ToolTip.Tip="Choose a default Event Info value"
+							Click="EventInfoDefaultsButton_OnClick">
+						<materialIcons:MaterialIcon Kind="FormatListBulleted"/>
+					</Button>
+					<Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" ColumnDefinitions="*,48,*,48" ColumnSpacing="8">
 						<TextBox Grid.Column="0"
 								 PlaceholderText="Visitor"
 								 HorizontalAlignment="Stretch"
