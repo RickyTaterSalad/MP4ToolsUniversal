@@ -119,7 +119,7 @@ public static class RecordingJsonElapsedOffset
 			obj["homeScore"] = Math.Max(0, homeScore.Value);
 
 		var displayName = FileUtils.BuildGameInfoOutputFileName(
-			eventDate, visitorName, homeName, visitorScore, homeScore);
+			eventDate, visitorName, homeName);
 		if (!string.IsNullOrWhiteSpace(displayName))
 			obj["id"] = displayName;
 	}

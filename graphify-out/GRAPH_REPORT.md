@@ -1,7 +1,7 @@
-# Graph Report - MP4ToolsUniversal  (2026-09-20)
+# Graph Report - MP4ToolsUniversal  (2026-09-26)
 
 ## Corpus Check
-- 53 files · ~22,234 words
+- 53 files · ~22,187 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `559c8df8`
+- Built from commit: `18e8913b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

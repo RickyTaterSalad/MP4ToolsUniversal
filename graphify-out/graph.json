@@ -3095,18 +3095,6 @@
             "receiver_type": "List",
             "lang": "csharp",
             "line": "L34"
-          },
-          {
-            "callee": "Max",
-            "receiver_type": "Math",
-            "lang": "csharp",
-            "line": "L47"
-          },
-          {
-            "callee": "Min",
-            "receiver_type": "Math",
-            "lang": "csharp",
-            "line": "L48"
           }
         ]
       },
@@ -29706,5 +29694,5 @@
       "source_file": "MP4Tools/Notes/1_vs_1_working_analysis.md"
     }
   ],
-  "built_at_commit": "559c8df804eec0bec00ec4b5564fbdf5420e56df"
+  "built_at_commit": "18e8913b70626f4b1519f7989389176a16e891af"
 }

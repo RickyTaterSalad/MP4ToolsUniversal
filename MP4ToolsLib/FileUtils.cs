@@ -20,7 +20,7 @@ namespace MP4ToolsLib
 			}
 		}
 
-		public static string BuildGameInfoOutputFileName(DateTime? eventDate, string visitorName, string homeName, int? visitorScore, int? homeScore)
+		public static string BuildGameInfoOutputFileName(DateTime? eventDate, string visitorName, string homeName)
 		{
 			if (!eventDate.HasValue)
 			{
@@ -32,26 +32,10 @@ namespace MP4ToolsLib
 			if (!string.IsNullOrWhiteSpace(visitorName) || !string.IsNullOrWhiteSpace(homeName))
 			{
 				parts.Add($"{visitorName ?? "Visitor"} vs. {homeName ?? "Home"}");
-				if (visitorScore.HasValue && homeScore.HasValue)
-				{
-					var vScore = visitorScore.Value;
-					var hScore = homeScore.Value;
-					var vName = visitorName ?? "Visitor";
-					var hName = homeName ?? "Home";
-					
-					if (vScore == hScore)
-						parts.Add($"{vScore}-{hScore} Tie");
-					else
-					{
-						var winnerName = vScore > hScore ? vName : hName;
-						var winnerScore = Math.Max(vScore, hScore);
-						var loserScore = Math.Min(vScore, hScore);
-						parts.Add($"{winnerScore}-{loserScore} {winnerName}");
-					}
-				}
 			}
 
-			return string.Join(" ", parts);
+			// Strip periods from the stem (e.g. "vs.") and normalize hyphens; callers add the extension separately.
+			return string.Join(" ", parts).Replace(".", string.Empty).Replace("-", "_");
 		}
 	}
 }

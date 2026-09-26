@@ -850,7 +850,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 	private string BuildGameInfoOutputFileName()
 	{
-		return FileUtils.BuildGameInfoOutputFileName(EventDate, VisitorName, HomeName, VisitorScore, HomeScore);
+		return FileUtils.BuildGameInfoOutputFileName(EventDate, VisitorName, HomeName);
 	}
 
 	private void UpdateIntroDetailsFromGameInfo()
