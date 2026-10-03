@@ -91,7 +91,8 @@ namespace MP4ToolsLib
                 useTrimSegmentAudioCodec: false,
                 seekBeforeMainInput: seekOpt,
                 hwAccelForIntro: hwAccelForIntro,
-                resolveSafeEncoding: resolveSafeEncoding);
+                resolveSafeEncoding: resolveSafeEncoding,
+                deleteSourceAfterRemux: true);
         }
 
         public static async Task PrependIntroAsync(
@@ -111,7 +112,8 @@ namespace MP4ToolsLib
             bool useTrimSegmentAudioCodec = false,
             FfmpegOption seekBeforeMainInput = default,
             string hwAccelForIntro = null,
-            bool resolveSafeEncoding = true
+            bool resolveSafeEncoding = true,
+            bool deleteSourceAfterRemux = false
             )
         {
             log ??= _ => { };
@@ -283,6 +285,9 @@ namespace MP4ToolsLib
                 await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(inputToTs), ct, log);
                 progress?.Report(0.9);
 
+                if (deleteSourceAfterRemux)
+                    TryDeleteSourceAfterTempsReady(inputPath, outputPath, introTs, inputTs, log, Step);
+
                 log("Concatenating...");
                 Step("Joining intro and main clip…");
                 var introAudioInTs = useTrimSegmentAudioCodec && MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(introAudioEnc)
@@ -320,6 +325,50 @@ namespace MP4ToolsLib
                 SafeDelete(introTs);
                 SafeDelete(inputTs);
             }
+        }
+
+        /// <summary>
+        /// After intro + main MPEG-TS intermediates exist, free the source file so the final
+        /// concat has room on the same volume. Skips when source and output are the same path.
+        /// </summary>
+        private static void TryDeleteSourceAfterTempsReady(
+            string inputPath,
+            string outputPath,
+            string introTs,
+            string inputTs,
+            Action<string> log,
+            Action<string> step)
+        {
+            if (!File.Exists(introTs) || new FileInfo(introTs).Length == 0
+                || !File.Exists(inputTs) || new FileInfo(inputTs).Length == 0)
+            {
+                log("Skipping source delete: MPEG-TS intermediates are missing or empty.");
+                return;
+            }
+
+            try
+            {
+                var srcFull = Path.GetFullPath(inputPath);
+                var outFull = Path.GetFullPath(outputPath);
+                if (string.Equals(srcFull, outFull, StringComparison.OrdinalIgnoreCase))
+                {
+                    log("Skipping source delete: output path is the same as the source.");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                log($"Skipping source delete: could not resolve paths ({ex.Message}).");
+                return;
+            }
+
+            step("Deleting source to free space for output…");
+            log($"Deleting source after remux to free space: {inputPath}");
+            FileUtils.TryDeleteFile(inputPath);
+            if (File.Exists(inputPath))
+                log("Warning: source file could not be deleted; continuing with concat.");
+            else
+                log("Source deleted.");
         }
 
         private static string EscapeDrawtext(string s) =>

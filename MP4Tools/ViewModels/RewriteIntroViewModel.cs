@@ -481,9 +481,10 @@ public partial class RewriteIntroViewModel : MP4ViewModelBase
 				effectiveDetails = string.Empty;
 			}
 
+			var sourcePath = InputPath;
 			var encPrefs = EncodingSettingsRuntime.Current;
 			await IntroVideoComposerAsync.ReplaceIntroAsync(
-				InputPath,
+				sourcePath,
 				effectiveTitle,
 				effectiveSubtitle,
 				OutputPath,
@@ -494,6 +495,13 @@ public partial class RewriteIntroViewModel : MP4ViewModelBase
 				operationStep: ReportStep,
 				hwAccelForIntro: encPrefs.HardwareAcceleration,
 				resolveSafeEncoding: false).ConfigureAwait(false);
+
+			// ReplaceIntro deletes the source after MPEG-TS temps are ready to free space.
+			if (!string.IsNullOrWhiteSpace(sourcePath) && !File.Exists(sourcePath)
+				&& string.Equals(InputPath, sourcePath, StringComparison.Ordinal))
+			{
+				InputPath = string.Empty;
+			}
 
 			if (File.Exists(OutputPath))
 			{

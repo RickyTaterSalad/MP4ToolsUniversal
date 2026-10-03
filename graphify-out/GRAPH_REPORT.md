@@ -1,16 +1,16 @@
 # Graph Report - MP4ToolsUniversal  (2026-10-02)
 
 ## Corpus Check
-- 60 files · ~25,092 words
+- 60 files · ~25,290 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 791 nodes · 1514 edges · 38 communities (32 shown, 4 thin omitted)
+- 792 nodes · 1518 edges · 41 communities (34 shown, 6 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 49 edges (avg confidence: 0.84)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b9304821`
+- Built from commit: `fe2ad905`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -34,21 +34,25 @@
 - .OnPropertyChanged
 - TimeRange
 - EncodingSettingsDto
-- .SyncSelectedInputFiles
+- .MoveInputFilesToIndex
 - BaseballLoggerSettingsRuntime
 - RewriteIntroViewModel
 - EventInfoDefaultsWindow
 - .Log
 - CombineView
 - OptionsViewModel
+- MP4Tools.Views
 - ExportTrimState
 - StartStopRange
 - .Apply
-- MP4ToolsLib
+- MP4Tools.ViewModels
 - MainWindowViewModel
 - ViewLocator
-- OpenRouterSettingsRuntime
+- MP4ToolsLib
 - .BuildAvaloniaApp
+- App.axaml.cs
+- RelayCommand
+- .ApplyFrom
 - .ScheduleEdgeDurationRefresh
 - .ApplyDefaultSkipRanges
 
@@ -84,10 +88,10 @@
 - **Resolve-safe re-encode remediation path** — mp4tools_notes_1_vs_1_working_analysis_libx265_reencode, mp4tools_notes_1_vs_1_working_analysis_1_working_mp4, mp4tools_notes_1_vs_1_working_analysis_ffmpeg, mp4tools_notes_1_vs_1_working_analysis_hevc_main_8bit [EXTRACTED 1.00]
 - **1.mp4 vs 1_working.mp4 container contrast** — mp4tools_notes_1_vs_1_working_analysis_1_mp4, mp4tools_notes_1_vs_1_working_analysis_1_working_mp4, mp4tools_notes_1_vs_1_working_analysis_ctts_box, mp4tools_notes_1_vs_1_working_analysis_colr_box, mp4tools_notes_1_vs_1_working_analysis_hevc_main_10, mp4tools_notes_1_vs_1_working_analysis_hevc_main_8bit [EXTRACTED 1.00]
 
-## Communities (38 total, 4 thin omitted)
+## Communities (41 total, 6 thin omitted)
 
 ### Community 0 - ".PrependIntroAsync"
-Cohesion: 0.07
+Cohesion: 0.06
 Nodes (26): IProgress, CancellationToken, List, Task, ICollection, DaVinciOutputEncoding, IEnumerable, FfmpegArguments (+18 more)
 
 ### Community 1 - "MP4ViewModelBase"
@@ -95,23 +99,23 @@ Cohesion: 0.06
 Nodes (26): CancellationToken, CancellationTokenSource, EventArgs, Process, Task, MP4ViewModelBase, CanClear, CanStop (+18 more)
 
 ### Community 2 - "TrimView"
-Cohesion: 0.05
-Nodes (22): DataFormat, IDataTransfer, RelayCommand, DragEventArgs, HashSet, IReadOnlyList, Task, FileDropHelper (+14 more)
+Cohesion: 0.07
+Nodes (17): DataFormat, IDataTransfer, RelayCommand, DragEventArgs, HashSet, IReadOnlyList, Task, FileDropHelper (+9 more)
 
 ### Community 3 - "ModifiedRecordingUploader"
 Cohesion: 0.20
 Nodes (7): Action, CancellationToken, JsonElement, Task, Uri, ModifiedRecordingUploader, UploadRevisionResult
 
 ### Community 4 - "FFMpegUtils"
-Cohesion: 0.15
+Cohesion: 0.14
 Nodes (17): audio, height, Lazy, Action, CancellationToken, HashSet, JsonElement, Process (+9 more)
 
 ### Community 5 - "CombineViewModel"
-Cohesion: 0.06
+Cohesion: 0.05
 Nodes (30): ConcurrentDictionary, AsyncRelayCommand, DateTime, ObservableCollection, RelayCommand, CombineViewModel, CanCombine, CombineCommand (+22 more)
 
 ### Community 6 - "RecordingJsonElapsedOffset"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (13): Elapsed, JsonObject, Action, CancellationToken, DateTime, HashSet, JsonNode, JsonSerializerOptions (+5 more)
 
 ### Community 7 - "TrimViewModel"
@@ -123,7 +127,7 @@ Cohesion: 0.26
 Nodes (8): HttpClient, Action, CancellationToken, JsonElement, Task, Uri, BoxScoreUploader, UploadBoxScoreResult
 
 ### Community 9 - "AppUserSettings"
-Cohesion: 0.13
+Cohesion: 0.12
 Nodes (15): JsonSerializerOptions, AppSettingsStore, Current, SettingsFilePath, AppUserSettings, BaseballLoggerApiKey, BaseballLoggerServerUrl, DefaultOutputDirectory (+7 more)
 
 ### Community 10 - "IntroScreenReadResult"
@@ -171,16 +175,20 @@ Cohesion: 0.13
 Nodes (9): KeyEventArgs, RoutedEventArgs, SelectionChangedEventArgs, EventInfoDefaultsWindow, MainWindow, RoutedEventArgs, YesNoConfirmWindow, TappedEventArgs (+1 more)
 
 ### Community 23 - ".Log"
-Cohesion: 0.29
+Cohesion: 0.23
 Nodes (4): Exception, CancellationToken, JsonNode, Task
 
 ### Community 24 - "CombineView"
 Cohesion: 0.07
-Nodes (24): DispatcherTimer, IPointer, ListBoxItem, EventArgs, IReadOnlyList, List, PointerPressedEventArgs, RoutedEventArgs (+16 more)
+Nodes (25): DispatcherTimer, IPointer, ListBoxItem, IEnumerable, EventArgs, IReadOnlyList, List, PointerPressedEventArgs (+17 more)
 
 ### Community 25 - "OptionsViewModel"
-Cohesion: 0.12
-Nodes (8): CancellationTokenSource, EventArgs, RelayCommand, Task, OptionsViewModel, ApiKeyPasswordChar, OpenRouterApiKeyPasswordChar, SettingsFilePathDisplay
+Cohesion: 0.20
+Nodes (5): CancellationTokenSource, OptionsViewModel, ApiKeyPasswordChar, OpenRouterApiKeyPasswordChar, SettingsFilePathDisplay
+
+### Community 26 - "MP4Tools.Views"
+Cohesion: 0.14
+Nodes (6): MP4Tools.Views, EventArgs, LogView, OptionsView, UserControl, VisualTreeAttachmentEventArgs
 
 ### Community 27 - "ExportTrimState"
 Cohesion: 0.29
@@ -191,28 +199,32 @@ Cohesion: 0.16
 Nodes (9): StartStopRange, EndRange, EndRangeDisplay, HasEndBound, InputPath, Label, SelectedDrawTextPosition, SourceFileName (+1 more)
 
 ### Community 29 - ".Apply"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (6): DefaultOutputPathRuntime, BuiltinFallbackDirectory, Directory, UiBehaviorSettingsRuntime, DeleteTrimSegmentsAfterTrimAndCombine, OpenOutputFolderOnComplete
 
-### Community 30 - "MP4ToolsLib"
-Cohesion: 0.12
-Nodes (8): MP4Tools.ViewModels, MP4Tools.Services, MP4Tools.Views, MP4Tools, MP4ToolsLib, Logger, FolderOpener, IntroFrameExtractor
+### Community 30 - "MP4Tools.ViewModels"
+Cohesion: 0.32
+Nodes (3): MP4Tools.ViewModels, MP4Tools.Services, FolderOpener
 
 ### Community 31 - "MainWindowViewModel"
-Cohesion: 0.14
-Nodes (10): Application, App, MainWindowViewModel, CombineViewModel, LogViewModel, OptionsViewModel, RewriteIntroViewModel, TrimViewModel (+2 more)
+Cohesion: 0.20
+Nodes (8): MainWindowViewModel, CombineViewModel, LogViewModel, OptionsViewModel, RewriteIntroViewModel, TrimViewModel, ViewModelBase, ObservableObject
 
 ### Community 32 - "ViewLocator"
 Cohesion: 0.33
 Nodes (3): Control, IDataTemplate, ViewLocator
 
-### Community 33 - "OpenRouterSettingsRuntime"
-Cohesion: 0.40
-Nodes (3): OpenRouterSettingsRuntime, ApiKey, Model
+### Community 33 - "MP4ToolsLib"
+Cohesion: 0.17
+Nodes (5): MP4ToolsLib, OpenRouterSettingsRuntime, ApiKey, Model, IntroFrameExtractor
 
 ### Community 35 - ".BuildAvaloniaApp"
 Cohesion: 0.32
 Nodes (4): AppBuilder, Program, STAThread, WaylandPlatformOptions
+
+### Community 36 - "App.axaml.cs"
+Cohesion: 0.25
+Nodes (4): Application, MP4Tools, App, Logger
 
 ## Ambiguous Edges - Review These
 - `DaVinci Resolve` → `Opus audio`  [AMBIGUOUS]
@@ -221,22 +233,22 @@ Nodes (4): AppBuilder, Program, STAThread, WaylandPlatformOptions
 ## Knowledge Gaps
 - **181 isolated node(s):** `net10.0`, `Avalonia (12.1.2)`, `Avalonia.Desktop (12.1.2)`, `Avalonia.Fonts.Inter (12.1.2)`, `Avalonia.Themes.Simple (12.1.2)` (+176 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 286 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `DaVinci Resolve` and `Opus audio`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `CombineViewModel` connect `CombineViewModel` to `.PrependIntroAsync`, `TrimView`, `.ScheduleEdgeDurationRefresh`, `.ApplyDefaultSkipRanges`, `LogViewModel`, `.OnPropertyChanged`, `TimeRange`, `.SyncSelectedInputFiles`, `.Log`, `CombineView`, `.RefreshCanCombineFromInputs`, `MP4ToolsLib`, `MainWindowViewModel`?**
-  _High betweenness centrality (0.257) - this node is a cross-community bridge._
-- **Why does `MP4ToolsLib` connect `MP4ToolsLib` to `.PrependIntroAsync`, `OpenRouterSettingsRuntime`, `MP4ViewModelBase`, `ModifiedRecordingUploader`, `RecordingJsonElapsedOffset`, `BoxScoreUploader`, `AppUserSettings`, `IntroScreenReadResult`, `DrawText Overlay Utils`, `.CreateAsync`, `TimeRange`, `EncodingSettingsDto`, `RewriteIntroViewModel`, `CombineView`, `ExportTrimState`?**
+- **Why does `CombineViewModel` connect `CombineViewModel` to `.PrependIntroAsync`, `TrimView`, `.ScheduleEdgeDurationRefresh`, `.ApplyDefaultSkipRanges`, `LogViewModel`, `.OnPropertyChanged`, `TimeRange`, `.MoveInputFilesToIndex`, `.Log`, `CombineView`, `MP4Tools.ViewModels`, `MainWindowViewModel`?**
+  _High betweenness centrality (0.256) - this node is a cross-community bridge._
+- **Why does `MP4ToolsLib` connect `MP4ToolsLib` to `.PrependIntroAsync`, `MP4ViewModelBase`, `ModifiedRecordingUploader`, `App.axaml.cs`, `FFMpegUtils`, `BoxScoreUploader`, `AppUserSettings`, `IntroScreenReadResult`, `DrawText Overlay Utils`, `.CreateAsync`, `TimeRange`, `EncodingSettingsDto`, `RewriteIntroViewModel`, `CombineView`, `MP4Tools.Views`, `ExportTrimState`, `MP4Tools.ViewModels`?**
   _High betweenness centrality (0.249) - this node is a cross-community bridge._
-- **Why does `TrimViewModel` connect `TrimViewModel` to `.PrependIntroAsync`, `TrimView`, `.ReadFileInfoAsync`, `LogViewModel`, `.OnPropertyChanged`, `TimeRange`, `ExportTrimState`, `StartStopRange`?**
+- **Why does `TrimViewModel` connect `TrimViewModel` to `.PrependIntroAsync`, `TrimView`, `.ClearTimeRanges`, `LogViewModel`, `.OnPropertyChanged`, `TimeRange`, `.Log`, `ExportTrimState`, `StartStopRange`?**
   _High betweenness centrality (0.096) - this node is a cross-community bridge._
 - **What connects `net10.0`, `Avalonia (12.1.2)`, `Avalonia.Desktop (12.1.2)` to the rest of the system?**
   _181 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `.PrependIntroAsync` be split into smaller, more focused modules?**
-  _Cohesion score 0.06518987341772152 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06450617283950617 - nodes in this community are weakly interconnected._
 - **Should `MP4ViewModelBase` be split into smaller, more focused modules?**
   _Cohesion score 0.059379217273954114 - nodes in this community are weakly interconnected._
