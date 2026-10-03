@@ -208,13 +208,27 @@ namespace MP4Tools
 			}
 		}
 
-		public async Task RunAndLogFFMpegAsync(string args, CancellationToken cancellationToken, string workingDirectory = "")
+		public async Task RunAndLogFFMpegAsync(
+			string args,
+			CancellationToken cancellationToken,
+			string workingDirectory = "",
+			Action<string> onOutputLine = null)
 		{
 			var workDir = !string.IsNullOrWhiteSpace(workingDirectory)
 				? workingDirectory
 				: System.IO.Path.GetDirectoryName(InputPath ?? string.Empty) ?? string.Empty;
 			await FFMpegUtils.Instance
-				.RunAndLogFFMpegAsync(args, HandleProcessOutput, Logger.Log, cancellationToken, workDir)
+				.RunAndLogFFMpegAsync(
+					args,
+					(process, data) =>
+					{
+						HandleProcessOutput(process, data);
+						if (!string.IsNullOrWhiteSpace(data))
+							onOutputLine?.Invoke(data);
+					},
+					Logger.Log,
+					cancellationToken,
+					workDir)
 				.ConfigureAwait(false);
 		}
 	}

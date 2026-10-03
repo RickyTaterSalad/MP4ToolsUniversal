@@ -71,6 +71,23 @@ public partial class CombineViewModel : MP4ViewModelBase
 		set => SetProperty(ref _operationStatus, value);
 	}
 
+	[ObservableProperty]
+	private double _progress;
+
+	[ObservableProperty]
+	private bool _showProgress;
+
+	/// <summary>
+	/// Duration-weighted combine progress (0–1). Media work (trim/intro/remux/concat/write)
+	/// fills up to <see cref="_progressMediaCap"/>; optional post-combine inning detection
+	/// uses the remainder.
+	/// </summary>
+	private double _progressMediaCap = 1;
+	private double _progressWorkTotal = 1;
+	private double _progressWorkDone;
+	private double _progressStageUnits = 1;
+	private double _lastProgressReported = -1;
+
 	private string _homeName;
 
 	public string HomeName
@@ -277,6 +294,127 @@ public partial class CombineViewModel : MP4ViewModelBase
 			OperationStatus = m;
 		else
 			Dispatcher.UIThread.Post(() => OperationStatus = m);
+	}
+
+	private void SetCombineProgress(double value01)
+	{
+		var value = Math.Clamp(value01, 0, 1);
+		if (value < _lastProgressReported + 0.002 && value < 0.995)
+			return;
+		_lastProgressReported = value;
+		if (Dispatcher.UIThread.CheckAccess())
+			Progress = value;
+		else
+			Dispatcher.UIThread.Post(() => Progress = value);
+	}
+
+	private void BeginCombineProgress(bool reserveInningDetector)
+	{
+		_progressMediaCap = reserveInningDetector ? 0.85 : 1.0;
+		_progressWorkTotal = 1;
+		_progressWorkDone = 0;
+		_progressStageUnits = 1;
+		_lastProgressReported = -1;
+		if (Dispatcher.UIThread.CheckAccess())
+		{
+			Progress = 0;
+			ShowProgress = true;
+		}
+		else
+		{
+			Dispatcher.UIThread.Post(() =>
+			{
+				Progress = 0;
+				ShowProgress = true;
+			});
+		}
+	}
+
+	private void PlanCombineProgressWork(double totalWorkSeconds)
+	{
+		_progressWorkTotal = Math.Max(totalWorkSeconds, 1);
+		_progressWorkDone = 0;
+		_progressStageUnits = 1;
+	}
+
+	private void BeginCombineProgressStage(double workSeconds)
+	{
+		_progressStageUnits = Math.Max(workSeconds, 0.01);
+	}
+
+	private void CompleteCombineProgressStage()
+	{
+		_progressWorkDone += _progressStageUnits;
+		_progressStageUnits = 0.01;
+		PublishCombineProgressUnits(_progressWorkDone);
+	}
+
+	private void ReportCombineProgressStageFraction(double fraction01)
+	{
+		var frac = Math.Clamp(fraction01, 0, 1);
+		PublishCombineProgressUnits(_progressWorkDone + frac * _progressStageUnits);
+	}
+
+	private void ReportCombineProgressFromFfmpegLine(string line)
+	{
+		if (!FfmpegProgressParser.TryParseTimeSeconds(line, out var mediaSeconds))
+			return;
+		ReportCombineProgressStageFraction(mediaSeconds / _progressStageUnits);
+	}
+
+	private void PublishCombineProgressUnits(double unitsDone)
+	{
+		var mediaFrac = Math.Clamp(unitsDone / _progressWorkTotal, 0, 1);
+		SetCombineProgress(mediaFrac * _progressMediaCap);
+	}
+
+	private void ReportCombineInningDetectorProgress(double progress01)
+	{
+		var p = Math.Clamp(progress01, 0, 1);
+		SetCombineProgress(_progressMediaCap + (1.0 - _progressMediaCap) * p);
+	}
+
+	private void FinishCombineProgress()
+	{
+		_lastProgressReported = -1;
+		SetCombineProgress(1);
+	}
+
+	private async Task RunCombineFfmpegWithProgressAsync(
+		string args,
+		CancellationToken ct,
+		double stageWorkSeconds)
+	{
+		BeginCombineProgressStage(stageWorkSeconds);
+		try
+		{
+			await RunAndLogFFMpegAsync(
+					args,
+					ct,
+					onOutputLine: ReportCombineProgressFromFfmpegLine)
+				.ConfigureAwait(false);
+		}
+		finally
+		{
+			CompleteCombineProgressStage();
+		}
+	}
+
+	private static double GetClipDurationSeconds(
+		IReadOnlyDictionary<string, TimeRange> videoDurations,
+		string path,
+		double fallback = 1)
+	{
+		if (!string.IsNullOrWhiteSpace(path)
+			&& videoDurations != null
+			&& videoDurations.TryGetValue(path, out var range)
+			&& range != null
+			&& range.TotalSeconds > 0)
+		{
+			return range.TotalSeconds;
+		}
+
+		return fallback;
 	}
 
 	public CombineViewModel()
@@ -1006,6 +1144,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 		_trackedFirstPath = null;
 		_trackedLastPath = null;
 		OperationStatus = string.Empty;
+		Progress = 0;
+		ShowProgress = false;
 		OutputPath = string.Empty;
 		RecordingJsonPath = string.Empty;
 		BoxScoreImagePath = string.Empty;
@@ -1070,6 +1210,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		Logger.LogMessageReceived += handler;
 		var ct = BeginFfmpegOperation();
 		CanCombine = false;
+		BeginCombineProgress(RunInningDetectorAfterCombine);
 		ReportCombineStep("Starting combine…");
 		try
 		{
@@ -1217,6 +1358,39 @@ public partial class CombineViewModel : MP4ViewModelBase
 				: default;
 			var tempFilesToDelete = new List<string>();
 			var lastSourcePath = writeFiles.Count > 0 ? writeFiles[^1].Path : null;
+			var startSkipSeconds = TrimFirstVideo ? StartRange.TotalSeconds : 0;
+			var firstSourcePath = writeFiles.Count > 0 ? writeFiles[0].Path : null;
+			var firstClipSeconds = Math.Max(
+				0.1,
+				GetClipDurationSeconds(videoDurations, firstSourcePath) - startSkipSeconds);
+			var introWorkSeconds = shouldAddIntro
+				? Math.Max(0.1, IntroDurationSeconds + firstClipSeconds)
+				: 0;
+			var estimatedOutputSeconds = Math.Max(
+				0.1,
+				dblTotalDuration - startSkipSeconds + (shouldAddIntro ? IntroDurationSeconds : 0));
+
+			// Duration-weighted plan: intro build + remux/concat + final write.
+			var plannedWork = new List<double>();
+			if (shouldAddIntro)
+				plannedWork.Add(introWorkSeconds);
+			if (!shouldAddIntro)
+			{
+				plannedWork.Add(estimatedOutputSeconds);
+			}
+			else if (writeFiles.Count == 1)
+			{
+				plannedWork.Add(estimatedOutputSeconds);
+			}
+			else
+			{
+				plannedWork.Add(introWorkSeconds); // remux intro-merged first clip
+				for (var i = 1; i < writeFiles.Count; i++)
+					plannedWork.Add(Math.Max(0.1, GetClipDurationSeconds(videoDurations, writeFiles[i].Path)));
+				plannedWork.Add(estimatedOutputSeconds); // final MPEG-TS → MP4 write
+			}
+
+			PlanCombineProgressWork(plannedWork.Sum());
 
 			var introFirstFile = "";
 			var introApplied = false;
@@ -1247,19 +1421,28 @@ public partial class CombineViewModel : MP4ViewModelBase
 				}
 
 				introFirstFile = Path.Combine(TempPathHelper.GetTempPath(), $"first_intro_{Guid.NewGuid():N}.mp4");
-				await IntroVideoComposerAsync.PrependIntroAsync(
-					firstFile.Path,
-					effectiveTitle,
-					effectiveSubtitle,
-					introFirstFile,
-					IntroDurationSeconds,
-					detailsText: effectiveDetails,
-					log: Logger.Log,
-					ct: ct,
-					operationStep: ReportCombineStep,
-					seekBeforeMainInput: seekBeforeMain,
-					hwAccelForIntro: encPrefs.HardwareAcceleration,
-					resolveSafeEncoding: false).ConfigureAwait(false);
+				BeginCombineProgressStage(introWorkSeconds);
+				try
+				{
+					await IntroVideoComposerAsync.PrependIntroAsync(
+						firstFile.Path,
+						effectiveTitle,
+						effectiveSubtitle,
+						introFirstFile,
+						IntroDurationSeconds,
+						detailsText: effectiveDetails,
+						log: Logger.Log,
+						progress: new Progress<double>(ReportCombineProgressStageFraction),
+						ct: ct,
+						operationStep: ReportCombineStep,
+						seekBeforeMainInput: seekBeforeMain,
+						hwAccelForIntro: encPrefs.HardwareAcceleration,
+						resolveSafeEncoding: false).ConfigureAwait(false);
+				}
+				finally
+				{
+					CompleteCombineProgressStage();
+				}
 				if (File.Exists(introFirstFile))
 				{
 					writeFiles[0] = new CombineFile { Name = Path.GetFileName(introFirstFile), Path = introFirstFile };
@@ -1290,7 +1473,6 @@ public partial class CombineViewModel : MP4ViewModelBase
 				if (trimOffFinal < TimeSpan.Zero)
 					trimOffFinal = TimeSpan.Zero;
 
-				var startSkipSeconds = TrimFirstVideo ? StartRange.TotalSeconds : 0;
 				var introAddSeconds = introApplied ? IntroDurationSeconds : 0;
 				var timelineSeconds = dblTotalDuration - startSkipSeconds + introAddSeconds;
 				var fullVideoSpan = TimeSpan.FromSeconds(Math.Max(0, timelineSeconds));
@@ -1325,7 +1507,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 					LegacyFastEncoding.AppendStreamCopyTail(concatOpts);
 					concatOpts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile)));
 
-					await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(concatOpts), ct).ConfigureAwait(false);
+					await RunCombineFfmpegWithProgressAsync(
+						FfmpegCommandLine.Build(concatOpts),
+						ct,
+						estimatedOutputSeconds).ConfigureAwait(false);
 				}
 				catch (OperationCanceledException)
 				{
@@ -1360,6 +1545,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 							File.Delete(combineOutputFile);
 						File.Move(introMergedPath, combineOutputFile);
 						tempFilesToDelete.Remove(introMergedPath);
+						BeginCombineProgressStage(estimatedOutputSeconds);
+						CompleteCombineProgressStage();
 					}
 					else
 					{
@@ -1373,7 +1560,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 						};
 						LegacyFastEncoding.AppendStreamCopyTail(promoteOpts);
 						promoteOpts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile)));
-						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(promoteOpts), ct).ConfigureAwait(false);
+						await RunCombineFfmpegWithProgressAsync(
+							FfmpegCommandLine.Build(promoteOpts),
+							ct,
+							estimatedOutputSeconds).ConfigureAwait(false);
 					}
 				}
 				catch (OperationCanceledException)
@@ -1415,6 +1605,14 @@ public partial class CombineViewModel : MP4ViewModelBase
 						audioCodecByPath[path] = ac;
 					}
 
+					var remuxDurations = new double[writeFiles.Count];
+					for (var i = 0; i < writeFiles.Count; i++)
+					{
+						remuxDurations[i] = i == 0 && introApplied
+							? introWorkSeconds
+							: Math.Max(0.1, GetClipDurationSeconds(videoDurations, writeFiles[i].Path));
+					}
+
 					for (int i = 0; i < writeFiles.Count; i++)
 					{
 						ct.ThrowIfCancellationRequested();
@@ -1438,7 +1636,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 						MpegTsConcatAudio.AppendMp4ToTsAudioOptions(partTsOpts, aProbe);
 						partTsOpts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
 						partTsOpts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(partTsFile)));
-						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(partTsOpts), ct).ConfigureAwait(false);
+						await RunCombineFfmpegWithProgressAsync(
+							FfmpegCommandLine.Build(partTsOpts),
+							ct,
+							remuxDurations[i]).ConfigureAwait(false);
 						if (!File.Exists(partTsFile))
 						{
 							combineSucceeded = false;
@@ -1479,7 +1680,10 @@ public partial class CombineViewModel : MP4ViewModelBase
 						LegacyFastEncoding.AppendStreamCopyTail(finalizeParts);
 						finalizeParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(combineOutputFile)));
 
-						await RunAndLogFFMpegAsync(FfmpegCommandLine.Build(finalizeParts), ct).ConfigureAwait(false);
+						await RunCombineFfmpegWithProgressAsync(
+							FfmpegCommandLine.Build(finalizeParts),
+							ct,
+							estimatedOutputSeconds).ConfigureAwait(false);
 					}
 					else if (combineSucceeded)
 					{
@@ -1526,6 +1730,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 			Logger.Log("Combine complete.");
 			if (combineSucceeded)
 			{
+				// Media merge/write complete — park at media cap before optional post steps.
+				SetCombineProgress(_progressMediaCap);
 				var introChapterOffsetSeconds = introApplied ? IntroDurationSeconds : 0;
 				await WriteCombineEditMapIfNeededAsync(
 					combineOutputFile,
@@ -1537,6 +1743,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					.ConfigureAwait(false);
 				await CreateBoxScoreSessionIfNeededAsync(ct).ConfigureAwait(false);
 				await RunInningDetectorIfNeededAsync(combineOutputFile, ct).ConfigureAwait(false);
+				FinishCombineProgress();
 				ReportCombineStep("Finished successfully.");
 				if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
 					FolderOpener.OpenContainingFolderIfExists(combineOutputFile);
@@ -1808,6 +2015,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 					combineOutputFile,
 					ct,
 					log: Logger.Log,
+					progress01: ReportCombineInningDetectorProgress,
 					options: new HalfInningDetector.Options
 					{
 						SkipIntroTitleCards = true,
@@ -1847,13 +2055,20 @@ public partial class CombineViewModel : MP4ViewModelBase
 				return null;
 			}
 
-			ReportCombineStep($"Running inning detector on {lrfPaths.Count} LRF proxy file(s)…");
+			var sampleInterval = UiBehaviorSettingsRuntime.LrfInningSampleIntervalSeconds;
+			ReportCombineStep(
+				$"Running inning detector on {lrfPaths.Count} LRF proxy file(s) (sample every {sampleInterval:0.###}s)…");
 			return await LrfInningDetector.DetectWithResolvedLrfAsync(
 					combineOutputFile,
 					map,
 					lrfPaths,
 					ct,
 					log: Logger.Log,
+					progress01: ReportCombineInningDetectorProgress,
+					options: new LrfInningDetector.Options
+					{
+						DetectorOptions = LrfInningDetector.Options.CreateDefaultDetectorOptions(sampleInterval),
+					},
 					outputJsonPath: outputJsonPath,
 					status: ReportCombineStep)
 				.ConfigureAwait(false);

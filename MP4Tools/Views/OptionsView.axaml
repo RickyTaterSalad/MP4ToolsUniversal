@@ -4,135 +4,11 @@
 						 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 						 xmlns:vm="using:MP4Tools.ViewModels"
 						 xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-						 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="220"
+						 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
 						 x:Class="MP4Tools.Views.OptionsView"
 						 x:DataType="vm:OptionsViewModel">
-	<ScrollViewer>
-		<StackPanel Margin="0,0,16,16" Spacing="14">
-			<TextBlock Text="Temporary files" FontWeight="SemiBold" FontSize="16"/>
-
-			<TextBlock TextWrapping="Wrap"
-								 Text="Leave the folder empty to use the system temporary directory. Files created during combine and trim are written here."/>
-
-			<Grid ColumnDefinitions="*,Auto,Auto">
-				<TextBox Grid.Column="0"
-								 PlaceholderText="System default"
-								 Text="{Binding TempDirectory, UpdateSourceTrigger=PropertyChanged}"
-								 Margin="0,0,8,0"/>
-				<Button Grid.Column="1"
-								Command="{Binding BrowseTempFolderCommand}"
-								Padding="10,6"
-								Margin="0,0,8,0">
-					<StackPanel Orientation="Horizontal">
-						<materialIcons:MaterialIcon Kind="FolderOpen"/>
-						<TextBlock Text="Browse…" Margin="6,0,0,0"/>
-					</StackPanel>
-				</Button>
-				<Button Grid.Column="2"
-								Command="{Binding ClearTempFolderPathCommand}"
-								Padding="10,6">
-					<TextBlock Text="Use system default"/>
-				</Button>
-			</Grid>
-
-			<ToggleSwitch Content="Keep temporary files after processing (do not delete intermediates)"
-								OffContent="" OnContent=""
-								IsChecked="{Binding RetainTemporaryFiles}"/>
-
-			<TextBlock Text="Default output folder" FontWeight="SemiBold" FontSize="16"/>
-			<TextBlock TextWrapping="Wrap"
-								 Text="Combine builds output paths here; Trim writes each session under this folder. Leave empty to use the built-in default (/opt/Encodes)."/>
-
-			<Grid ColumnDefinitions="*,Auto,Auto">
-				<TextBox Grid.Column="0"
-								 PlaceholderText="/opt/Encodes"
-								 Text="{Binding DefaultOutputDirectory, UpdateSourceTrigger=PropertyChanged}"
-								 Margin="0,0,8,0"/>
-				<Button Grid.Column="1"
-								Command="{Binding BrowseDefaultOutputFolderCommand}"
-								Padding="10,6"
-								Margin="0,0,8,0">
-					<StackPanel Orientation="Horizontal">
-						<materialIcons:MaterialIcon Kind="FolderOpen"/>
-						<TextBlock Text="Browse…" Margin="6,0,0,0"/>
-					</StackPanel>
-				</Button>
-				<Button Grid.Column="2"
-								Command="{Binding ClearDefaultOutputFolderPathCommand}"
-								Padding="10,6">
-					<TextBlock Text="Use built-in default"/>
-				</Button>
-			</Grid>
-
-			<ToggleSwitch Content="Open output folder when Combine/Trim completes successfully"
-								OffContent="" OnContent=""
-								IsChecked="{Binding OpenOutputFolderOnComplete}"/>
-
-			<ToggleSwitch Content="Warn when estimated disk space may be insufficient (Combine / Replace Segment)"
-								OffContent="" OnContent=""
-								IsChecked="{Binding WarnOnInsufficientDiskSpace}"
-								ToolTip.Tip="Estimates final output plus temporary intermediates before starting. When free space looks too low, asks whether to continue."/>
-
-			<ToggleSwitch Content="Delete segment clips after successful Trim And Combine"
-								OffContent="" OnContent=""
-								IsChecked="{Binding DeleteTrimSegmentsAfterTrimAndCombine}"
-								ToolTip.Tip="Does not apply to Trim-only runs."/>
-
-			<TextBlock Text="Encoding" FontWeight="SemiBold" FontSize="16"/>
-			<ToggleSwitch Content="Resolve-safe encoding (re-encode for DaVinci Resolve)"
-								OffContent="" OnContent=""
-								IsChecked="{Binding UseResolveSafeEncoding}"
-								ToolTip.Tip="When enabled, trim re-encodes video to clean 8-bit HEVC MP4. Combine always uses stream copy. When disabled, trim uses fast stream-copy (may crash or misalign in Resolve)."/>
-
-			<TextBlock Text="Baseball Logger Server" FontWeight="SemiBold" FontSize="16"/>
-			<TextBlock TextWrapping="Wrap"
-								 Text="Combine uploads a modified recording JSON only when the Recording JSON field is a /share/… URL on this server. If a box-score image path is set, it is uploaded to the same source recording after the JSON upload (API key required). Set the server base URL below. Revision uploads use the share token; API key is optional for that route but required for box scores."/>
-
-			<TextBox PlaceholderText="https://logger.example.com"
-							 Text="{Binding BaseballLoggerServerUrl, UpdateSourceTrigger=PropertyChanged}"/>
-
-			<Grid ColumnDefinitions="*,Auto">
-				<TextBox Grid.Column="0"
-								 PlaceholderText="API key (required for box-score upload)"
-								 PasswordChar="{Binding ApiKeyPasswordChar}"
-								 Text="{Binding BaseballLoggerApiKey, UpdateSourceTrigger=PropertyChanged}"
-								 Margin="0,0,8,0"/>
-				<Button Grid.Column="1"
-								Command="{Binding ToggleApiKeyVisibilityCommand}"
-								Padding="8,6"
-								ToolTip.Tip="Show or hide API key">
-					<Panel>
-						<materialIcons:MaterialIcon Kind="Eye" IsVisible="{Binding !IsApiKeyVisible}"/>
-						<materialIcons:MaterialIcon Kind="EyeOff" IsVisible="{Binding IsApiKeyVisible}"/>
-					</Panel>
-				</Button>
-			</Grid>
-
-			<TextBlock Text="OpenRouter" FontWeight="SemiBold" FontSize="16"/>
-			<TextBlock TextWrapping="Wrap"
-								 Text="Used by Rewrite Intro → Read Intro to OCR an existing title card via a vision model. Get a key at openrouter.ai."/>
-
-			<Grid ColumnDefinitions="*,Auto">
-				<TextBox Grid.Column="0"
-								 PlaceholderText="OpenRouter API key"
-								 PasswordChar="{Binding OpenRouterApiKeyPasswordChar}"
-								 Text="{Binding OpenRouterApiKey, UpdateSourceTrigger=PropertyChanged}"
-								 Margin="0,0,8,0"/>
-				<Button Grid.Column="1"
-								Command="{Binding ToggleOpenRouterApiKeyVisibilityCommand}"
-								Padding="8,6"
-								ToolTip.Tip="Show or hide OpenRouter API key">
-					<Panel>
-						<materialIcons:MaterialIcon Kind="Eye" IsVisible="{Binding !IsOpenRouterApiKeyVisible}"/>
-						<materialIcons:MaterialIcon Kind="EyeOff" IsVisible="{Binding IsOpenRouterApiKeyVisible}"/>
-					</Panel>
-				</Button>
-			</Grid>
-
-			<TextBox PlaceholderText="Model (optional, default google/gemini-2.5-flash)"
-							 Text="{Binding OpenRouterModel, UpdateSourceTrigger=PropertyChanged}"
-							 ToolTip.Tip="OpenRouter model id for intro vision OCR."/>
-
+	<DockPanel>
+		<StackPanel DockPanel.Dock="Bottom" Margin="0,8,16,8" Spacing="2">
 			<TextBlock Text="Configuration file" Opacity="0.85" FontSize="12"/>
 			<TextBlock Text="{Binding SettingsFilePathDisplay}"
 								 TextWrapping="Wrap"
@@ -143,5 +19,170 @@
 								 FontSize="11"
 								 Text="Changes are saved and applied automatically (output paths, temp folder, and behavior flags update without restarting)."/>
 		</StackPanel>
-	</ScrollViewer>
+
+		<TabControl Margin="0">
+			<TabItem Header="File System">
+				<ScrollViewer>
+					<StackPanel Margin="8,8,16,16" Spacing="14">
+						<TextBlock Text="Temporary files" FontWeight="SemiBold" FontSize="16"/>
+
+						<TextBlock TextWrapping="Wrap"
+											 Text="Leave the folder empty to use the system temporary directory. Files created during combine and trim are written here."/>
+
+						<Grid ColumnDefinitions="*,Auto,Auto">
+							<TextBox Grid.Column="0"
+											 PlaceholderText="System default"
+											 Text="{Binding TempDirectory, UpdateSourceTrigger=PropertyChanged}"
+											 Margin="0,0,8,0"/>
+							<Button Grid.Column="1"
+											Command="{Binding BrowseTempFolderCommand}"
+											Padding="10,6"
+											Margin="0,0,8,0">
+								<StackPanel Orientation="Horizontal">
+									<materialIcons:MaterialIcon Kind="FolderOpen"/>
+									<TextBlock Text="Browse…" Margin="6,0,0,0"/>
+								</StackPanel>
+							</Button>
+							<Button Grid.Column="2"
+											Command="{Binding ClearTempFolderPathCommand}"
+											Padding="10,6">
+								<TextBlock Text="Use system default"/>
+							</Button>
+						</Grid>
+
+						<ToggleSwitch Content="Keep temporary files after processing (do not delete intermediates)"
+											OffContent="" OnContent=""
+											IsChecked="{Binding RetainTemporaryFiles}"/>
+
+						<TextBlock Text="Default output folder" FontWeight="SemiBold" FontSize="16"/>
+						<TextBlock TextWrapping="Wrap"
+											 Text="Combine builds output paths here; Trim writes each session under this folder. Leave empty to use the built-in default (/opt/Encodes)."/>
+
+						<Grid ColumnDefinitions="*,Auto,Auto">
+							<TextBox Grid.Column="0"
+											 PlaceholderText="/opt/Encodes"
+											 Text="{Binding DefaultOutputDirectory, UpdateSourceTrigger=PropertyChanged}"
+											 Margin="0,0,8,0"/>
+							<Button Grid.Column="1"
+											Command="{Binding BrowseDefaultOutputFolderCommand}"
+											Padding="10,6"
+											Margin="0,0,8,0">
+								<StackPanel Orientation="Horizontal">
+									<materialIcons:MaterialIcon Kind="FolderOpen"/>
+									<TextBlock Text="Browse…" Margin="6,0,0,0"/>
+								</StackPanel>
+							</Button>
+							<Button Grid.Column="2"
+											Command="{Binding ClearDefaultOutputFolderPathCommand}"
+											Padding="10,6">
+								<TextBlock Text="Use built-in default"/>
+							</Button>
+						</Grid>
+
+						<ToggleSwitch Content="Open output folder when Combine/Trim completes successfully"
+											OffContent="" OnContent=""
+											IsChecked="{Binding OpenOutputFolderOnComplete}"/>
+
+						<ToggleSwitch Content="Warn when estimated disk space may be insufficient (Combine / Replace Segment)"
+											OffContent="" OnContent=""
+											IsChecked="{Binding WarnOnInsufficientDiskSpace}"
+											ToolTip.Tip="Estimates final output plus temporary intermediates before starting. When free space looks too low, asks whether to continue."/>
+
+						<ToggleSwitch Content="Delete segment clips after successful Trim And Combine"
+											OffContent="" OnContent=""
+											IsChecked="{Binding DeleteTrimSegmentsAfterTrimAndCombine}"
+											ToolTip.Tip="Does not apply to Trim-only runs."/>
+					</StackPanel>
+				</ScrollViewer>
+			</TabItem>
+
+			<TabItem Header="Encoding">
+				<ScrollViewer>
+					<StackPanel Margin="8,8,16,16" Spacing="14">
+						<TextBlock Text="Encoding" FontWeight="SemiBold" FontSize="16"/>
+						<ToggleSwitch Content="Resolve-safe encoding (re-encode for DaVinci Resolve)"
+											OffContent="" OnContent=""
+											IsChecked="{Binding UseResolveSafeEncoding}"
+											ToolTip.Tip="When enabled, trim re-encodes video to clean 8-bit HEVC MP4. Combine always uses stream copy. When disabled, trim uses fast stream-copy (may crash or misalign in Resolve)."/>
+					</StackPanel>
+				</ScrollViewer>
+			</TabItem>
+
+			<TabItem Header="Baseball Logger">
+				<ScrollViewer>
+					<StackPanel Margin="8,8,16,16" Spacing="14">
+						<TextBlock Text="Baseball Logger Server" FontWeight="SemiBold" FontSize="16"/>
+						<TextBlock TextWrapping="Wrap"
+											 Text="Combine uploads a modified recording JSON only when the Recording JSON field is a /share/… URL on this server. If a box-score image path is set, it is uploaded to the same source recording after the JSON upload (API key required). Set the server base URL below. Revision uploads use the share token; API key is optional for that route but required for box scores."/>
+
+						<TextBox PlaceholderText="https://logger.example.com"
+										 Text="{Binding BaseballLoggerServerUrl, UpdateSourceTrigger=PropertyChanged}"/>
+
+						<Grid ColumnDefinitions="*,Auto">
+							<TextBox Grid.Column="0"
+											 PlaceholderText="API key (required for box-score upload)"
+											 PasswordChar="{Binding ApiKeyPasswordChar}"
+											 Text="{Binding BaseballLoggerApiKey, UpdateSourceTrigger=PropertyChanged}"
+											 Margin="0,0,8,0"/>
+							<Button Grid.Column="1"
+											Command="{Binding ToggleApiKeyVisibilityCommand}"
+											Padding="8,6"
+											ToolTip.Tip="Show or hide API key">
+								<Panel>
+									<materialIcons:MaterialIcon Kind="Eye" IsVisible="{Binding !IsApiKeyVisible}"/>
+									<materialIcons:MaterialIcon Kind="EyeOff" IsVisible="{Binding IsApiKeyVisible}"/>
+								</Panel>
+							</Button>
+						</Grid>
+					</StackPanel>
+				</ScrollViewer>
+			</TabItem>
+
+			<TabItem Header="AI">
+				<ScrollViewer>
+					<StackPanel Margin="8,8,16,16" Spacing="14">
+						<TextBlock Text="Inning detector (LRF)" FontWeight="SemiBold" FontSize="16"/>
+						<TextBlock TextWrapping="Wrap"
+											 Text="When detecting half-innings on DJI .LRF proxies (AI → LRF Inning Detector, or Combine after-encode when .LRF siblings exist), frames are sampled at this interval. Lower values are more accurate and slower."/>
+						<StackPanel Orientation="Horizontal" Spacing="8">
+							<TextBlock Text="Sample every" VerticalAlignment="Center"/>
+							<NumericUpDown Minimum="0.5"
+														 Maximum="30"
+														 Increment="0.5"
+														 FormatString="0.#"
+														 Value="{Binding LrfInningSampleIntervalSeconds}"
+														 Width="110"
+														 ToolTip.Tip="Default 3 seconds. Combined-MP4 inning detection still uses its own 5s default."/>
+							<TextBlock Text="seconds" VerticalAlignment="Center"/>
+						</StackPanel>
+
+						<TextBlock Text="OpenRouter" FontWeight="SemiBold" FontSize="16"/>
+						<TextBlock TextWrapping="Wrap"
+											 Text="Used by Rewrite Intro → Read Intro to OCR an existing title card via a vision model. Get a key at openrouter.ai."/>
+
+						<Grid ColumnDefinitions="*,Auto">
+							<TextBox Grid.Column="0"
+											 PlaceholderText="OpenRouter API key"
+											 PasswordChar="{Binding OpenRouterApiKeyPasswordChar}"
+											 Text="{Binding OpenRouterApiKey, UpdateSourceTrigger=PropertyChanged}"
+											 Margin="0,0,8,0"/>
+							<Button Grid.Column="1"
+											Command="{Binding ToggleOpenRouterApiKeyVisibilityCommand}"
+											Padding="8,6"
+											ToolTip.Tip="Show or hide OpenRouter API key">
+								<Panel>
+									<materialIcons:MaterialIcon Kind="Eye" IsVisible="{Binding !IsOpenRouterApiKeyVisible}"/>
+									<materialIcons:MaterialIcon Kind="EyeOff" IsVisible="{Binding IsOpenRouterApiKeyVisible}"/>
+								</Panel>
+							</Button>
+						</Grid>
+
+						<TextBox PlaceholderText="Model (optional, default google/gemini-2.5-flash)"
+										 Text="{Binding OpenRouterModel, UpdateSourceTrigger=PropertyChanged}"
+										 ToolTip.Tip="OpenRouter model id for intro vision OCR."/>
+					</StackPanel>
+				</ScrollViewer>
+			</TabItem>
+		</TabControl>
+	</DockPanel>
 </UserControl>

@@ -54,7 +54,7 @@
 
 		<ScrollViewer>
 			<StackPanel Spacing="12">
-				<TextBlock Text="Detects half-innings on DJI .LRF proxies, then remaps bookmarks onto the combined MP4 using the Combine edit map (intro + start/end trims). Combine writes a .combine-map.json next to the output video."
+				<TextBlock Text="Detects half-innings on DJI .LRF proxies, then remaps bookmarks onto the combined MP4 using the Combine edit map (intro + start/end trims). Combine writes a .combine-map.json next to the output video. Sample interval is set under Options → Inning detector (LRF) (default every 3 seconds)."
 						   TextWrapping="Wrap"
 						   Opacity="0.8"/>
 

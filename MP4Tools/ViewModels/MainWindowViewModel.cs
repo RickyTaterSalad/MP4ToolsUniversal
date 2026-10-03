@@ -40,12 +40,9 @@ public partial class MainWindowViewModel : ViewModelBase
 				EditViewModel.SelectedTabIndex = 0;
 				break;
 			case LogOperationSource.GenerateIntro:
-				SelectedTabIndex = 2;
-				EditViewModel.SelectedTabIndex = 1;
-				break;
 			case LogOperationSource.ReplaceSegment:
 				SelectedTabIndex = 2;
-				EditViewModel.SelectedTabIndex = 2;
+				EditViewModel.SelectedTabIndex = 1;
 				break;
 			case LogOperationSource.InningDetector:
 				SelectedTabIndex = 3;

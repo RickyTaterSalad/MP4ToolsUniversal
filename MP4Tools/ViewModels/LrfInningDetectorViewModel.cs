@@ -188,6 +188,7 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 
 		try
 		{
+			var sampleInterval = UiBehaviorSettingsRuntime.LrfInningSampleIntervalSeconds;
 			var result = await LrfInningDetector.DetectAsync(
 				CombinedVideoPath,
 				LrfFolderPath,
@@ -200,6 +201,10 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 						Progress = value;
 					else
 						Dispatcher.UIThread.Post(() => Progress = value);
+				},
+				options: new LrfInningDetector.Options
+				{
+					DetectorOptions = LrfInningDetector.Options.CreateDefaultDetectorOptions(sampleInterval),
 				},
 				outputJsonPath: OutputJsonPath,
 				status: ReportStatus).ConfigureAwait(false);

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenCvSharp;
@@ -702,7 +701,9 @@ public static class HalfInningDetector
 		bool BatterPresent,
 		bool DefenseReady,
 		bool LooksEmpty,
-		bool CoachNearPlate);
+		bool CoachNearPlate,
+		bool OnDeckPresent,
+		bool InningInProgress);
 
 	private static FrameSignals BuildFrameSignals(
 		IReadOnlyList<DetectedObject> detections,
@@ -716,21 +717,37 @@ public static class HalfInningDetector
 			var hasHitter = HasClassAbove(detections, "hitter", options.RoleHitterConfidence);
 			var hasPitcher = HasClassAbove(detections, "pitcher", options.RolePitcherConfidence);
 			var hasCatcher = HasClassAbove(detections, "catcher", options.RoleCatcherConfidence);
-			// Prefer a hitter whose center is in the batter's box; accept any hitter as fallback.
+			// Prefer a hitter whose center is in the batter's box; accept any hitter as fallback
+			// unless that hitter is only in an on-deck ROI (next batter, not at plate).
 			var hitterInBox = CountClassInRoiAbove(
 				detections, "hitter", options.RoleHitterConfidence, frameW, frameH, options.BatterBoxRoi) > 0;
-			var batterPresent = hitterInBox || hasHitter;
+			var onDeckInRoi = CountClassInRoiAbove(
+					detections, "hitter", options.RoleHitterConfidence, frameW, frameH, options.OnDeckLeftRoi)
+				+ CountClassInRoiAbove(
+					detections, "hitter", options.RoleHitterConfidence, frameW, frameH, options.OnDeckRightRoi);
+			var hittersOutsideBox = CountClassOutsideRoiAbove(
+				detections, "hitter", options.RoleHitterConfidence, frameW, frameH, options.BatterBoxRoi);
+			var onDeckPresent = onDeckInRoi > 0
+				|| (hitterInBox && hittersOutsideBox > 0);
+			// Lone on-deck hitter is not "batter present" for half-start bookmarks.
+			var batterPresent = hitterInBox || (hasHitter && !onDeckPresent);
 			// BaseballCV PHC often misses the distant mound pitcher on kids/backstop wide shots;
 			// catcher gear is larger and more reliable as a "defense is out" proxy.
 			var defenseReady = hasPitcher || hasCatcher;
 			var looksEmpty = !hasPitcher && !hasHitter && !hasCatcher;
-			return new FrameSignals(hasHitter, hasPitcher, hasCatcher, batterPresent, defenseReady, looksEmpty, CoachNearPlate: false);
+			var inningInProgress = options.UseOnDeckInProgressSignal && hitterInBox && onDeckPresent;
+			return new FrameSignals(
+				hasHitter, hasPitcher, hasCatcher, batterPresent, defenseReady, looksEmpty,
+				CoachNearPlate: false, OnDeckPresent: onDeckPresent, InningInProgress: inningInProgress);
 		}
 
 		var fieldCount = CountInRoi(detections, frameW, frameH, options.FieldRoi);
 		var batterInBox = CountInRoi(detections, frameW, frameH, options.BatterBoxRoi) > 0;
+		var personOnDeck = CountInRoi(detections, frameW, frameH, options.OnDeckLeftRoi)
+			+ CountInRoi(detections, frameW, frameH, options.OnDeckRightRoi) > 0;
 		var coachNearPlate = !batterInBox
 			&& CountInRoi(detections, frameW, frameH, options.BatterApproachRoi) > 0;
+		var personInProgress = options.UseOnDeckInProgressSignal && batterInBox && personOnDeck;
 		return new FrameSignals(
 			HasHitter: batterInBox,
 			HasPitcher: fieldCount >= options.MinFieldersPlaying,
@@ -738,7 +755,9 @@ public static class HalfInningDetector
 			BatterPresent: batterInBox,
 			DefenseReady: fieldCount >= options.MinFieldersPlaying,
 			LooksEmpty: fieldCount <= options.MaxFieldersEmpty,
-			CoachNearPlate: coachNearPlate);
+			CoachNearPlate: coachNearPlate,
+			OnDeckPresent: personOnDeck,
+			InningInProgress: personInProgress);
 	}
 
 	/// <summary>
@@ -846,6 +865,30 @@ public static class HalfInningDetector
 				continue;
 			var c = new Point(det.Box.X + det.Box.Width / 2, det.Box.Y + det.Box.Height / 2);
 			if (roi.Contains(c))
+				count++;
+		}
+
+		return count;
+	}
+
+	private static int CountClassOutsideRoiAbove(
+		IReadOnlyList<DetectedObject> detections,
+		string className,
+		float minConfidence,
+		int frameW,
+		int frameH,
+		Rect2d roiNorm)
+	{
+		var roi = ToPixelRoi(roiNorm, frameW, frameH);
+		var count = 0;
+		foreach (var det in detections)
+		{
+			if (!string.Equals(det.ClassName, className, StringComparison.OrdinalIgnoreCase))
+				continue;
+			if (det.Confidence < minConfidence)
+				continue;
+			var c = new Point(det.Box.X + det.Box.Width / 2, det.Box.Y + det.Box.Height / 2);
+			if (!roi.Contains(c))
 				count++;
 		}
 
@@ -1097,10 +1140,6 @@ public static class HalfInningDetector
 		return TimeSpan.FromSeconds(clamped);
 	}
 
-	private static readonly Regex FfmpegTimeRegex = new(
-		@"time=\s*(-?\d{1,3}):(\d{2}):(\d{2}(?:\.\d+)?)",
-		RegexOptions.Compiled | RegexOptions.CultureInvariant);
-
 	private static async Task ExtractSampleFramesAsync(
 		string videoPath,
 		string frameDir,
@@ -1240,7 +1279,7 @@ public static class HalfInningDetector
 			log?.Invoke(line);
 			if (string.IsNullOrWhiteSpace(line))
 				return;
-			if (!TryParseFfmpegTimeSeconds(line, out var mediaSeconds))
+			if (!FfmpegProgressParser.TryParseTimeSeconds(line, out var mediaSeconds))
 				return;
 
 			var written = 0;
@@ -1305,27 +1344,6 @@ public static class HalfInningDetector
 				// expected
 			}
 		}
-	}
-
-	private static bool TryParseFfmpegTimeSeconds(string line, out double seconds)
-	{
-		seconds = 0;
-		if (string.IsNullOrEmpty(line) || !line.Contains("time=", StringComparison.Ordinal))
-			return false;
-
-		var match = FfmpegTimeRegex.Match(line);
-		if (!match.Success)
-			return false;
-
-		if (!int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var hours))
-			return false;
-		if (!int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var minutes))
-			return false;
-		if (!double.TryParse(match.Groups[3].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var secs))
-			return false;
-
-		seconds = Math.Abs(hours) * 3600 + minutes * 60 + secs;
-		return true;
 	}
 
 	private static double ProbeDurationWithOpenCv(string videoPath)

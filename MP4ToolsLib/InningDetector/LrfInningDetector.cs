@@ -16,12 +16,16 @@ public static class LrfInningDetector
 {
 	public sealed class Options
 	{
-		public HalfInningDetector.Options DetectorOptions { get; set; } = new()
-		{
-			// LRF proxies do not contain Combine intros / replace-segment cards.
-			SkipIntroTitleCards = false,
-			SampleIntervalSeconds = 5,
-		};
+		public HalfInningDetector.Options DetectorOptions { get; set; } = CreateDefaultDetectorOptions();
+
+		/// <summary>Default LRF sampling: every 3s (finer than the combined-MP4 5s default).</summary>
+		public static HalfInningDetector.Options CreateDefaultDetectorOptions(double sampleIntervalSeconds = 3) =>
+			new()
+			{
+				// LRF proxies do not contain Combine intros / replace-segment cards.
+				SkipIntroTitleCards = false,
+				SampleIntervalSeconds = Math.Clamp(sampleIntervalSeconds, 0.5, 30),
+			};
 	}
 
 	public static async Task<InningDetectionResult> DetectAsync(
@@ -121,7 +125,7 @@ public static class LrfInningDetector
 		}
 
 		options ??= new Options();
-		options.DetectorOptions ??= new HalfInningDetector.Options { SkipIntroTitleCards = false };
+		options.DetectorOptions ??= Options.CreateDefaultDetectorOptions();
 
 		var workDir = Path.Combine(TempPathHelper.GetTempPath(), $"lrf_innings_{Guid.NewGuid():N}");
 		Directory.CreateDirectory(workDir);

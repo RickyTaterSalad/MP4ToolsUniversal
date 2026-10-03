@@ -297,6 +297,8 @@
 						   VerticalAlignment="Center"
 						   Opacity="0.85"/>
 			</StackPanel>
+			<ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress}" Height="8"
+						 IsVisible="{Binding ShowProgress}"/>
 			<TextBlock Text="{Binding OperationStatus}"
 					   TextWrapping="Wrap"
 					   Opacity="0.92"/>

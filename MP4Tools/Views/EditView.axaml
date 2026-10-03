@@ -11,9 +11,6 @@
 		<TabItem Header="Rewrite Intro">
 			<views:RewriteIntroView DataContext="{Binding RewriteIntroViewModel}" Margin="8"/>
 		</TabItem>
-		<TabItem Header="Generate Intro">
-			<views:GenerateIntroView DataContext="{Binding GenerateIntroViewModel}" Margin="8"/>
-		</TabItem>
 		<TabItem Header="Replace Segment">
 			<views:ReplaceSegmentView DataContext="{Binding ReplaceSegmentViewModel}" Margin="8"/>
 		</TabItem>

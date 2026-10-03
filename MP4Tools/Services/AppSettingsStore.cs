@@ -54,6 +54,12 @@ public sealed class AppUserSettings
 	/// OpenRouter model id for intro vision OCR. Empty uses the built-in default.
 	/// </summary>
 	public string OpenRouterModel { get; set; } = "";
+
+	/// <summary>
+	/// Seconds between analyzed frames when running the inning detector on DJI .LRF proxies
+	/// (AI → LRF Inning Detector, or Combine after-encode LRF path). Default 3.
+	/// </summary>
+	public double LrfInningSampleIntervalSeconds { get; set; } = 3;
 }
 
 public static class AppSettingsStore

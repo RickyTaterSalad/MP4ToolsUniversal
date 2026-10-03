@@ -42,6 +42,10 @@ public partial class OptionsViewModel : ViewModelBase
 			BaseballLoggerApiKey = loaded.BaseballLoggerApiKey ?? "";
 			OpenRouterApiKey = loaded.OpenRouterApiKey ?? "";
 			OpenRouterModel = loaded.OpenRouterModel ?? "";
+			var lrfInterval = loaded.LrfInningSampleIntervalSeconds;
+			if (double.IsNaN(lrfInterval) || double.IsInfinity(lrfInterval) || lrfInterval <= 0)
+				lrfInterval = 3;
+			LrfInningSampleIntervalSeconds = Math.Clamp(lrfInterval, 0.5, 30);
 		}
 		finally
 		{
@@ -83,6 +87,9 @@ public partial class OptionsViewModel : ViewModelBase
 	private string _openRouterModel = "";
 
 	[ObservableProperty]
+	private double _lrfInningSampleIntervalSeconds = 3;
+
+	[ObservableProperty]
 	[NotifyPropertyChangedFor(nameof(ApiKeyPasswordChar))]
 	private bool _isApiKeyVisible;
 
@@ -108,6 +115,7 @@ public partial class OptionsViewModel : ViewModelBase
 	partial void OnBaseballLoggerApiKeyChanged(string value) => SchedulePersist();
 	partial void OnOpenRouterApiKeyChanged(string value) => SchedulePersist();
 	partial void OnOpenRouterModelChanged(string value) => SchedulePersist();
+	partial void OnLrfInningSampleIntervalSecondsChanged(double value) => PersistNow();
 
 	private void PersistNow()
 	{
@@ -152,6 +160,11 @@ public partial class OptionsViewModel : ViewModelBase
 			if (!string.IsNullOrEmpty(outTrimmed))
 				Directory.CreateDirectory(outTrimmed);
 
+			var lrfInterval = LrfInningSampleIntervalSeconds;
+			if (double.IsNaN(lrfInterval) || double.IsInfinity(lrfInterval) || lrfInterval <= 0)
+				lrfInterval = 3;
+			lrfInterval = Math.Clamp(lrfInterval, 0.5, 30);
+
 			var s = new AppUserSettings
 			{
 				TempDirectory = trimmed,
@@ -165,6 +178,7 @@ public partial class OptionsViewModel : ViewModelBase
 				BaseballLoggerApiKey = BaseballLoggerApiKey?.Trim() ?? "",
 				OpenRouterApiKey = OpenRouterApiKey?.Trim() ?? "",
 				OpenRouterModel = OpenRouterModel?.Trim() ?? "",
+				LrfInningSampleIntervalSeconds = lrfInterval,
 			};
 			AppSettingsStore.SaveAndApply(s);
 			MP4Tools.Logger.Log($"Settings saved. Temporary files folder: {TempPathHelper.GetTempPath()}");
@@ -173,6 +187,8 @@ public partial class OptionsViewModel : ViewModelBase
 			MP4Tools.Logger.Log($"Warn on insufficient disk space: {UiBehaviorSettingsRuntime.WarnOnInsufficientDiskSpace}");
 			MP4Tools.Logger.Log($"Delete trim segments after Trim And Combine: {UiBehaviorSettingsRuntime.DeleteTrimSegmentsAfterTrimAndCombine}");
 			MP4Tools.Logger.Log($"Resolve-safe encoding: {EncodingSettingsRuntime.Current.UseResolveSafeEncoding}");
+			MP4Tools.Logger.Log(
+				$"LRF inning sample interval: {UiBehaviorSettingsRuntime.LrfInningSampleIntervalSeconds:0.###}s");
 			MP4Tools.Logger.Log(
 				$"Baseball Logger server: {(string.IsNullOrWhiteSpace(BaseballLoggerSettingsRuntime.ServerUrl) ? "(not set)" : BaseballLoggerSettingsRuntime.ServerUrl)}");
 			MP4Tools.Logger.Log(
