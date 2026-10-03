@@ -4,9 +4,9 @@
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-			 mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="560"
-			 x:Class="MP4Tools.Views.InningDetectorView"
-			 x:DataType="vm:InningDetectorViewModel">
+			 mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="620"
+			 x:Class="MP4Tools.Views.LrfInningDetectorView"
+			 x:DataType="vm:LrfInningDetectorViewModel">
 	<DockPanel DragDrop.AllowDrop="True"
 			   Background="Transparent"
 			   DragDrop.DragOver="OnDragOver"
@@ -45,7 +45,7 @@
 					<Button.Content>
 						<StackPanel Orientation="Horizontal">
 							<materialIcons:MaterialIcon Kind="Baseball"/>
-							<TextBlock Text="Detect Innings" Margin="5,0,5,0"/>
+							<TextBlock Text="Detect from LRF" Margin="5,0,5,0"/>
 						</StackPanel>
 					</Button.Content>
 				</Button>
@@ -54,12 +54,16 @@
 
 		<ScrollViewer>
 			<StackPanel Spacing="12">
+				<TextBlock Text="Detects half-innings on DJI .LRF proxies, then remaps bookmarks onto the combined MP4 using the Combine edit map (intro + start/end trims). Combine writes a .combine-map.json next to the output video."
+						   TextWrapping="Wrap"
+						   Opacity="0.8"/>
+
 				<Grid ColumnDefinitions="*,Auto">
 					<TextBox Grid.Column="0"
-							 PlaceholderText="Input Video"
-							 Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"
+							 PlaceholderText="Combined output video (.mp4)"
+							 Text="{Binding CombinedVideoPath, UpdateSourceTrigger=PropertyChanged}"
 							 Margin="0,0,10,0"/>
-					<Button Grid.Column="1" Click="BrowseButton_OnClick" Padding="4">
+					<Button Grid.Column="1" Click="BrowseVideoButton_OnClick" Padding="4">
 						<Button.Content>
 							<StackPanel Orientation="Horizontal">
 								<materialIcons:MaterialIcon Kind="Video"/>
@@ -69,13 +73,33 @@
 					</Button>
 				</Grid>
 
-				<TextBlock Text="Detects half-inning starts using local CV: field clears → defense/pitcher warmup with an empty batter's box (a coach near the plate is OK) → bookmark when the first batter enters the batter's box. Writes Baseball Logger recording JSON and a YouTube chapter bookmark .txt next to the video."
-						   TextWrapping="Wrap"
-						   Opacity="0.8"/>
+				<Grid ColumnDefinitions="*,Auto">
+					<TextBox Grid.Column="0"
+							 PlaceholderText="Folder containing .LRF proxy files"
+							 Text="{Binding LrfFolderPath, UpdateSourceTrigger=PropertyChanged}"
+							 Margin="0,0,10,0"/>
+					<Button Grid.Column="1" Click="BrowseFolderButton_OnClick" Padding="4">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Folder"/>
+								<TextBlock Text="Browse" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+				</Grid>
 
-				<CheckBox IsChecked="{Binding SkipIntroTitleCards}"
-						  Content="Skip intro / replaced-segment title cards"
-						  ToolTip.Tip="Ignore solid-background text cards (usually 3–10s at the start; rare mid-video Replace Segment intros). Prevents empty intro frames from looking like a half-inning break."/>
+				<StackPanel Spacing="4">
+					<TextBlock Text="Combine edit map" Opacity="0.85"/>
+					<TextBox Text="{Binding CombineMapPath}" IsReadOnly="True"
+							 PlaceholderText="Auto-found beside the video as {name}.combine-map.json (written by Combine)"/>
+				</StackPanel>
+
+				<StackPanel Spacing="4">
+					<TextBlock Text="Matched LRF proxies" Opacity="0.85"/>
+					<ListBox ItemsSource="{Binding MatchedLrfLines}"
+							 MinHeight="80"
+							 MaxHeight="160"/>
+				</StackPanel>
 
 				<StackPanel Spacing="4">
 					<TextBlock Text="Output JSON" Opacity="0.85"/>
@@ -85,10 +109,10 @@
 				</StackPanel>
 
 				<StackPanel Spacing="4">
-					<TextBlock Text="Detected events" Opacity="0.85"/>
+					<TextBlock Text="Detected events (combined timeline)" Opacity="0.85"/>
 					<ListBox ItemsSource="{Binding DetectedEventLines}"
-							 MinHeight="160"
-							 MaxHeight="320"/>
+							 MinHeight="140"
+							 MaxHeight="280"/>
 				</StackPanel>
 			</StackPanel>
 		</ScrollViewer>

@@ -124,11 +124,7 @@ public partial class InningDetectorViewModel : MP4ViewModelBase
 			var result = await HalfInningDetector.DetectAsync(
 				InputPath,
 				ct,
-				log: msg =>
-				{
-					Logger.Log(msg);
-					ReportStatus(msg);
-				},
+				log: Logger.Log,
 				progress01: p =>
 				{
 					var value = Math.Clamp(p, 0, 1);
@@ -141,7 +137,8 @@ public partial class InningDetectorViewModel : MP4ViewModelBase
 				{
 					SkipIntroTitleCards = SkipIntroTitleCards,
 				},
-				outputJsonPath: OutputJsonPath).ConfigureAwait(false);
+				outputJsonPath: OutputJsonPath,
+				status: ReportStatus).ConfigureAwait(false);
 
 			await Dispatcher.UIThread.InvokeAsync(() =>
 			{

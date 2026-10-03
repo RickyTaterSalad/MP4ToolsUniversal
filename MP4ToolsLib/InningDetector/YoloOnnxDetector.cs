@@ -7,28 +7,57 @@ using OpenCvSharp;
 
 namespace MP4ToolsLib;
 
-public readonly record struct DetectedPerson(Rect Box, float Confidence);
+public readonly record struct DetectedObject(Rect Box, float Confidence, int ClassId, string ClassName);
+
+public enum YoloModelKind
+{
+	/// <summary>COCO YOLOv8n — person class only.</summary>
+	PersonCoco,
+
+	/// <summary>BaseballCV pitcher/hitter/catcher detector (ONNX export).</summary>
+	BaseballPhc,
+}
 
 /// <summary>
-/// YOLOv8 ONNX person detector (COCO class 0) running on the CPU execution provider.
+/// YOLOv8-family ONNX detector (CPU). Supports COCO person and BaseballCV PHC class maps.
 /// </summary>
-public sealed class YoloPersonDetector : IDisposable
+public sealed class YoloOnnxDetector : IDisposable
 {
 	private const int InputSize = 640;
-	private const int PersonClassId = 0;
+
+	private static readonly string[] PersonClassNames = { "person" };
+	private static readonly string[] BaseballPhcClassNames = { "hitter", "pitcher", "catcher" };
 
 	private readonly InferenceSession _session;
 	private readonly string _inputName;
 	private readonly float _confidenceThreshold;
 	private readonly float _iouThreshold;
+	private readonly string[] _classNames;
+	private readonly HashSet<int> _allowedClassIds;
 
-	public YoloPersonDetector(string modelPath, float confidenceThreshold = 0.35f, float iouThreshold = 0.45f)
+	public YoloModelKind Kind { get; }
+	public IReadOnlyList<string> ClassNames => _classNames;
+
+	public YoloOnnxDetector(
+		string modelPath,
+		YoloModelKind kind,
+		float confidenceThreshold = 0.35f,
+		float iouThreshold = 0.45f)
 	{
 		if (string.IsNullOrWhiteSpace(modelPath))
 			throw new ArgumentException("Model path is required.", nameof(modelPath));
 
+		Kind = kind;
 		_confidenceThreshold = confidenceThreshold;
 		_iouThreshold = iouThreshold;
+		_classNames = kind switch
+		{
+			YoloModelKind.BaseballPhc => BaseballPhcClassNames,
+			_ => PersonClassNames,
+		};
+		_allowedClassIds = kind == YoloModelKind.PersonCoco
+			? new HashSet<int> { 0 }
+			: new HashSet<int>(Enumerable.Range(0, _classNames.Length));
 
 		var options = new SessionOptions
 		{
@@ -40,10 +69,10 @@ public sealed class YoloPersonDetector : IDisposable
 		_inputName = _session.InputMetadata.Keys.First();
 	}
 
-	public IReadOnlyList<DetectedPerson> Detect(Mat bgrFrame)
+	public IReadOnlyList<DetectedObject> Detect(Mat bgrFrame)
 	{
 		if (bgrFrame == null || bgrFrame.Empty())
-			return Array.Empty<DetectedPerson>();
+			return Array.Empty<DetectedObject>();
 
 		var origW = bgrFrame.Width;
 		var origH = bgrFrame.Height;
@@ -59,7 +88,10 @@ public sealed class YoloPersonDetector : IDisposable
 		return ParseYoloV8(output, dims, origW, origH, scale, padX, padY);
 	}
 
-	private List<DetectedPerson> ParseYoloV8(
+	public bool HasClass(IReadOnlyList<DetectedObject> detections, string className) =>
+		detections.Any(d => string.Equals(d.ClassName, className, StringComparison.OrdinalIgnoreCase));
+
+	private List<DetectedObject> ParseYoloV8(
 		float[] output,
 		int[] dims,
 		int origW,
@@ -68,7 +100,7 @@ public sealed class YoloPersonDetector : IDisposable
 		float padX,
 		float padY)
 	{
-		// Expected: [1, 84, N] or [1, N, 84]
+		// Expected: [1, 4+nc, N] or [1, N, 4+nc]
 		int channels;
 		int anchors;
 		bool channelsFirst;
@@ -86,7 +118,6 @@ public sealed class YoloPersonDetector : IDisposable
 		}
 		else if (dims.Length == 2)
 		{
-			// [84, N] or [N, 84]
 			if (dims[0] < dims[1])
 			{
 				channels = dims[0];
@@ -102,26 +133,26 @@ public sealed class YoloPersonDetector : IDisposable
 		}
 		else
 		{
-			return new List<DetectedPerson>();
+			return new List<DetectedObject>();
 		}
 
 		var classCount = channels - 4;
-		if (classCount <= PersonClassId)
-			return new List<DetectedPerson>();
+		if (classCount <= 0)
+			return new List<DetectedObject>();
 
 		var boxes = new List<Rect>();
 		var scores = new List<float>();
+		var classIds = new List<int>();
 
 		for (var i = 0; i < anchors; i++)
 		{
-			float cx, cy, w, h, personScore;
+			float cx, cy, w, h;
 			if (channelsFirst)
 			{
 				cx = output[0 * anchors + i];
 				cy = output[1 * anchors + i];
 				w = output[2 * anchors + i];
 				h = output[3 * anchors + i];
-				personScore = output[(4 + PersonClassId) * anchors + i];
 			}
 			else
 			{
@@ -130,13 +161,31 @@ public sealed class YoloPersonDetector : IDisposable
 				cy = output[baseIdx + 1];
 				w = output[baseIdx + 2];
 				h = output[baseIdx + 3];
-				personScore = output[baseIdx + 4 + PersonClassId];
 			}
 
-			if (personScore < _confidenceThreshold)
+			var bestClass = -1;
+			var bestScore = 0f;
+			for (var c = 0; c < classCount; c++)
+			{
+				if (!_allowedClassIds.Contains(c))
+					continue;
+
+				float score;
+				if (channelsFirst)
+					score = output[(4 + c) * anchors + i];
+				else
+					score = output[i * channels + 4 + c];
+
+				if (score > bestScore)
+				{
+					bestScore = score;
+					bestClass = c;
+				}
+			}
+
+			if (bestClass < 0 || bestScore < _confidenceThreshold)
 				continue;
 
-			// Undo letterbox
 			var x1 = (cx - w / 2f - padX) / scale;
 			var y1 = (cy - h / 2f - padY) / scale;
 			var x2 = (cx + w / 2f - padX) / scale;
@@ -146,20 +195,26 @@ public sealed class YoloPersonDetector : IDisposable
 			var top = (int)Math.Clamp(Math.Floor(y1), 0, origH - 1);
 			var right = (int)Math.Clamp(Math.Ceiling(x2), 0, origW - 1);
 			var bottom = (int)Math.Clamp(Math.Ceiling(y2), 0, origH - 1);
-			var bw = Math.Max(1, right - left);
-			var bh = Math.Max(1, bottom - top);
-			boxes.Add(new Rect(left, top, bw, bh));
-			scores.Add(personScore);
+			boxes.Add(new Rect(left, top, Math.Max(1, right - left), Math.Max(1, bottom - top)));
+			scores.Add(bestScore);
+			classIds.Add(bestClass);
 		}
 
 		if (boxes.Count == 0)
-			return new List<DetectedPerson>();
+			return new List<DetectedObject>();
 
 		var indices = NonMaxSuppression(boxes, scores, _iouThreshold);
-		var people = new List<DetectedPerson>(indices.Count);
+		var detections = new List<DetectedObject>(indices.Count);
 		foreach (var idx in indices)
-			people.Add(new DetectedPerson(boxes[idx], scores[idx]));
-		return people;
+		{
+			var classId = classIds[idx];
+			var name = classId >= 0 && classId < _classNames.Length
+				? _classNames[classId]
+				: $"class_{classId}";
+			detections.Add(new DetectedObject(boxes[idx], scores[idx], classId, name));
+		}
+
+		return detections;
 	}
 
 	private static List<int> NonMaxSuppression(IReadOnlyList<Rect> boxes, IReadOnlyList<float> scores, float iouThreshold)
@@ -215,7 +270,6 @@ public sealed class YoloPersonDetector : IDisposable
 		Cv2.CvtColor(padded, rgb, ColorConversionCodes.BGR2RGB);
 
 		var data = new float[1 * 3 * InputSize * InputSize];
-		// CHW normalize /255
 		for (var y = 0; y < InputSize; y++)
 		{
 			for (var x = 0; x < InputSize; x++)
@@ -233,4 +287,29 @@ public sealed class YoloPersonDetector : IDisposable
 	}
 
 	public void Dispose() => _session?.Dispose();
+}
+
+/// <summary>Backward-compatible person-only wrapper over <see cref="YoloOnnxDetector"/>.</summary>
+public readonly record struct DetectedPerson(Rect Box, float Confidence);
+
+/// <summary>Backward-compatible alias for COCO person detection.</summary>
+public sealed class YoloPersonDetector : IDisposable
+{
+	private readonly YoloOnnxDetector _inner;
+
+	public YoloPersonDetector(string modelPath, float confidenceThreshold = 0.35f, float iouThreshold = 0.45f)
+	{
+		_inner = new YoloOnnxDetector(modelPath, YoloModelKind.PersonCoco, confidenceThreshold, iouThreshold);
+	}
+
+	public IReadOnlyList<DetectedPerson> Detect(Mat bgrFrame)
+	{
+		var objects = _inner.Detect(bgrFrame);
+		var people = new List<DetectedPerson>(objects.Count);
+		foreach (var o in objects)
+			people.Add(new DetectedPerson(o.Box, o.Confidence));
+		return people;
+	}
+
+	public void Dispose() => _inner.Dispose();
 }

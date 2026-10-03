@@ -11,6 +11,7 @@ public enum LogOperationSource
 	GenerateIntro,
 	ReplaceSegment,
 	InningDetector,
+	LrfInningDetector,
 }
 
 /// <summary>Tracks which feature last started a logged ffmpeg/ffprobe operation.</summary>
@@ -39,6 +40,7 @@ public static class LogOperationTracker
 		LogOperationSource.GenerateIntro => "Generate Intro",
 		LogOperationSource.ReplaceSegment => "Replace Segment",
 		LogOperationSource.InningDetector => "Inning Detector",
+		LogOperationSource.LrfInningDetector => "LRF Inning Detect",
 		_ => string.Empty,
 	};
 }

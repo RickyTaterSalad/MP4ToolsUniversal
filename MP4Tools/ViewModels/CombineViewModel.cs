@@ -41,7 +41,9 @@ public partial class CombineViewModel : MP4ViewModelBase
 	private bool _includeIntro;
 
 	/// <summary>
-	/// When true, run local inning detection on the combined MP4 after a successful Combine.
+	/// When true, run local inning detection after a successful Combine. Prefers DJI .LRF
+	/// proxies beside the source clips when every clip has a match; otherwise runs on the
+	/// combined MP4.
 	/// </summary>
 	[ObservableProperty]
 	private bool _runInningDetectorAfterCombine;
@@ -1164,6 +1166,8 @@ public partial class CombineViewModel : MP4ViewModelBase
 			Logger.Log("Preparing input files...");
 			var writeFiles = new List<CombineFile>();
 			writeFiles.AddRange(InputFiles);
+			// Preserve original source paths before intro rewrite mutates writeFiles[0].
+			var originalSourcePaths = InputFiles.Select(f => f.Path).ToList();
 			Logger.Log($"Prepared {writeFiles.Count} files.");
 			var combineSucceeded = true;
 
@@ -1523,6 +1527,12 @@ public partial class CombineViewModel : MP4ViewModelBase
 			if (combineSucceeded)
 			{
 				var introChapterOffsetSeconds = introApplied ? IntroDurationSeconds : 0;
+				await WriteCombineEditMapIfNeededAsync(
+					combineOutputFile,
+					originalSourcePaths,
+					videoDurations,
+					introApplied,
+					ct).ConfigureAwait(false);
 				await WriteOffsetRecordingJsonIfNeededAsync(combineOutputFile, introChapterOffsetSeconds, ct)
 					.ConfigureAwait(false);
 				await CreateBoxScoreSessionIfNeededAsync(ct).ConfigureAwait(false);
@@ -1724,6 +1734,53 @@ public partial class CombineViewModel : MP4ViewModelBase
 		}
 	}
 
+	private async Task WriteCombineEditMapIfNeededAsync(
+		string combineOutputFile,
+		IReadOnlyList<string> originalSourcePaths,
+		IReadOnlyDictionary<string, TimeRange> videoDurations,
+		bool introApplied,
+		CancellationToken ct)
+	{
+		if (string.IsNullOrWhiteSpace(combineOutputFile) || !File.Exists(combineOutputFile))
+			return;
+		if (originalSourcePaths == null || originalSourcePaths.Count == 0)
+			return;
+
+		try
+		{
+			ReportCombineStep("Writing combine edit map…");
+			var clips = new List<(string Path, double DurationSeconds)>(originalSourcePaths.Count);
+			foreach (var path in originalSourcePaths)
+			{
+				var duration = 0.0;
+				if (videoDurations != null && videoDurations.TryGetValue(path, out var range) && range != null)
+					duration = range.TotalSeconds;
+				clips.Add((path, duration));
+			}
+
+			var map = CombineEditMapIO.Build(
+				combineOutputFile,
+				clips,
+				introApplied,
+				IntroDurationSeconds,
+				TrimFirstVideo,
+				StartRange.TotalSeconds,
+				TrimLastVideo,
+				EndRange.TotalSeconds);
+
+			await CombineEditMapIO.WriteAsync(map, ct, Logger.Log).ConfigureAwait(false);
+			await CombineEditMapEmbedder.TryEmbedAsync(map, ct, Logger.Log).ConfigureAwait(false);
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"Failed to write combine edit map: {ex.Message}");
+		}
+	}
+
 	private async Task RunInningDetectorIfNeededAsync(string combineOutputFile, CancellationToken ct)
 	{
 		if (!RunInningDetectorAfterCombine)
@@ -1733,21 +1790,31 @@ public partial class CombineViewModel : MP4ViewModelBase
 
 		try
 		{
-			ReportCombineStep("Running inning detector…");
 			var outputJsonPath = InningDetectionRecordingWriter.BuildUniqueOutputPath(combineOutputFile);
-			var result = await HalfInningDetector.DetectAsync(
-				combineOutputFile,
-				ct,
-				log: msg =>
-				{
-					Logger.Log(msg);
-					ReportCombineStep(msg);
-				},
-				options: new HalfInningDetector.Options
-				{
-					SkipIntroTitleCards = true,
-				},
-				outputJsonPath: outputJsonPath).ConfigureAwait(false);
+			InningDetectionResult result;
+
+			// Prefer LRF proxies sitting next to the combine source clips when the edit map
+			// is available and every clip has a matching .LRF sibling.
+			if (CombineEditMapIO.TryFindMapPath(combineOutputFile, out _)
+				&& await TryRunLrfInningDetectorAfterCombineAsync(combineOutputFile, outputJsonPath, ct)
+					.ConfigureAwait(false) is { } lrfResult)
+			{
+				result = lrfResult;
+			}
+			else
+			{
+				ReportCombineStep("Running inning detector on combined MP4…");
+				result = await HalfInningDetector.DetectAsync(
+					combineOutputFile,
+					ct,
+					log: Logger.Log,
+					options: new HalfInningDetector.Options
+					{
+						SkipIntroTitleCards = true,
+					},
+					outputJsonPath: outputJsonPath,
+					status: ReportCombineStep).ConfigureAwait(false);
+			}
 
 			Logger.Log($"Inning detector JSON: {result.OutputJsonPath}");
 			if (!string.IsNullOrWhiteSpace(result.OutputYoutubeDescriptionPath))
@@ -1763,6 +1830,43 @@ public partial class CombineViewModel : MP4ViewModelBase
 		{
 			Logger.Log($"Inning detector failed: {ex.Message}");
 			ReportCombineStep($"Inning detector failed: {ex.Message}");
+		}
+	}
+
+	private async Task<InningDetectionResult> TryRunLrfInningDetectorAfterCombineAsync(
+		string combineOutputFile,
+		string outputJsonPath,
+		CancellationToken ct)
+	{
+		try
+		{
+			var map = await CombineEditMapIO.LoadAsync(combineOutputFile, ct).ConfigureAwait(false);
+			if (!LrfInningDetector.TryResolveLrfPathsAlongsideSources(map, out var lrfPaths, Logger.Log))
+			{
+				ReportCombineStep("LRF proxies not found beside all source clips — using combined MP4.");
+				return null;
+			}
+
+			ReportCombineStep($"Running inning detector on {lrfPaths.Count} LRF proxy file(s)…");
+			return await LrfInningDetector.DetectWithResolvedLrfAsync(
+					combineOutputFile,
+					map,
+					lrfPaths,
+					ct,
+					log: Logger.Log,
+					outputJsonPath: outputJsonPath,
+					status: ReportCombineStep)
+				.ConfigureAwait(false);
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"LRF inning detector unavailable after combine ({ex.Message}); falling back to combined MP4.");
+			ReportCombineStep($"LRF inning detector failed ({ex.Message}); falling back to combined MP4.");
+			return null;
 		}
 	}
 

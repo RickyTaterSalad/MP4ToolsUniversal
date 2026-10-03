@@ -51,6 +51,10 @@ public partial class MainWindowViewModel : ViewModelBase
 				SelectedTabIndex = 3;
 				AiViewModel.SelectedTabIndex = 0;
 				break;
+			case LogOperationSource.LrfInningDetector:
+				SelectedTabIndex = 3;
+				AiViewModel.SelectedTabIndex = 1;
+				break;
 		}
 	}
 }

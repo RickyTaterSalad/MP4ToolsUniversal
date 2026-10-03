@@ -11,5 +11,8 @@
 		<TabItem Header="Inning Detector">
 			<views:InningDetectorView DataContext="{Binding InningDetectorViewModel}" Margin="8"/>
 		</TabItem>
+		<TabItem Header="LRF Inning Detect">
+			<views:LrfInningDetectorView DataContext="{Binding LrfInningDetectorViewModel}" Margin="8"/>
+		</TabItem>
 	</TabControl>
 </UserControl>

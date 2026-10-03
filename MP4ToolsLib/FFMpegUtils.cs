@@ -21,7 +21,15 @@ namespace MP4ToolsLib
 
 		}
 
-		private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(30);
+		/// <summary>
+		/// Default wall-clock limit for capture-style ffmpeg jobs (frame extract, remux, etc.).
+		/// Long kids games can need well over 30 minutes just to sample frames.
+		/// </summary>
+		private static readonly TimeSpan DefaultFfmpegCaptureTimeout = TimeSpan.FromHours(2);
+
+		/// <summary>ffprobe should finish quickly; keep a short hang guard.</summary>
+		private static readonly TimeSpan DefaultFfprobeCaptureTimeout = TimeSpan.FromMinutes(5);
+
 		private static string _ffprobe_exe = string.Empty;
 
 		private static readonly object TrackedProcessesLock = new object();
@@ -301,7 +309,7 @@ namespace MP4ToolsLib
 				RegisterTrackedMediaProcess(process);
 
 				using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-				linkedCts.CancelAfter(ProcessTimeout);
+				linkedCts.CancelAfter(DefaultFfprobeCaptureTimeout);
 
 				log($"{psi.FileName}: {psi.Arguments}");
 
@@ -372,20 +380,37 @@ namespace MP4ToolsLib
 			}
 		}
 
-		public Task<string> RunCaptureFFMpegAsync(string args, CancellationToken ct, Action<string> Log = null)
+		public Task<string> RunCaptureFFMpegAsync(
+			string args,
+			CancellationToken ct,
+			Action<string> Log = null,
+			TimeSpan? timeout = null)
 		{
 			args = ApplyForcedFfmpegArgs(args ?? string.Empty);
-			return RunCaptureAsync(FFPMEG_EXE, args, ct, Log);
+			return RunCaptureAsync(FFPMEG_EXE, args, ct, Log, timeout ?? DefaultFfmpegCaptureTimeout);
 		}
 
-		public Task<string> RunCaptureFFProbeAsync(string args, CancellationToken ct, Action<string> Log = null)
+		public Task<string> RunCaptureFFProbeAsync(
+			string args,
+			CancellationToken ct,
+			Action<string> Log = null,
+			TimeSpan? timeout = null)
 		{
-			return RunCaptureAsync(FFPROBE_EXE, args, ct, Log);
+			return RunCaptureAsync(FFPROBE_EXE, args, ct, Log, timeout ?? DefaultFfprobeCaptureTimeout);
 		}
 
-		public async Task<string> RunCaptureAsync(string exe, string args, CancellationToken ct, Action<string> Log = null)
+		public async Task<string> RunCaptureAsync(
+			string exe,
+			string args,
+			CancellationToken ct,
+			Action<string> Log = null,
+			TimeSpan? timeout = null)
 		{
 			Log ??= _ => { };
+			var effectiveTimeout = timeout ?? DefaultFfmpegCaptureTimeout;
+			if (effectiveTimeout <= TimeSpan.Zero)
+				effectiveTimeout = DefaultFfmpegCaptureTimeout;
+
 			var psi = new ProcessStartInfo(exe, args)
 			{
 				WindowStyle = ProcessWindowStyle.Hidden,
@@ -412,7 +437,7 @@ namespace MP4ToolsLib
 				RegisterTrackedMediaProcess(process);
 
 				using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-				linkedCts.CancelAfter(ProcessTimeout);
+				linkedCts.CancelAfter(effectiveTimeout);
 
 				Debug.WriteLine($"[RunCaptureAsync] FileName: {psi.FileName}");
 				Debug.WriteLine($"[RunCaptureAsync] Arguments: {psi.Arguments}");
@@ -441,8 +466,9 @@ namespace MP4ToolsLib
 						TryKillProcess(process);
 						await WaitForExitQuietAsync(process).ConfigureAwait(false);
 						await DrainStdoutQuietAsync(stdoutTask).ConfigureAwait(false);
-						Log($"** Timeout after {ProcessTimeout.TotalMinutes:0} minutes **");
-						throw new TimeoutException($"{exe} timed out after {ProcessTimeout.TotalMinutes:0} minutes");
+						var minutes = Math.Max(1, (int)Math.Ceiling(effectiveTimeout.TotalMinutes));
+						Log($"** Timeout after {minutes} minutes **");
+						throw new TimeoutException($"{exe} timed out after {minutes} minutes");
 					}
 				}
 

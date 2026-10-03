@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading;
@@ -6,16 +7,30 @@ using System.Threading.Tasks;
 
 namespace MP4ToolsLib;
 
+public sealed record ResolvedYoloModel(string Path, YoloModelKind Kind);
+
 /// <summary>
-/// Locates or downloads the YOLOv8n ONNX person-detection model used by the inning detector.
+/// Locates or downloads ONNX models used by the inning detector.
+/// Prefers BaseballCV pitcher/hitter/catcher when present; falls back to COCO YOLOv8n person.
 /// </summary>
 public static class YoloModelStore
 {
-	public const string ModelFileName = "yolov8n.onnx";
+	public const string PersonModelFileName = "yolov8n.onnx";
+	public const string BaseballModelFileName = "pitcher_hitter_catcher.onnx";
+
+	/// <summary>Legacy alias used by older call sites.</summary>
+	public const string ModelFileName = PersonModelFileName;
 
 	/// <summary>Public Hugging Face mirror of YOLOv8n ONNX (~12 MB).</summary>
 	public const string DefaultDownloadUrl =
 		"https://huggingface.co/cabelo/yolov8/resolve/main/yolov8n.onnx";
+
+	/// <summary>
+	/// BallDataLab / BaseballCV PHC weights (.pt). ONNX must be exported once with Ultralytics;
+	/// place <see cref="BaseballModelFileName"/> in the model directory. Runtime itself is C#/ONNX only.
+	/// </summary>
+	public const string BaseballPtDownloadUrl =
+		"https://data.balldatalab.com/index.php/s/KP5ZqJKEfjQ785X/download/pitcher_hitter_catcher_detector_v3.pt";
 
 	public static string GetDefaultModelDirectory()
 	{
@@ -27,10 +42,59 @@ public static class YoloModelStore
 	}
 
 	public static string GetDefaultModelPath() =>
-		Path.Combine(GetDefaultModelDirectory(), ModelFileName);
+		Path.Combine(GetDefaultModelDirectory(), PersonModelFileName);
+
+	public static string GetDefaultBaseballModelPath() =>
+		Path.Combine(GetDefaultModelDirectory(), BaseballModelFileName);
 
 	/// <summary>
-	/// Returns a usable model path. Checks explicit path, app base Models/, then local cache;
+	/// Prefer BaseballCV PHC ONNX for role classes; otherwise ensure COCO person ONNX.
+	/// </summary>
+	public static async Task<ResolvedYoloModel> EnsureDetectorModelAsync(
+		string preferredPath = null,
+		CancellationToken ct = default,
+		Action<string> log = null)
+	{
+		// Explicit path wins; infer kind from filename when possible.
+		if (!string.IsNullOrWhiteSpace(preferredPath) && IsUsableModel(preferredPath.Trim()))
+		{
+			var path = preferredPath.Trim();
+			var kind = LooksLikeBaseballModel(path) ? YoloModelKind.BaseballPhc : YoloModelKind.PersonCoco;
+			log?.Invoke(
+				kind == YoloModelKind.BaseballPhc
+					? $"Using BaseballCV PHC model (hitter/pitcher/catcher): {path}"
+					: $"Using YOLO person model: {path}");
+			return new ResolvedYoloModel(path, kind);
+		}
+
+		foreach (var candidate in EnumerateCandidates(preferredPath: null, BaseballModelFileName))
+		{
+			if (IsUsableModel(candidate))
+			{
+				log?.Invoke($"Using BaseballCV PHC model (hitter/pitcher/catcher): {candidate}");
+				return new ResolvedYoloModel(candidate, YoloModelKind.BaseballPhc);
+			}
+		}
+
+		log?.Invoke(
+			$"Baseball role model not found ({BaseballModelFileName}). " +
+			$"Place the ONNX export in {GetDefaultModelDirectory()} for pitcher/hitter/catcher detection. " +
+			$"Falling back to COCO person model.");
+
+		var personPath = await EnsureModelAsync(preferredPath, ct, log).ConfigureAwait(false);
+		return new ResolvedYoloModel(personPath, YoloModelKind.PersonCoco);
+	}
+
+	private static bool LooksLikeBaseballModel(string path)
+	{
+		var name = Path.GetFileName(path) ?? "";
+		return name.Contains("pitcher_hitter", StringComparison.OrdinalIgnoreCase)
+			|| name.Contains("phc", StringComparison.OrdinalIgnoreCase)
+			|| name.Contains("baseball", StringComparison.OrdinalIgnoreCase);
+	}
+
+	/// <summary>
+	/// Returns a usable COCO person model path. Checks explicit path, app base Models/, then local cache;
 	/// downloads into the local cache when missing.
 	/// </summary>
 	public static async Task<string> EnsureModelAsync(
@@ -38,11 +102,11 @@ public static class YoloModelStore
 		CancellationToken ct = default,
 		Action<string> log = null)
 	{
-		foreach (var candidate in EnumerateCandidates(preferredPath))
+		foreach (var candidate in EnumerateCandidates(preferredPath, PersonModelFileName))
 		{
-			if (File.Exists(candidate) && new FileInfo(candidate).Length > 1_000_000)
+			if (IsUsableModel(candidate))
 			{
-				log?.Invoke($"Using YOLO model: {candidate}");
+				log?.Invoke($"Using YOLO person model: {candidate}");
 				return candidate;
 			}
 		}
@@ -52,7 +116,7 @@ public static class YoloModelStore
 		if (!string.IsNullOrWhiteSpace(destDir) && !Directory.Exists(destDir))
 			Directory.CreateDirectory(destDir);
 
-		log?.Invoke($"Downloading YOLO model ({ModelFileName})…");
+		log?.Invoke($"Downloading YOLO model ({PersonModelFileName})…");
 		using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
 		using var response = await http.GetAsync(DefaultDownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct)
 			.ConfigureAwait(false);
@@ -72,22 +136,32 @@ public static class YoloModelStore
 		return dest;
 	}
 
-	private static System.Collections.Generic.IEnumerable<string> EnumerateCandidates(string preferredPath)
+	private static bool IsUsableModel(string path) =>
+		!string.IsNullOrWhiteSpace(path)
+		&& File.Exists(path)
+		&& new FileInfo(path).Length > 1_000_000;
+
+	private static IEnumerable<string> EnumerateCandidates(string preferredPath, string fileName)
 	{
 		if (!string.IsNullOrWhiteSpace(preferredPath))
-			yield return preferredPath.Trim();
+		{
+			var trimmed = preferredPath.Trim();
+			yield return trimmed;
+			// If caller passed a directory, look for the requested file inside it.
+			if (Directory.Exists(trimmed))
+				yield return Path.Combine(trimmed, fileName);
+		}
 
 		var baseDir = AppContext.BaseDirectory;
 		if (!string.IsNullOrWhiteSpace(baseDir))
 		{
-			yield return Path.Combine(baseDir, "Models", ModelFileName);
-			yield return Path.Combine(baseDir, ModelFileName);
+			yield return Path.Combine(baseDir, "Models", fileName);
+			yield return Path.Combine(baseDir, fileName);
 		}
 
-		yield return GetDefaultModelPath();
+		yield return Path.Combine(GetDefaultModelDirectory(), fileName);
 
-		// Dev / source-tree convenience when running from bin/
-		var libModels = Path.GetFullPath(Path.Combine(baseDir ?? "", "..", "..", "..", "..", "MP4ToolsLib", "Models", ModelFileName));
+		var libModels = Path.GetFullPath(Path.Combine(baseDir ?? "", "..", "..", "..", "..", "MP4ToolsLib", "Models", fileName));
 		yield return libModels;
 	}
 }
