@@ -13,6 +13,9 @@ public static class UiBehaviorSettingsRuntime
 	/// <summary>LRF inning-detector sample interval (seconds). Default 3.</summary>
 	public static double LrfInningSampleIntervalSeconds { get; private set; } = 3;
 
+	/// <summary>Keep named inning-detect debug packages (default on).</summary>
+	public static bool SaveInningDetectionArtifacts { get; private set; } = true;
+
 	public static void Apply(AppUserSettings settings)
 	{
 		OpenOutputFolderOnComplete = settings?.OpenOutputFolderOnComplete ?? false;
@@ -22,6 +25,7 @@ public static class UiBehaviorSettingsRuntime
 		if (double.IsNaN(interval) || double.IsInfinity(interval))
 			interval = 3;
 		LrfInningSampleIntervalSeconds = Math.Clamp(interval, 0.5, 30);
+		SaveInningDetectionArtifacts = settings?.SaveInningDetectionArtifacts ?? true;
 	}
 }
 

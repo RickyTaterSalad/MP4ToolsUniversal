@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -25,6 +24,11 @@ public static class LrfInningDetector
 				// LRF proxies do not contain Combine intros / replace-segment cards.
 				SkipIntroTitleCards = false,
 				SampleIntervalSeconds = Math.Clamp(sampleIntervalSeconds, 0.5, 30),
+				// Prefer early half bookmarks on dusk/backstop LRF (see HalfInningDetector.Options).
+				RefineLookbackSeconds = HalfInningDetector.Options.DefaultRefineLookbackSeconds,
+				RoleHitterConfidence = 0.22f,
+				RoleCatcherConfidence = 0.25f,
+				RoleEmptyHoldSeconds = 20,
 			};
 	}
 
@@ -127,31 +131,85 @@ public static class LrfInningDetector
 		options ??= new Options();
 		options.DetectorOptions ??= Options.CreateDefaultDetectorOptions();
 
-		var workDir = Path.Combine(TempPathHelper.GetTempPath(), $"lrf_innings_{Guid.NewGuid():N}");
-		Directory.CreateDirectory(workDir);
+		InningDetectionArtifactSession artifactSession = null;
+		string workDir;
+		if (InningDetectionArtifactRuntime.Enabled)
+		{
+			artifactSession = InningDetectionArtifactSession.Create(combinedVideoPath, "lrf-parallel");
+			workDir = artifactSession.SessionDirectory;
+			status = artifactSession.WrapStatus(status);
+		}
+		else
+		{
+			workDir = Path.Combine(TempPathHelper.GetTempPath(), $"lrf_innings_{Guid.NewGuid():N}");
+			Directory.CreateDirectory(workDir);
+		}
 
 		try
 		{
 			progress01?.Invoke(0.02);
-			var proxyPath = Path.Combine(workDir, "lrf_game_proxy.mp4");
-			await BuildLrfGameProxyAsync(map, lrfPaths, proxyPath, ct, log, Status).ConfigureAwait(false);
-			progress01?.Invoke(0.15);
+			var orderedLrf = lrfPaths;
+			if (orderedLrf.Count != map.Clips.Count)
+				throw new InvalidOperationException("LRF path count does not match combine map clips.");
 
-			Status("Running half-inning detection on LRF game proxy…");
-			var proxyResult = await HalfInningDetector.DetectAsync(
-				proxyPath,
-				ct,
-				log,
-				p => progress01?.Invoke(0.15 + 0.75 * Math.Clamp(p, 0, 1)),
-				options.DetectorOptions,
-				writeOutputFiles: false,
-				status: status).ConfigureAwait(false);
+			var segments = GameContentTimeline.BuildSegments(map, orderedLrf);
+			var gameDuration = GameContentTimeline.TotalDurationSeconds(segments);
+			var mapDuration = map.ComputeGameContentDurationSeconds();
+			if (Math.Abs(gameDuration - mapDuration) > 1.0)
+			{
+				log?.Invoke(
+					$"Game-content duration from segments {gameDuration:0.###}s vs map {mapDuration:0.###}s " +
+					"(using segment total).");
+			}
+
+			if (gameDuration <= 0.5)
+				throw new InvalidOperationException("Combine edit map implies empty game content duration.");
+
+			if (artifactSession != null)
+			{
+				Status($"Saving inning-detect debug package under {artifactSession.SessionDirectory}");
+				await artifactSession.WriteCombineMapCopyAsync(map, ct).ConfigureAwait(false);
+				await artifactSession.WriteDetectorOptionsAsync(options.DetectorOptions, ct).ConfigureAwait(false);
+			}
+
+			Status(
+				$"Parallel snapshot extract across {segments.Count} LRF clip(s) " +
+				$"({gameDuration:0.###}s game content)…");
+			var frameDir = artifactSession != null
+				? artifactSession.FramesDirectory
+				: Path.Combine(workDir, "frames");
+			var samples = await ParallelClipSampleExtractor.ExtractAsync(
+					segments,
+					options.DetectorOptions,
+					frameDir,
+					ct,
+					log,
+					Status,
+					p => progress01?.Invoke(0.02 + 0.53 * Math.Clamp(p, 0, 1)))
+				.ConfigureAwait(false);
+			progress01?.Invoke(0.55);
+
+			Status("Running half-inning detection on parallel LRF samples…");
+			var refineMedia = new GameContentRefineMediaSource(segments);
+			var proxyResult = await HalfInningDetector.DetectFromSamplesAsync(
+					combinedVideoPath,
+					samples,
+					gameDuration,
+					ct,
+					log,
+					p => progress01?.Invoke(0.55 + 0.40 * Math.Clamp(p, 0, 1)),
+					options.DetectorOptions,
+					writeOutputFiles: false,
+					status: status,
+					refineMedia: refineMedia,
+					artifactSession: artifactSession,
+					finalizeArtifacts: false)
+				.ConfigureAwait(false);
 
 			var intro = map.IntroApplied ? Math.Max(0, map.IntroDurationSeconds) : 0;
-			var gameDuration = proxyResult.DurationSeconds > 0
+			var outputDuration = intro + (proxyResult.DurationSeconds > 0
 				? proxyResult.DurationSeconds
-				: map.ComputeGameContentDurationSeconds();
-			var outputDuration = intro + gameDuration;
+				: gameDuration);
 
 			Status(
 				intro > 0
@@ -171,6 +229,36 @@ public static class LrfInningDetector
 				.WriteSessionAndYoutubeAsync(root, jsonPath, ct, log)
 				.ConfigureAwait(false);
 
+			if (artifactSession != null)
+			{
+				await artifactSession.WriteEventsAsync(artifactSession.EventsCombinedPath, remapped, ct)
+					.ConfigureAwait(false);
+				var manifest = new InningDetectionArtifactManifest
+				{
+					SampleIntervalSeconds = options.DetectorOptions.SampleIntervalSeconds,
+					GameDurationSeconds = gameDuration,
+					OutputDurationSeconds = outputDuration,
+					IntroOffsetSeconds = intro,
+					CombineMapPath = map.CombineMapPath,
+					RecordingJsonPath = jsonPath,
+					YoutubeDescriptionPath = youtubePath,
+					LrfPaths = orderedLrf.ToList(),
+					Segments = segments.Select(s => new ArtifactSegmentInfo
+					{
+						ClipIndex = s.ClipIndex,
+						MediaPath = s.MediaPath,
+						LocalStartSeconds = s.LocalStartSeconds,
+						ContributionSeconds = s.ContributionSeconds,
+						GameStartSeconds = s.GameStartSeconds,
+					}).ToList(),
+					HalfInningEvents = remapped
+						.Where(e => string.Equals(e.Kind, "half_inning", StringComparison.OrdinalIgnoreCase))
+						.ToList(),
+				};
+				await artifactSession.FinalizeAsync(manifest, ct, log).ConfigureAwait(false);
+				Status($"Cursor handoff: {artifactSession.HandoffMarkdownPath}");
+			}
+
 			progress01?.Invoke(1);
 			Status(
 				$"LRF inning detect complete. Intro offset {intro:0.###}s; wrote {jsonPath}");
@@ -182,11 +270,14 @@ public static class LrfInningDetector
 				OutputYoutubeDescriptionPath = youtubePath,
 				DurationSeconds = outputDuration,
 				Events = remapped,
+				ArtifactHandoffPath = artifactSession?.HandoffMarkdownPath,
+				ArtifactSessionDirectory = artifactSession?.SessionDirectory,
 			};
 		}
 		finally
 		{
-			TempPathHelper.DeleteTemporaryDirectoryUnlessRetained(workDir, recursive: true);
+			if (artifactSession == null)
+				TempPathHelper.DeleteTemporaryDirectoryUnlessRetained(workDir, recursive: true);
 		}
 	}
 
@@ -308,58 +399,6 @@ public static class LrfInningDetector
 		{
 			return null;
 		}
-	}
-
-	private static async Task BuildLrfGameProxyAsync(
-		CombineEditMap map,
-		IReadOnlyList<string> lrfPaths,
-		string proxyPath,
-		CancellationToken ct,
-		Action<string> log,
-		Action<string> status = null)
-	{
-		if (lrfPaths.Count != map.Clips.Count)
-			throw new InvalidOperationException("LRF path count does not match combine map clips.");
-
-		var listPath = Path.Combine(Path.GetDirectoryName(proxyPath) ?? TempPathHelper.GetTempPath(), "lrf_concat.txt");
-		static string Escape(string p) => (p ?? string.Empty).Replace("'", "'\\''");
-		await File.WriteAllLinesAsync(
-			listPath,
-			lrfPaths.Select(p => $"file '{Escape(Path.GetFullPath(p))}'"),
-			ct).ConfigureAwait(false);
-
-		var startSkip = map.TrimFirstVideo ? Math.Max(0, map.StartSkipSeconds) : 0;
-		var gameDuration = map.ComputeGameContentDurationSeconds();
-		if (gameDuration <= 0.5)
-			throw new InvalidOperationException("Combine edit map implies empty game content duration.");
-
-		var opts = new List<FfmpegOption?>();
-		if (startSkip > 0)
-		{
-			opts.Add(FfmpegOption.Pair(
-				FfmpegArguments.SeekInputTimestamp,
-				startSkip.ToString("0.###", CultureInfo.InvariantCulture)));
-		}
-
-		opts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatConcatDemuxer));
-		opts.Add(FfmpegOption.Pair(FfmpegArguments.ConcatDemuxerSafeFlag, FfmpegArguments.ConcatDemuxerAllowAnyPath));
-		opts.Add(FfmpegCommandLine.DefaultInputThreadQueue());
-		opts.Add(FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(listPath)));
-		opts.Add(FfmpegOption.Pair(
-			FfmpegArguments.LimitOutputDuration,
-			gameDuration.ToString("0.###", CultureInfo.InvariantCulture)));
-		LegacyFastEncoding.AppendStreamCopyTail(opts);
-		opts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(proxyPath)));
-
-		status?.Invoke(
-			$"Building LRF game proxy (start skip {startSkip:0.###}s, duration {gameDuration:0.###}s)…");
-		await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(opts), ct, log)
-			.ConfigureAwait(false);
-
-		if (!File.Exists(proxyPath) || new FileInfo(proxyPath).Length <= 0)
-			throw new InvalidOperationException("Failed to build LRF game proxy.");
-
-		status?.Invoke("LRF game proxy ready.");
 	}
 
 	private static List<InningDetectionEvent> RemapEventsToCombinedTimeline(

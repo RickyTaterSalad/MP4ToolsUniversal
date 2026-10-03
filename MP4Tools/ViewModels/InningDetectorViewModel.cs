@@ -152,10 +152,14 @@ public partial class InningDetectorViewModel : MP4ViewModelBase
 					DetectedEventLines.Add($"{stamp}  {ev.Label}");
 				}
 
-				OperationStatus =
-					$"Done. {result.Events.Count} events → JSON + YouTube bookmarks.";
+				OperationStatus = string.IsNullOrWhiteSpace(result.ArtifactHandoffPath)
+					? $"Done. {result.Events.Count} events → JSON + YouTube bookmarks."
+					: $"Done. {result.Events.Count} events. Cursor handoff: {result.ArtifactHandoffPath}";
 				RefreshCanDetect();
 			});
+
+			if (!string.IsNullOrWhiteSpace(result.ArtifactHandoffPath))
+				Logger.Log($"Inning-detect Cursor handoff: {result.ArtifactHandoffPath}");
 
 			if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
 				FolderOpener.OpenContainingFolderIfExists(result.OutputJsonPath);

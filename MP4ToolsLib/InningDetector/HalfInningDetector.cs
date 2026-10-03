@@ -16,6 +16,15 @@ namespace MP4ToolsLib;
 /// </summary>
 public static class HalfInningDetector
 {
+	/// <summary>One analysis JPEG with its game-content timestamp (seconds).</summary>
+	public readonly record struct TimedSampleFrame(string Path, double ElapsedSeconds);
+
+	/// <summary>Maps a game-content time to a media file for refine-window extracts.</summary>
+	public interface IRefineMediaSource
+	{
+		bool TryResolve(double gameSeconds, out string mediaPath, out double localSeconds);
+	}
+
 	public sealed class Options
 	{
 		/// <summary>
@@ -25,8 +34,8 @@ public static class HalfInningDetector
 		public double SampleIntervalSeconds { get; set; } = 5.0;
 
 		/// <summary>
-		/// After a coarse half-inning hit, densely sample the hit's time window to find an
-		/// earlier, higher-confidence start (first batter/hitter appearance in that range).
+		/// After a coarse half-inning hit, densely sample before the hit to pull the bookmark
+		/// earlier (prefer early over late when a half has already started).
 		/// </summary>
 		public bool RefineHalfInningHits { get; set; } = true;
 
@@ -34,12 +43,16 @@ public static class HalfInningDetector
 		public double RefineIntervalSeconds { get; set; } = 0.5;
 
 		/// <summary>
-		/// How far before the coarse hit to search. Defaults to one coarse sample interval
-		/// (the transition falls between the previous empty sample and the hit).
+		/// How far before the coarse hit to search for an earlier batter/hitter.
+		/// Default is intentionally wide so late coarse hits can still snap early.
+		/// Null uses <see cref="DefaultRefineLookbackSeconds"/>.
 		/// </summary>
-		public double? RefineLookbackSeconds { get; set; }
+		public double? RefineLookbackSeconds { get; set; } = DefaultRefineLookbackSeconds;
 
-		/// <summary>How far after the coarse hit to keep searching (usually 0).</summary>
+		/// <summary>Default refine lookback when <see cref="RefineLookbackSeconds"/> is null.</summary>
+		public const double DefaultRefineLookbackSeconds = 45;
+
+		/// <summary>How far after the coarse hit to keep searching (usually 0 — prefer early).</summary>
 		public double RefineLookaheadSeconds { get; set; } = 0;
 
 		/// <summary>Max analysis width (keeps aspect ratio).</summary>
@@ -53,11 +66,14 @@ public static class HalfInningDetector
 		/// </summary>
 		public float RoleModelConfidenceFloor { get; set; } = 0.20f;
 
-		/// <summary>PHC hitter score gate (kids/backstop cameras need a lower bar than broadcast).</summary>
-		public float RoleHitterConfidence { get; set; } = 0.28f;
+		/// <summary>
+		/// PHC hitter score gate. Kept low so dusk/LRF/backstop footage bookmarks as soon as a
+		/// hitter is plausible (prefer early half starts over late ones).
+		/// </summary>
+		public float RoleHitterConfidence { get; set; } = 0.22f;
 
 		/// <summary>PHC catcher score gate (primary defense proxy when pitcher is never detected).</summary>
-		public float RoleCatcherConfidence { get; set; } = 0.28f;
+		public float RoleCatcherConfidence { get; set; } = 0.25f;
 
 		/// <summary>PHC pitcher score gate (rarely fires on wide backstop kids footage).</summary>
 		public float RolePitcherConfidence { get; set; } = 0.20f;
@@ -101,9 +117,9 @@ public static class HalfInningDetector
 
 		/// <summary>
 		/// Roles mode: how long PHC must see no hitter/pitcher/catcher before counting as an
-		/// empty (side-change) stretch.
+		/// empty (side-change) stretch. Shorter arms the next half-start sooner.
 		/// </summary>
-		public double RoleEmptyHoldSeconds { get; set; } = 30;
+		public double RoleEmptyHoldSeconds { get; set; } = 20;
 
 		/// <summary>
 		/// Roles mode: a new half-inning hitter must occur within this many seconds after an
@@ -179,6 +195,14 @@ public static class HalfInningDetector
 		if (string.IsNullOrWhiteSpace(videoPath) || !File.Exists(videoPath))
 			throw new FileNotFoundException("Video not found.", videoPath);
 
+		options ??= new Options();
+		InningDetectionArtifactSession artifactSession = null;
+		if (InningDetectionArtifactRuntime.Enabled)
+		{
+			artifactSession = InningDetectionArtifactSession.Create(videoPath, "combined-mp4");
+			status = artifactSession.WrapStatus(status);
+		}
+
 		void Status(string message)
 		{
 			if (string.IsNullOrWhiteSpace(message))
@@ -186,11 +210,6 @@ public static class HalfInningDetector
 			status?.Invoke(message);
 			log?.Invoke(message);
 		}
-
-		options ??= new Options();
-		Status("Loading YOLO detection model…");
-		var resolvedModel = await YoloModelStore.EnsureDetectorModelAsync(modelPath, ct, log).ConfigureAwait(false);
-		var useRoles = resolvedModel.Kind == YoloModelKind.BaseballPhc;
 
 		Status("Reading video duration…");
 		var durationText = await FFMpegUtils.Instance.GetFileDurationAsync(videoPath, ct, log).ConfigureAwait(false);
@@ -202,12 +221,14 @@ public static class HalfInningDetector
 			$"Preparing detection ({FormatElapsed(durationSeconds)} video, sample every {options.SampleIntervalSeconds:0.###}s)…");
 		progress01?.Invoke(0);
 
-		// Extract dominates wall time on long games; reserve most of the bar for it.
 		const double extractProgressEnd = 0.55;
-		const double analyzeProgressEnd = 0.92;
-
-		var frameDir = Path.Combine(TempPathHelper.GetTempPath(), $"innings_frames_{Guid.NewGuid():N}");
-		Directory.CreateDirectory(frameDir);
+		var frameDir = artifactSession != null
+			? artifactSession.FramesDirectory
+			: Path.Combine(TempPathHelper.GetTempPath(), $"innings_frames_{Guid.NewGuid():N}");
+		if (artifactSession != null)
+			Status($"Saving inning-detect debug package under {artifactSession.SessionDirectory}");
+		else
+			Directory.CreateDirectory(frameDir);
 
 		try
 		{
@@ -227,10 +248,95 @@ public static class HalfInningDetector
 			if (frames.Length == 0)
 				throw new InvalidOperationException("No sample frames were extracted from the video.");
 
+			var interval = Math.Max(0.25, options.SampleIntervalSeconds);
+			var samples = new List<TimedSampleFrame>(frames.Length);
+			for (var i = 0; i < frames.Length; i++)
+				samples.Add(new TimedSampleFrame(frames[i], i * interval));
+
+			return await DetectFromSamplesAsync(
+					videoPath,
+					samples,
+					durationSeconds,
+					ct,
+					log,
+					p => progress01?.Invoke(extractProgressEnd + (1.0 - extractProgressEnd) * Math.Clamp(p, 0, 1)),
+					options,
+					modelPath,
+					outputJsonPath,
+					writeOutputFiles,
+					status,
+					refineMedia: null,
+					ownSampleFiles: false,
+					artifactSession: artifactSession)
+				.ConfigureAwait(false);
+		}
+		finally
+		{
+			if (artifactSession == null)
+				TempPathHelper.DeleteTemporaryDirectoryUnlessRetained(frameDir, recursive: true);
+		}
+	}
+
+	/// <summary>
+	/// Runs detection on pre-extracted timed samples (e.g. parallel per-clip extract).
+	/// Progress is 0..1 for analyze/refine/write only (extract already finished).
+	/// </summary>
+	public static async Task<InningDetectionResult> DetectFromSamplesAsync(
+		string resultVideoPath,
+		IReadOnlyList<TimedSampleFrame> samples,
+		double durationSeconds,
+		CancellationToken ct = default,
+		Action<string> log = null,
+		Action<double> progress01 = null,
+		Options options = null,
+		string modelPath = null,
+		string outputJsonPath = null,
+		bool writeOutputFiles = true,
+		Action<string> status = null,
+		IRefineMediaSource refineMedia = null,
+		bool ownSampleFiles = false,
+		InningDetectionArtifactSession artifactSession = null,
+		bool finalizeArtifacts = true)
+	{
+		if (samples == null || samples.Count == 0)
+			throw new ArgumentException("At least one sample frame is required.", nameof(samples));
+		if (string.IsNullOrWhiteSpace(resultVideoPath))
+			throw new ArgumentException("Result video path is required.", nameof(resultVideoPath));
+
+		options ??= new Options();
+		durationSeconds = Math.Max(durationSeconds, samples[^1].ElapsedSeconds);
+
+		if (artifactSession == null && InningDetectionArtifactRuntime.Enabled)
+		{
+			artifactSession = InningDetectionArtifactSession.Create(resultVideoPath, "samples");
+			status = artifactSession.WrapStatus(status);
+		}
+
+		void Status(string message)
+		{
+			if (string.IsNullOrWhiteSpace(message))
+				return;
+			status?.Invoke(message);
+			log?.Invoke(message);
+		}
+
+		if (artifactSession != null)
+		{
+			await artifactSession.WriteSamplesCsvAsync(samples, ct).ConfigureAwait(false);
+			await artifactSession.WriteDetectorOptionsAsync(options, ct).ConfigureAwait(false);
+		}
+
+		Status("Loading YOLO detection model…");
+		var resolvedModel = await YoloModelStore.EnsureDetectorModelAsync(modelPath, ct, log).ConfigureAwait(false);
+		var useRoles = resolvedModel.Kind == YoloModelKind.BaseballPhc;
+
+		const double analyzeProgressEnd = 0.85;
+		try
+		{
 			Status(
 				useRoles
-					? $"Analyzing gameplay with BaseballCV roles ({frames.Length} samples)…"
-					: $"Analyzing gameplay with YOLO person model ({frames.Length} samples)…");
+					? $"Analyzing gameplay with BaseballCV roles ({samples.Count} samples)…"
+					: $"Analyzing gameplay with YOLO person model ({samples.Count} samples)…");
 
 			var detectConfidence = useRoles
 				? Math.Min(options.ConfidenceThreshold, options.RoleModelConfidenceFloor)
@@ -268,17 +374,17 @@ public static class HalfInningDetector
 					? "Scanning for half-innings (empty end-of-half → hitter start; on-deck+box = in progress; catcher = defense)…"
 					: "Scanning for later half-innings (field clear → warmup → first batter in box)…");
 
-			for (var i = 0; i < frames.Length; i++)
+			for (var i = 0; i < samples.Count; i++)
 			{
 				ct.ThrowIfCancellationRequested();
 				if (stoppedForGameOver)
 					break;
 
-				var elapsed = i * options.SampleIntervalSeconds;
-				var analyzeFrac = frames.Length <= 1 ? 1.0 : (double)i / (frames.Length - 1);
-				progress01?.Invoke(extractProgressEnd + (analyzeProgressEnd - extractProgressEnd) * analyzeFrac);
+				var elapsed = samples[i].ElapsedSeconds;
+				var analyzeFrac = samples.Count <= 1 ? 1.0 : (double)i / (samples.Count - 1);
+				progress01?.Invoke(analyzeProgressEnd * analyzeFrac);
 
-				using var mat = Cv2.ImRead(frames[i], ImreadModes.Color);
+				using var mat = Cv2.ImRead(samples[i].Path, ImreadModes.Color);
 				if (mat.Empty())
 					continue;
 
@@ -321,10 +427,10 @@ public static class HalfInningDetector
 					if (skippingIntro)
 					{
 						introSkipCount++;
-						if (i % 10 == 0 || i + 1 == frames.Length)
+						if (i % 10 == 0 || i + 1 == samples.Count)
 						{
 							Status(
-								$"Skipping title card… sample {i + 1}/{frames.Length} ({FormatElapsed(elapsed)})");
+								$"Skipping title card… sample {i + 1}/{samples.Count} ({FormatElapsed(elapsed)})");
 						}
 
 						continue;
@@ -402,10 +508,28 @@ public static class HalfInningDetector
 
 						if (topFirstSeeded && noHitterGapOk && emptyBeforeOk && minGapOk)
 						{
-							halfStarts.Add(elapsed);
-							lastHalfSeconds = elapsed;
-							Status(
-								$"[{FormatElapsed(elapsed)}] Half-inning start (hitter after empty) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
+							// Floor at prior half only — do not clamp to lastEmptyEnd, or missed
+							// hitter frames during a false-empty stretch cannot pull the bookmark early.
+							var earliest = FindEarliestBatterStartInSamples(
+								samples,
+								i,
+								detector,
+								options,
+								useRoles,
+								notBeforeSeconds: lastHalfSeconds,
+								ct);
+							halfStarts.Add(earliest);
+							lastHalfSeconds = earliest;
+							if (earliest < elapsed - 0.05)
+							{
+								Status(
+									$"[{FormatElapsed(earliest)}] Half-inning start (hitter after empty, walked back from {FormatElapsed(elapsed)}) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
+							}
+							else
+							{
+								Status(
+									$"[{FormatElapsed(earliest)}] Half-inning start (hitter after empty) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
+							}
 						}
 
 						lastHitterSeconds = elapsed;
@@ -509,14 +633,30 @@ public static class HalfInningDetector
 							if (warmupConfirmed
 								&& elapsed - lastHalfSeconds >= options.MinSecondsBetweenHalfInnings)
 							{
-								halfStarts.Add(elapsed);
-								lastHalfSeconds = elapsed;
+								var earliest = FindEarliestBatterStartInSamples(
+									samples,
+									i,
+									detector,
+									options,
+									useRoles,
+									notBeforeSeconds: lastHalfSeconds,
+									ct);
+								halfStarts.Add(earliest);
+								lastHalfSeconds = earliest;
 								phase = Phase.Playing;
 								emptySince = -1;
 								warmupSince = -1;
 								warmupConfirmed = false;
-								Status(
-									$"[{FormatElapsed(elapsed)}] Half-inning start (first batter in box) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
+								if (earliest < elapsed - 0.05)
+								{
+									Status(
+										$"[{FormatElapsed(earliest)}] Half-inning start (first batter in box, walked back from {FormatElapsed(elapsed)}) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
+								}
+								else
+								{
+									Status(
+										$"[{FormatElapsed(earliest)}] Half-inning start (first batter in box) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
+								}
 							}
 							else if (!warmupConfirmed)
 							{
@@ -526,7 +666,7 @@ public static class HalfInningDetector
 					}
 				}
 
-				if (i % 10 == 0 || i + 1 == frames.Length)
+				if (i % 10 == 0 || i + 1 == samples.Count)
 				{
 					var phaseLabel = useRoles
 						? (topFirstSeeded ? "watching for empty→hitter half-innings" : "waiting for first defense (Top 1st)")
@@ -545,7 +685,7 @@ public static class HalfInningDetector
 						? $"; P={signals.HasPitcher} H={signals.HasHitter} C={signals.HasCatcher}"
 						: "";
 					Status(
-						$"Analyzing gameplay… {i + 1}/{frames.Length} ({FormatElapsed(elapsed)}) — {phaseLabel}{roleHint}; found {halfStarts.Count} half-inning(s)");
+						$"Analyzing gameplay… {i + 1}/{samples.Count} ({FormatElapsed(elapsed)}) — {phaseLabel}{roleHint}; found {halfStarts.Count} half-inning(s)");
 				}
 			}
 
@@ -558,7 +698,7 @@ public static class HalfInningDetector
 					useRoles
 						? "No half-inning transitions found — scanning for Top 1st hitter-after-warmup fallback…"
 						: "No half-inning transitions found — scanning for Top 1st batter-in-box fallback…");
-				var first = FindFirstBatterAfterWarmup(frames, detector, options, useRoles, ct);
+				var first = FindFirstBatterAfterWarmup(samples, detector, options, useRoles, ct);
 				if (first.HasValue)
 				{
 					halfStarts.Add(first.Value);
@@ -594,15 +734,20 @@ public static class HalfInningDetector
 						continue;
 					}
 
+					var previousHalf = hi > 0 ? halfStarts[hi - 1] : 0;
 					var refined = await RefineHalfInningStartAsync(
-							videoPath,
+							resultVideoPath,
 							coarse,
 							durationSeconds,
 							detector,
 							options,
 							useRoles,
 							ct,
-							Status)
+							Status,
+							refineMedia,
+							artifactSession,
+							halfIndex: hi,
+							notBeforeSeconds: previousHalf)
 						.ConfigureAwait(false);
 					halfStarts[hi] = refined;
 					var refineFrac = halfStarts.Count <= 1 ? 1.0 : (double)(hi + 1) / halfStarts.Count;
@@ -630,9 +775,9 @@ public static class HalfInningDetector
 				Status("Writing recording JSON and YouTube bookmarks…");
 				progress01?.Invoke(0.99);
 				outputPath = string.IsNullOrWhiteSpace(outputJsonPath)
-					? InningDetectionRecordingWriter.BuildUniqueOutputPath(videoPath)
+					? InningDetectionRecordingWriter.BuildUniqueOutputPath(resultVideoPath)
 					: outputJsonPath.Trim();
-				var root = InningDetectionRecordingWriter.BuildSessionJson(videoPath, durationSeconds, events);
+				var root = InningDetectionRecordingWriter.BuildSessionJson(resultVideoPath, durationSeconds, events);
 				(_, youtubePath) = await InningDetectionRecordingWriter
 					.WriteSessionAndYoutubeAsync(root, outputPath, ct, log)
 					.ConfigureAwait(false);
@@ -647,18 +792,50 @@ public static class HalfInningDetector
 			}
 
 			Status($"Detection complete — {halfStarts.Count} half-inning start(s).");
+
+			if (artifactSession != null)
+			{
+				await artifactSession.WriteEventsAsync(artifactSession.EventsGamePath, events, ct)
+					.ConfigureAwait(false);
+				if (finalizeArtifacts)
+				{
+					var manifest = new InningDetectionArtifactManifest
+					{
+						SampleIntervalSeconds = options.SampleIntervalSeconds,
+						GameDurationSeconds = durationSeconds,
+						OutputDurationSeconds = durationSeconds,
+						IntroOffsetSeconds = 0,
+						ModelPath = resolvedModel.Path,
+						ModelKind = resolvedModel.Kind.ToString(),
+						RecordingJsonPath = outputPath,
+						YoutubeDescriptionPath = youtubePath,
+						HalfInningEvents = events
+							.Where(e => string.Equals(e.Kind, "half_inning", StringComparison.OrdinalIgnoreCase))
+							.ToList(),
+					};
+					await artifactSession.FinalizeAsync(manifest, ct, log).ConfigureAwait(false);
+					Status($"Cursor handoff: {artifactSession.HandoffMarkdownPath}");
+				}
+			}
+
 			return new InningDetectionResult
 			{
-				VideoPath = videoPath,
+				VideoPath = resultVideoPath,
 				OutputJsonPath = outputPath,
 				OutputYoutubeDescriptionPath = youtubePath,
 				DurationSeconds = durationSeconds,
 				Events = events,
+				ArtifactHandoffPath = artifactSession?.HandoffMarkdownPath,
+				ArtifactSessionDirectory = artifactSession?.SessionDirectory,
 			};
 		}
 		finally
 		{
-			TempPathHelper.DeleteTemporaryDirectoryUnlessRetained(frameDir, recursive: true);
+			if (ownSampleFiles && artifactSession == null)
+			{
+				foreach (var sample in samples)
+					TempPathHelper.DeleteTemporaryFileUnlessRetained(sample.Path);
+			}
 		}
 	}
 
@@ -764,7 +941,7 @@ public static class HalfInningDetector
 	/// Fallback for Top 1st: warmup without a batter/hitter, then first batter/hitter.
 	/// </summary>
 	private static double? FindFirstBatterAfterWarmup(
-		string[] frames,
+		IReadOnlyList<TimedSampleFrame> samples,
 		YoloOnnxDetector detector,
 		Options options,
 		bool useRoles,
@@ -775,11 +952,11 @@ public static class HalfInningDetector
 		var introStreak = 0;
 		var skippingIntro = false;
 		var warmupNeed = Math.Min(options.WarmupHoldSeconds, Math.Max(0, options.FirstHalfWarmupHoldSeconds));
-		for (var i = 0; i < frames.Length; i++)
+		for (var i = 0; i < samples.Count; i++)
 		{
 			ct.ThrowIfCancellationRequested();
-			var elapsed = i * options.SampleIntervalSeconds;
-			using var mat = Cv2.ImRead(frames[i], ImreadModes.Color);
+			var elapsed = samples[i].ElapsedSeconds;
+			using var mat = Cv2.ImRead(samples[i].Path, ImreadModes.Color);
 			if (mat.Empty())
 				continue;
 
@@ -922,20 +1099,27 @@ public static class HalfInningDetector
 	/// high-confidence batter/hitter frame (preferring hitter-in-box / higher confidence).
 	/// </summary>
 	private static async Task<double> RefineHalfInningStartAsync(
-		string videoPath,
+		string fallbackVideoPath,
 		double coarseHitSeconds,
 		double durationSeconds,
 		YoloOnnxDetector detector,
 		Options options,
 		bool useRoles,
 		CancellationToken ct,
-		Action<string> status)
+		Action<string> status,
+		IRefineMediaSource refineMedia = null,
+		InningDetectionArtifactSession artifactSession = null,
+		int halfIndex = 0,
+		double notBeforeSeconds = 0)
 	{
-		var lookback = Math.Max(0.25, options.RefineLookbackSeconds ?? options.SampleIntervalSeconds);
+		var lookback = Math.Max(
+			0.25,
+			options.RefineLookbackSeconds ?? Options.DefaultRefineLookbackSeconds);
 		var lookahead = Math.Max(0, options.RefineLookaheadSeconds);
 		var refineInterval = Math.Clamp(options.RefineIntervalSeconds, 0.1, Math.Max(0.1, options.SampleIntervalSeconds));
 
-		var windowStart = Math.Max(0, coarseHitSeconds - lookback);
+		// Prefer early: search a wide window before the coarse hit, but never into the prior half.
+		var windowStart = Math.Max(Math.Max(0, notBeforeSeconds), coarseHitSeconds - lookback);
 		var windowEnd = coarseHitSeconds + lookahead;
 		if (durationSeconds > 0)
 			windowEnd = Math.Min(durationSeconds, windowEnd);
@@ -947,14 +1131,29 @@ public static class HalfInningDetector
 			$"Refine window {FormatElapsed(windowStart)}–{FormatElapsed(Math.Min(windowStart + windowDuration, windowEnd + refineInterval))} " +
 			$"(coarse hit {FormatElapsed(coarseHitSeconds)})");
 
-		var refineDir = Path.Combine(TempPathHelper.GetTempPath(), $"innings_refine_{Guid.NewGuid():N}");
-		Directory.CreateDirectory(refineDir);
+		if (!TryResolveRefineExtract(
+			    refineMedia,
+			    fallbackVideoPath,
+			    windowStart,
+			    out var extractPath,
+			    out var extractLocalStart))
+		{
+			status?.Invoke("Refine skipped — could not resolve media for refine window.");
+			return coarseHitSeconds;
+		}
+
+		var keepRefine = artifactSession != null;
+		var refineDir = keepRefine
+			? artifactSession.CreateRefineWindowDirectory(halfIndex, coarseHitSeconds)
+			: Path.Combine(TempPathHelper.GetTempPath(), $"innings_refine_{Guid.NewGuid():N}");
+		if (!keepRefine)
+			Directory.CreateDirectory(refineDir);
 		try
 		{
 			await ExtractRangeSampleFramesAsync(
-					videoPath,
+					extractPath,
 					refineDir,
-					windowStart,
+					extractLocalStart,
 					windowDuration,
 					refineInterval,
 					options.AnalysisWidth,
@@ -970,11 +1169,12 @@ public static class HalfInningDetector
 			// Collect candidate (time, score) frames where a batter/hitter is present.
 			var candidates = new List<(double Time, float Confidence, bool InBox, bool AfterEmpty)>();
 			var sawEmptyLeadIn = false;
+			var localToGame = windowStart - extractLocalStart;
 
 			for (var i = 0; i < frames.Length; i++)
 			{
 				ct.ThrowIfCancellationRequested();
-				var t = windowStart + i * refineInterval;
+				var t = extractLocalStart + i * refineInterval + localToGame;
 				if (t > coarseHitSeconds + lookahead + 0.001)
 					break;
 
@@ -1005,7 +1205,15 @@ public static class HalfInningDetector
 				return coarseHitSeconds;
 
 			// Prefer earliest empty→batter transition; then in-box + confidence.
-			static double PickBest(IReadOnlyList<(double Time, float Confidence, bool InBox, bool AfterEmpty)> list, float minConfidence)
+			// Use role hitter gate (not the stricter person ConfidenceThreshold) so refine can
+			// snap earlier on weak dusk/LRF hitter scores.
+			var minConfidence = useRoles
+				? options.RoleHitterConfidence
+				: options.ConfidenceThreshold;
+
+			static double PickBest(
+				IReadOnlyList<(double Time, float Confidence, bool InBox, bool AfterEmpty)> list,
+				float minConf)
 			{
 				var ordered = list
 					.OrderBy(c => c.Time)
@@ -1014,30 +1222,84 @@ public static class HalfInningDetector
 					.ToList();
 				foreach (var c in ordered)
 				{
-					if (c.Confidence >= minConfidence && c.InBox)
+					if (c.Confidence >= minConf && c.InBox)
 						return c.Time;
 				}
 
 				foreach (var c in ordered)
 				{
-					if (c.Confidence >= minConfidence)
+					if (c.Confidence >= minConf)
 						return c.Time;
 				}
 
+				// Prefer earliest candidate even if below gate — err early once a batter was seen.
 				return ordered[0].Time;
 			}
 
 			var afterEmpty = candidates.Where(c => c.AfterEmpty).ToList();
 			if (afterEmpty.Count > 0)
-				return PickBest(afterEmpty, options.ConfidenceThreshold);
+				return PickBest(afterEmpty, minConfidence);
 
 			// Window opened already on a batter — earliest confident / in-box sample.
-			return PickBest(candidates, options.ConfidenceThreshold);
+			return PickBest(candidates, minConfidence);
 		}
 		finally
 		{
-			TempPathHelper.DeleteTemporaryDirectoryUnlessRetained(refineDir, recursive: true);
+			if (!keepRefine)
+				TempPathHelper.DeleteTemporaryDirectoryUnlessRetained(refineDir, recursive: true);
 		}
+	}
+
+	/// <summary>
+	/// Walks backward from a coarse hit through already-extracted samples to the earliest
+	/// continuous batter/hitter presence (stops at empty / non-batter). Prefers early bookmarks.
+	/// </summary>
+	private static double FindEarliestBatterStartInSamples(
+		IReadOnlyList<TimedSampleFrame> samples,
+		int hitIndex,
+		YoloOnnxDetector detector,
+		Options options,
+		bool useRoles,
+		double notBeforeSeconds,
+		CancellationToken ct)
+	{
+		if (samples == null || samples.Count == 0 || hitIndex < 0 || hitIndex >= samples.Count)
+			return 0;
+		if (hitIndex == 0)
+			return samples[0].ElapsedSeconds;
+
+		var coarse = samples[hitIndex].ElapsedSeconds;
+		var lookback = Math.Max(0.25, options.RefineLookbackSeconds ?? Options.DefaultRefineLookbackSeconds);
+		var floor = Math.Max(Math.Max(0, notBeforeSeconds), coarse - lookback);
+		var earliest = coarse;
+
+		for (var j = hitIndex - 1; j >= 0; j--)
+		{
+			ct.ThrowIfCancellationRequested();
+			var t = samples[j].ElapsedSeconds;
+			if (t < floor - 0.001)
+				break;
+
+			using var mat = Cv2.ImRead(samples[j].Path, ImreadModes.Color);
+			if (mat.Empty())
+				continue;
+
+			if (options.SkipIntroTitleCards && IntroTitleCardClassifier.IsSolidTextCard(mat))
+				break;
+
+			var detections = detector.Detect(mat);
+			var signals = BuildFrameSignals(detections, mat.Width, mat.Height, options, useRoles);
+			if (signals.BatterPresent)
+			{
+				earliest = t;
+				continue;
+			}
+
+			// Empty or non-batter lead-in — earliest batter after this gap is the start.
+			break;
+		}
+
+		return earliest;
 	}
 
 	private static float BestBatterConfidence(
@@ -1074,6 +1336,48 @@ public static class HalfInningDetector
 		}
 
 		return bestPerson;
+	}
+
+	/// <summary>Public entry for timed range extracts used by parallel per-clip sampling.</summary>
+	public static Task ExtractTimedRangeAsync(
+		string videoPath,
+		string frameDir,
+		double startSeconds,
+		double durationSeconds,
+		double intervalSeconds,
+		int analysisWidth,
+		CancellationToken ct,
+		Action<string> log,
+		Action<string> status = null) =>
+		ExtractRangeSampleFramesAsync(
+			videoPath,
+			frameDir,
+			startSeconds,
+			durationSeconds,
+			intervalSeconds,
+			analysisWidth,
+			ct,
+			log,
+			status);
+
+	private static bool TryResolveRefineExtract(
+		IRefineMediaSource refineMedia,
+		string fallbackVideoPath,
+		double gameWindowStart,
+		out string mediaPath,
+		out double localStartSeconds)
+	{
+		if (refineMedia != null
+			&& refineMedia.TryResolve(gameWindowStart, out mediaPath, out localStartSeconds)
+			&& !string.IsNullOrWhiteSpace(mediaPath)
+			&& File.Exists(mediaPath))
+		{
+			return true;
+		}
+
+		mediaPath = fallbackVideoPath;
+		localStartSeconds = gameWindowStart;
+		return !string.IsNullOrWhiteSpace(mediaPath) && File.Exists(mediaPath);
 	}
 
 	private static async Task ExtractRangeSampleFramesAsync(

@@ -2027,8 +2027,12 @@ public partial class CombineViewModel : MP4ViewModelBase
 			Logger.Log($"Inning detector JSON: {result.OutputJsonPath}");
 			if (!string.IsNullOrWhiteSpace(result.OutputYoutubeDescriptionPath))
 				Logger.Log($"Inning detector YouTube bookmarks: {result.OutputYoutubeDescriptionPath}");
+			if (!string.IsNullOrWhiteSpace(result.ArtifactHandoffPath))
+				Logger.Log($"Inning-detect Cursor handoff: {result.ArtifactHandoffPath}");
 			ReportCombineStep(
-				$"Inning detector finished ({result.Events?.Count ?? 0} events).");
+				string.IsNullOrWhiteSpace(result.ArtifactHandoffPath)
+					? $"Inning detector finished ({result.Events?.Count ?? 0} events)."
+					: $"Inning detector finished ({result.Events?.Count ?? 0} events). Cursor handoff: {result.ArtifactHandoffPath}");
 		}
 		catch (OperationCanceledException)
 		{

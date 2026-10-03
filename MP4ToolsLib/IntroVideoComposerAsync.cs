@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -419,8 +420,23 @@ namespace MP4ToolsLib
                     : (DaVinciOutputEncoding.UsesVaapi(hwAccelForIntro) && OperatingSystem.IsLinux() ? ",format=nv12,hwupload" : string.Empty);
                 if (!string.IsNullOrEmpty(hwUploadSuffix))
                     vf += hwUploadSuffix;
+                // Weight progress by media duration so the long main-clip mux moves the bar.
+                var seekSeconds = TryParseTimestampSeconds(seekBeforeMainInput.Value);
+                var sourceDurationText = await FFMpegUtils.Instance.GetFileDurationAsync(inputPath, ct, log)
+                    .ConfigureAwait(false);
+                var sourceDurationSeconds = TryParseDurationSeconds(sourceDurationText);
+                var mainDurationSeconds = sourceDurationSeconds > 0
+                    ? Math.Max(0.1, sourceDurationSeconds - seekSeconds)
+                    : 3600; // fallback weight when probe fails (time= still advances the bar)
+                var introDurationSeconds = Math.Max(0.1, durationSeconds);
+                var concatDurationSeconds = introDurationSeconds + mainDurationSeconds;
+                var totalWeight = introDurationSeconds + mainDurationSeconds + concatDurationSeconds;
+                var introEnd = introDurationSeconds / totalWeight;
+                var mainEnd = (introDurationSeconds + mainDurationSeconds) / totalWeight;
+
                 log("Creating intro...");
                 Step("Encoding intro to MPEG-TS…");
+                progress?.Report(0);
 
                 var introVidTail = new List<FfmpegOption?>();
                 if (resolveSafeEncoding)
@@ -480,8 +496,9 @@ namespace MP4ToolsLib
                 introMp4Parts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
                 introMp4Parts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(introTs)));
 
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(introMp4Parts), ct, log);
-                progress?.Report(0.8);
+                var introLog = CreateStageProgressLog(log, progress, 0, introEnd, introDurationSeconds);
+                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(introMp4Parts), ct, introLog);
+                progress?.Report(introEnd);
 
                 Step("Muxing main clip to MPEG-TS…");
                 var inputToTs = new List<FfmpegOption?>
@@ -526,8 +543,18 @@ namespace MP4ToolsLib
                     inputToTs.Add(MpegTsVideoBitstream.GetMp4ToAnnexBOption("hevc"));
                 inputToTs.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
                 inputToTs.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(inputTs)));
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(inputToTs), ct, log);
-                progress?.Report(0.9);
+                var mainExpectedBytes = EstimateRemuxOutputBytes(inputPath, sourceDurationSeconds, seekSeconds);
+                await RunFfmpegWithOutputProgressAsync(
+                        FfmpegCommandLine.Build(inputToTs),
+                        inputTs,
+                        mainExpectedBytes,
+                        log,
+                        progress,
+                        introEnd,
+                        mainEnd,
+                        mainDurationSeconds,
+                        ct)
+                    .ConfigureAwait(false);
 
                 if (deleteSourceAfterRemux)
                     TryDeleteSourceAfterTempsReady(inputPath, outputPath, introTs, inputTs, log, Step);
@@ -557,10 +584,19 @@ namespace MP4ToolsLib
                 if (resolveSafeEncoding)
                     DaVinciOutputEncoding.AppendMp4OutputOptions(finalParts);
                 finalParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(outputPath)));
-                await FFMpegUtils.Instance.RunCaptureFFMpegAsync(
-                    FfmpegCommandLine.Build(finalParts),
-                    ct, log);
-                progress?.Report(1.0);
+                // concat: MPEG-TS often omits usable time=; grow the output file instead.
+                var joinExpectedBytes = SafeFileLength(introTs) + SafeFileLength(inputTs);
+                await RunFfmpegWithOutputProgressAsync(
+                        FfmpegCommandLine.Build(finalParts),
+                        outputPath,
+                        joinExpectedBytes,
+                        log,
+                        progress,
+                        mainEnd,
+                        1.0,
+                        concatDurationSeconds,
+                        ct)
+                    .ConfigureAwait(false);
 
                 log("Done.");
             }
@@ -569,6 +605,133 @@ namespace MP4ToolsLib
                 SafeDelete(introTs);
                 SafeDelete(inputTs);
             }
+        }
+
+        /// <summary>
+        /// Runs ffmpeg and advances progress from <c>time=</c> when available, otherwise from
+        /// growing <paramref name="outputPath"/> size (needed for MPEG-TS <c>concat:</c> copy).
+        /// </summary>
+        private static async Task RunFfmpegWithOutputProgressAsync(
+            string args,
+            string outputPath,
+            long expectedBytes,
+            Action<string> log,
+            IProgress<double> progress,
+            double stageStart,
+            double stageEnd,
+            double stageDurationSeconds,
+            CancellationToken ct)
+        {
+            var logWithTime = CreateStageProgressLog(log, progress, stageStart, stageEnd, stageDurationSeconds);
+            var ffmpegTask = FFMpegUtils.Instance.RunCaptureFFMpegAsync(args, ct, logWithTime);
+            var span = Math.Max(0, stageEnd - stageStart);
+            var expected = Math.Max(1L, expectedBytes);
+
+            while (!ffmpegTask.IsCompleted)
+            {
+                try
+                {
+                    await Task.WhenAny(ffmpegTask, Task.Delay(500, ct)).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                if (progress == null || span <= 0)
+                    continue;
+
+                var len = SafeFileLength(outputPath);
+                if (len <= 0)
+                    continue;
+
+                var frac = Math.Clamp(len / (double)expected, 0, 0.995);
+                progress.Report(stageStart + span * frac);
+            }
+
+            await ffmpegTask.ConfigureAwait(false);
+            progress?.Report(stageEnd);
+        }
+
+        /// <summary>
+        /// Logs ffmpeg stderr and maps <c>time=</c> progress into a 0..1 stage window.
+        /// </summary>
+        private static Action<string> CreateStageProgressLog(
+            Action<string> log,
+            IProgress<double> progress,
+            double stageStart,
+            double stageEnd,
+            double stageDurationSeconds)
+        {
+            var span = Math.Max(0, stageEnd - stageStart);
+            var duration = Math.Max(0.1, stageDurationSeconds);
+            return line =>
+            {
+                log?.Invoke(line);
+                if (progress == null || span <= 0)
+                    return;
+                if (!FfmpegProgressParser.TryParseTimeSeconds(line, out var mediaSeconds))
+                    return;
+                var frac = Math.Clamp(mediaSeconds / duration, 0, 1);
+                progress.Report(stageStart + span * frac);
+            };
+        }
+
+        private static long EstimateRemuxOutputBytes(string inputPath, double sourceDurationSeconds, double seekSeconds)
+        {
+            var sourceLen = SafeFileLength(inputPath);
+            if (sourceLen <= 0)
+                return 1;
+            if (sourceDurationSeconds <= 0.1 || seekSeconds <= 0)
+                return sourceLen;
+            var remainFrac = Math.Clamp((sourceDurationSeconds - seekSeconds) / sourceDurationSeconds, 0.05, 1);
+            return Math.Max(1L, (long)(sourceLen * remainFrac));
+        }
+
+        private static long SafeFileLength(string path)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                    return 0;
+                return new FileInfo(path).Length;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        private static double TryParseDurationSeconds(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return 0;
+            text = text.Trim();
+            if (text.Contains(':'))
+            {
+                var range = TimeRange.FromString(text);
+                return range?.TotalSeconds ?? 0;
+            }
+
+            return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)
+                ? Math.Max(0, seconds)
+                : 0;
+        }
+
+        private static double TryParseTimestampSeconds(string timestamp)
+        {
+            if (string.IsNullOrWhiteSpace(timestamp))
+                return 0;
+            var cleaned = timestamp.Trim().Trim('"');
+            if (cleaned.Contains(':'))
+            {
+                var range = TimeRange.FromString(cleaned);
+                return range?.TotalSeconds ?? 0;
+            }
+
+            return double.TryParse(cleaned, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)
+                ? Math.Max(0, seconds)
+                : 0;
         }
 
         /// <summary>

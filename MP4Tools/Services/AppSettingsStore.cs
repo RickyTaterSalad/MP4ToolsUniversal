@@ -60,6 +60,13 @@ public sealed class AppUserSettings
 	/// (AI → LRF Inning Detector, or Combine after-encode LRF path). Default 3.
 	/// </summary>
 	public double LrfInningSampleIntervalSeconds { get; set; } = 3;
+
+	/// <summary>
+	/// When true (default), inning detection keeps a named debug package (frames, maps, options,
+	/// events, and <c>CURSOR_REFINE.md</c>) under the temp folder for Cursor/model refinement.
+	/// Null in older settings files means enabled.
+	/// </summary>
+	public bool? SaveInningDetectionArtifacts { get; set; }
 }
 
 public static class AppSettingsStore
@@ -106,6 +113,7 @@ public static class AppSettingsStore
 		Current = settings ?? new AppUserSettings();
 		TempPathHelper.ApplyConfiguration(Current.TempDirectory, Current.RetainTemporaryFiles);
 		EncodingSettingsRuntime.Apply(Current);
+		InningDetectionArtifactRuntime.Apply(Current.SaveInningDetectionArtifacts);
 		SettingsChanged?.Invoke(null, EventArgs.Empty);
 	}
 

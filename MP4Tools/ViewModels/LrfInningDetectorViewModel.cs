@@ -221,9 +221,14 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 					DetectedEventLines.Add($"{stamp}  {ev.Label}");
 				}
 
-				OperationStatus = $"Done. {result.Events.Count} events → JSON + YouTube bookmarks (combined timeline).";
+				OperationStatus = string.IsNullOrWhiteSpace(result.ArtifactHandoffPath)
+					? $"Done. {result.Events.Count} events → JSON + YouTube bookmarks (combined timeline)."
+					: $"Done. {result.Events.Count} events. Cursor handoff: {result.ArtifactHandoffPath}";
 				RefreshCanDetect();
 			});
+
+			if (!string.IsNullOrWhiteSpace(result.ArtifactHandoffPath))
+				Logger.Log($"Inning-detect Cursor handoff: {result.ArtifactHandoffPath}");
 
 			if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
 				FolderOpener.OpenContainingFolderIfExists(result.OutputJsonPath);

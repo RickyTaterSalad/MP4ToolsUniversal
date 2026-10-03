@@ -156,6 +156,12 @@
 							<TextBlock Text="seconds" VerticalAlignment="Center"/>
 						</StackPanel>
 
+						<CheckBox Content="Save inning-detection debug package (for Cursor refine)"
+											IsChecked="{Binding SaveInningDetectionArtifacts}"
+											ToolTip.Tip="Keeps frames, combine map, detector options, events, and CURSOR_REFINE.md under Temp/inning_detect/{videoStem}_{timestamp}/. On by default."/>
+						<TextBlock TextWrapping="Wrap" Opacity="0.85"
+											 Text="When enabled, each detect run writes a video-named folder with CURSOR_REFINE.md — point Cursor at that file to refine half-inning modeling. Uses the Temporary files folder from General."/>
+
 						<TextBlock Text="OpenRouter" FontWeight="SemiBold" FontSize="16"/>
 						<TextBlock TextWrapping="Wrap"
 											 Text="Used by Rewrite Intro → Read Intro to OCR an existing title card via a vision model. Get a key at openrouter.ai."/>

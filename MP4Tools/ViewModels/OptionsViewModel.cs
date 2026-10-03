@@ -46,6 +46,7 @@ public partial class OptionsViewModel : ViewModelBase
 			if (double.IsNaN(lrfInterval) || double.IsInfinity(lrfInterval) || lrfInterval <= 0)
 				lrfInterval = 3;
 			LrfInningSampleIntervalSeconds = Math.Clamp(lrfInterval, 0.5, 30);
+			SaveInningDetectionArtifacts = loaded.SaveInningDetectionArtifacts ?? true;
 		}
 		finally
 		{
@@ -90,6 +91,9 @@ public partial class OptionsViewModel : ViewModelBase
 	private double _lrfInningSampleIntervalSeconds = 3;
 
 	[ObservableProperty]
+	private bool _saveInningDetectionArtifacts = true;
+
+	[ObservableProperty]
 	[NotifyPropertyChangedFor(nameof(ApiKeyPasswordChar))]
 	private bool _isApiKeyVisible;
 
@@ -116,6 +120,7 @@ public partial class OptionsViewModel : ViewModelBase
 	partial void OnOpenRouterApiKeyChanged(string value) => SchedulePersist();
 	partial void OnOpenRouterModelChanged(string value) => SchedulePersist();
 	partial void OnLrfInningSampleIntervalSecondsChanged(double value) => PersistNow();
+	partial void OnSaveInningDetectionArtifactsChanged(bool value) => PersistNow();
 
 	private void PersistNow()
 	{
@@ -179,6 +184,7 @@ public partial class OptionsViewModel : ViewModelBase
 				OpenRouterApiKey = OpenRouterApiKey?.Trim() ?? "",
 				OpenRouterModel = OpenRouterModel?.Trim() ?? "",
 				LrfInningSampleIntervalSeconds = lrfInterval,
+				SaveInningDetectionArtifacts = SaveInningDetectionArtifacts,
 			};
 			AppSettingsStore.SaveAndApply(s);
 			MP4Tools.Logger.Log($"Settings saved. Temporary files folder: {TempPathHelper.GetTempPath()}");
@@ -189,6 +195,8 @@ public partial class OptionsViewModel : ViewModelBase
 			MP4Tools.Logger.Log($"Resolve-safe encoding: {EncodingSettingsRuntime.Current.UseResolveSafeEncoding}");
 			MP4Tools.Logger.Log(
 				$"LRF inning sample interval: {UiBehaviorSettingsRuntime.LrfInningSampleIntervalSeconds:0.###}s");
+			MP4Tools.Logger.Log(
+				$"Save inning-detection artifacts: {UiBehaviorSettingsRuntime.SaveInningDetectionArtifacts}");
 			MP4Tools.Logger.Log(
 				$"Baseball Logger server: {(string.IsNullOrWhiteSpace(BaseballLoggerSettingsRuntime.ServerUrl) ? "(not set)" : BaseballLoggerSettingsRuntime.ServerUrl)}");
 			MP4Tools.Logger.Log(
