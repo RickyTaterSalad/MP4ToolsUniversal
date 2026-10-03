@@ -960,6 +960,34 @@ public partial class CombineViewModel : MP4ViewModelBase
 		return true;
 	}
 
+	/// <summary>
+	/// Inserts a generated intro (or any supported video) at the front of the combine list
+	/// without clearing existing clips.
+	/// </summary>
+	public bool InsertVideoAtFront(string filePath)
+	{
+		if (!CombineFile.IsSupportedVideoFile(filePath))
+			return false;
+
+		var fileInfo = new FileInfo(filePath);
+		var item = new CombineFile { Name = fileInfo.Name, Path = fileInfo.FullName };
+		BeginEdgeRefreshSuspend();
+		try
+		{
+			InputFiles.Insert(0, item);
+		}
+		finally
+		{
+			EndEdgeRefreshSuspend();
+		}
+
+		SelectedInputFile = item;
+		SyncSelectedInputFiles([item]);
+		RefreshCanCombineFromInputs();
+		Logger.Log($"Added to Combine (first): {item.Path}");
+		return true;
+	}
+
 	protected override Task Clear()
 	{
 		CancelEdgeDurationRefresh();

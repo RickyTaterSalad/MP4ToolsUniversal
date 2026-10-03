@@ -1,0 +1,213 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:vm="using:MP4Tools.ViewModels"
+			 xmlns:views="using:MP4Tools.Views"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+			 mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="560"
+			 x:Class="MP4Tools.Views.ReplaceSegmentView"
+			 x:DataType="vm:ReplaceSegmentViewModel">
+	<Panel>
+		<!-- Generate Intro swap -->
+		<Panel IsVisible="{Binding IsShowingGenerateIntro}">
+			<views:GenerateIntroView DataContext="{Binding GenerateIntroViewModel}"/>
+		</Panel>
+
+		<!-- Replace Segment main UI -->
+		<Grid IsVisible="{Binding !IsShowingGenerateIntro}"
+			  DragDrop.AllowDrop="True"
+			  Background="Transparent"
+			  DragDrop.DragOver="OnDragOver"
+			  DragDrop.Drop="OnDrop"
+			  RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
+
+			<StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+				<TextBlock Text="Input"
+						   FontSize="12"
+						   FontWeight="SemiBold"
+						   Opacity="0.65"
+						   LetterSpacing="0.4"/>
+				<TextBlock Text="Stream-copy edits: cut points may snap to nearby keyframes. Text intros are configured now and generated when you Apply Edits."
+						   TextWrapping="Wrap"
+						   Opacity="0.75"
+						   FontSize="12"/>
+				<Grid ColumnDefinitions="*,Auto">
+					<TextBox Grid.Column="0"
+							 Margin="0,0,10,0"
+							 PlaceholderText="Video to edit"
+							 Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"/>
+					<Button Grid.Column="1" Click="BrowseButton_OnClick" Padding="4">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Video"/>
+								<TextBlock Text="Browse" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+				</Grid>
+				<TextBlock Opacity="0.8" FontSize="12">
+					<Run Text="Duration: "/>
+					<Run Text="{Binding DurationDisplay}"/>
+				</TextBlock>
+			</StackPanel>
+
+			<Separator Grid.Row="1" Margin="0,0,0,12" Opacity="0.45"/>
+
+			<!-- Draft range -->
+			<Border Grid.Row="2" BorderThickness=".35" BorderBrush="gray" CornerRadius="2" Padding="8" Margin="0,0,0,12">
+				<StackPanel Spacing="10">
+					<TextBlock Text="Add removal / replacement range"
+							   FontSize="12"
+							   FontWeight="SemiBold"
+							   Opacity="0.65"/>
+					<StackPanel Orientation="Horizontal" Spacing="24">
+						<StackPanel Spacing="4">
+							<TextBlock Text="Start" Opacity="0.85"/>
+							<StackPanel Orientation="Horizontal" Spacing="6">
+								<ComboBox Classes="twoDigitTime" ItemsSource="{Binding VideoHourRange}" Width="50" SelectedValue="{Binding DraftStart.Hours}" IsEnabled="{Binding IsHoursRangeEnabled}"/>
+								<TextBlock Text="h" VerticalAlignment="Center"/>
+								<ComboBox Classes="twoDigitTime" ItemsSource="{Binding VideoMinuteRange}" Width="50" SelectedValue="{Binding DraftStart.Minutes}"/>
+								<TextBlock Text="m" VerticalAlignment="Center"/>
+								<ComboBox Classes="twoDigitTime" ItemsSource="{Binding Range}" Width="50" SelectedValue="{Binding DraftStart.Seconds}"/>
+								<TextBlock Text="s" VerticalAlignment="Center"/>
+							</StackPanel>
+						</StackPanel>
+						<StackPanel Spacing="4">
+							<TextBlock Text="End" Opacity="0.85"/>
+							<StackPanel Orientation="Horizontal" Spacing="6">
+								<ComboBox Classes="twoDigitTime" ItemsSource="{Binding VideoHourRange}" Width="50" SelectedValue="{Binding DraftEnd.Hours}" IsEnabled="{Binding IsHoursRangeEnabled}"/>
+								<TextBlock Text="h" VerticalAlignment="Center"/>
+								<ComboBox Classes="twoDigitTime" ItemsSource="{Binding VideoMinuteRange}" Width="50" SelectedValue="{Binding DraftEnd.Minutes}"/>
+								<TextBlock Text="m" VerticalAlignment="Center"/>
+								<ComboBox Classes="twoDigitTime" ItemsSource="{Binding Range}" Width="50" SelectedValue="{Binding DraftEnd.Seconds}"/>
+								<TextBlock Text="s" VerticalAlignment="Center"/>
+							</StackPanel>
+						</StackPanel>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+						<ToggleSwitch IsChecked="{Binding DraftReplaceWithText}" OffContent="" OnContent="" VerticalAlignment="Center"/>
+						<TextBlock Text="Replace with text" VerticalAlignment="Center" Opacity="0.85"/>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal" Spacing="8">
+						<Button Command="{Binding AddSegmentCommand}" Padding="4">
+							<Button.Content>
+								<StackPanel Orientation="Horizontal">
+									<materialIcons:MaterialIcon Kind="Add"/>
+									<TextBlock Text="Add range" Margin="5,0,5,0"/>
+								</StackPanel>
+							</Button.Content>
+						</Button>
+						<TextBlock Text="{Binding AddRangeError}"
+								   Foreground="#E57373"
+								   VerticalAlignment="Center"
+								   TextWrapping="Wrap"/>
+					</StackPanel>
+				</StackPanel>
+			</Border>
+
+			<!-- Segment list -->
+			<Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+				<ListBox ItemsSource="{Binding Segments}"
+						 SelectedItem="{Binding SelectedSegment}"
+						 MinHeight="120">
+					<ListBox.ItemTemplate>
+						<DataTemplate x:DataType="vm:ReplaceSegmentRange">
+							<Grid ColumnDefinitions="*,Auto,Auto" Margin="4" ColumnSpacing="10">
+								<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+									<TextBlock Text="{Binding StartRange}" VerticalAlignment="Center"/>
+									<TextBlock Text="–" VerticalAlignment="Center"/>
+									<TextBlock Text="{Binding EndRange}" VerticalAlignment="Center"/>
+								</StackPanel>
+								<TextBlock Grid.Column="1"
+										   Text="{Binding ReplacementStatus}"
+										   Opacity="0.85"
+										   VerticalAlignment="Center"
+										   MinWidth="120"/>
+								<ToggleSwitch Grid.Column="2"
+											  IsChecked="{Binding ReplaceWithText}"
+											  OffContent="Remove"
+											  OnContent="Text"
+											  VerticalAlignment="Center"/>
+							</Grid>
+						</DataTemplate>
+					</ListBox.ItemTemplate>
+				</ListBox>
+				<StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="6">
+					<Button Command="{Binding CreateIntroForSelectedCommand}"
+							Padding="4"
+							ToolTip.Tip="Configure (or edit) intro text for the selected text-replacement range. Encoding happens on Apply Edits.">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Text"/>
+								<TextBlock Text="Edit intro" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+					<Button Command="{Binding RemoveSelectedSegmentCommand}" Padding="4" ToolTip.Tip="Remove selected range">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Remove"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+					<Button Command="{Binding ClearSegmentsCommand}" Padding="4" ToolTip.Tip="Clear all ranges">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Trash"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+				</StackPanel>
+			</Grid>
+
+			<StackPanel Grid.Row="4" Spacing="6" Margin="0,0,0,12">
+				<TextBlock Text="Output"
+						   FontSize="12"
+						   FontWeight="SemiBold"
+						   Opacity="0.65"
+						   LetterSpacing="0.4"/>
+				<TextBox PlaceholderText="Edited output path"
+						 Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}"/>
+			</StackPanel>
+
+			<TextBlock Grid.Row="5"
+					   Text="{Binding OperationStatus}"
+					   TextWrapping="Wrap"
+					   Margin="0,0,0,8"
+					   Opacity="0.92"/>
+
+			<Grid Grid.Row="6" ColumnDefinitions="Auto,*,Auto">
+				<StackPanel Grid.Column="0" Orientation="Horizontal">
+					<Button Command="{Binding StopCommand}" Padding="4" IsEnabled="{Binding CanStop}" Margin="0,0,5,0">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Stop"/>
+								<TextBlock Text="Stop" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+					<Button Command="{Binding ClearCommand}" Padding="4" IsEnabled="{Binding CanClear}">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Remove"/>
+								<TextBlock Text="Clear" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+				</StackPanel>
+				<Button Grid.Column="2"
+						Command="{Binding ApplyCommand}"
+						Padding="4"
+						IsEnabled="{Binding CanApply}">
+					<Button.Content>
+						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="ContentCut"/>
+							<TextBlock Text="Apply edits" Margin="5,0,5,0"/>
+						</StackPanel>
+					</Button.Content>
+				</Button>
+			</Grid>
+		</Grid>
+	</Panel>
+</UserControl>

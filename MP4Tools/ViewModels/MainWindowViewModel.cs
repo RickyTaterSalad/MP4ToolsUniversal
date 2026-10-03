@@ -7,7 +7,7 @@ public partial class MainWindowViewModel : ViewModelBase
 	public CombineViewModel CombineViewModel { get; }
 	public TrimViewModel TrimViewModel { get; }
 	public OptionsViewModel OptionsViewModel { get; }
-	public RewriteIntroViewModel RewriteIntroViewModel { get; }
+	public EditViewModel EditViewModel { get; }
 	public LogViewModel LogViewModel { get; } = new();
 
 	public MainWindowViewModel(AppUserSettings settings)
@@ -15,6 +15,6 @@ public partial class MainWindowViewModel : ViewModelBase
 		CombineViewModel = new CombineViewModel();
 		TrimViewModel = new TrimViewModel();
 		OptionsViewModel = new OptionsViewModel(settings);
-		RewriteIntroViewModel = new RewriteIntroViewModel();
+		EditViewModel = new EditViewModel(CombineViewModel);
 	}
 }

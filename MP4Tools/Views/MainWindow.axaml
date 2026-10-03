@@ -5,8 +5,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-			  Height="750"
-				Width="1200"
+			  Height="900"
+				Width="1440"
         x:Class="MP4Tools.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/projectIcon.ico"
@@ -23,8 +23,8 @@
        <!-- <TabItem Header="Encode">
             <views:EncodeView DataContext="{Binding EncodeViewModel}" Margin="10"/>
         </TabItem> -->
-        <TabItem Header="Rewrite Intro">
-            <views:RewriteIntroView DataContext="{Binding RewriteIntroViewModel}" Margin="10"/>
+        <TabItem Header="Edit">
+            <views:EditView DataContext="{Binding EditViewModel}" Margin="10"/>
         </TabItem>
         <TabItem Header="Log">
             <views:LogView DataContext="{Binding LogViewModel}" Margin="10"/>

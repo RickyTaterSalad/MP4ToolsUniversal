@@ -1,0 +1,14 @@
+---
+description: After code changes, verify with a Release build
+alwaysApply: true
+---
+
+# Build verification
+
+After modifying code in this repo, run:
+
+```bash
+dotnet build -c Release
+```
+
+Do not use Debug-only builds (`dotnet build` / `-c Debug`) as the final verification step unless the user asks otherwise.
