@@ -670,6 +670,12 @@ public static class HalfInningDetector
 			var throwDownAccumSeconds = 0.0;
 			var throwDownSawPitcher = false;
 			var pendingThrowDownSeconds = -1.0;
+			// First arm time (does not slide). Used so LooksEmpty freeze can track the full
+			// between-half clear even after the bookmark advances to the clear's end.
+			var pendingThrowDownArmedAt = -1.0;
+			// After a solid LooksEmpty following throw-down arm, freeze the bookmark at the
+			// clear (real half boundary) and stop sliding on later empty-box catcher frames.
+			var pendingThrowDownFrozen = false;
 			var longEmptySince = -1.0;
 			var introStreak = 0;
 			var skippingIntro = false;
@@ -798,6 +804,8 @@ public static class HalfInningDetector
 						throwDownAccumSeconds = 0;
 						throwDownSawPitcher = false;
 						pendingThrowDownSeconds = -1;
+						pendingThrowDownArmedAt = -1;
+						pendingThrowDownFrozen = false;
 					}
 					else if (signals.LooksEmpty)
 					{
@@ -843,6 +851,33 @@ public static class HalfInningDetector
 								{
 									bestLooksEmptyClearSeconds = looksClear;
 									bestLooksEmptyEndSeconds = lastLooksEmptyEndSeconds;
+								}
+							}
+
+							// Solid LooksEmpty after throw-down = between-half clear. Freeze the
+							// bookmark at the clear's end so later new-half catcher crouches cannot
+							// slide it past the first batter (Coyotes Bottom 1st slid 12:30→14:05).
+							if (pendingThrowDownSeconds >= 0
+								&& pendingThrowDownArmedAt >= 0
+								&& lastLooksEmptyArmStartSeconds >= pendingThrowDownArmedAt - 0.05
+								&& lastLooksEmptyEndSeconds - lastLooksEmptyArmStartSeconds
+								>= options.RoleSolidEmptySeconds)
+							{
+								var freezeAt = lastLooksEmptyEndSeconds;
+								if (!pendingThrowDownFrozen)
+								{
+									pendingThrowDownFrozen = true;
+									throwDownLastSeen = -1;
+									throwDownSince = -1;
+									throwDownAccumSeconds = 0;
+									throwDownSawPitcher = false;
+									pendingThrowDownSeconds = freezeAt;
+									Status(
+										$"[{FormatElapsed(pendingThrowDownSeconds)}] Throw-down pending frozen at LooksEmpty clear — waiting for batter");
+								}
+								else if (freezeAt > pendingThrowDownSeconds)
+								{
+									pendingThrowDownSeconds = freezeAt;
 								}
 							}
 						}
@@ -907,7 +942,8 @@ public static class HalfInningDetector
 								throwDownSawPitcher = true;
 							// Slide pending bookmark to the latest throw-down frame — early
 							// empty-box catcher crouch is before the actual throw to second.
-							if (pendingThrowDownSeconds >= 0)
+							// Stop sliding once a solid LooksEmpty froze the half-boundary mark.
+							if (pendingThrowDownSeconds >= 0 && !pendingThrowDownFrozen)
 								pendingThrowDownSeconds = elapsed;
 							defenseOnlySince = -1;
 						}
@@ -978,6 +1014,8 @@ public static class HalfInningDetector
 						Status(
 							$"[{FormatElapsed(elapsed)}] Clearing stale throw-down pending ({FormatElapsed(pendingThrowDownSeconds)}) — no batter walk-up");
 						pendingThrowDownSeconds = -1;
+						pendingThrowDownArmedAt = -1;
+						pendingThrowDownFrozen = false;
 					}
 
 					if (options.AssumeTopFirstAtGameStart && !topFirstSeeded)
@@ -992,6 +1030,8 @@ public static class HalfInningDetector
 							throwDownAccumSeconds = 0;
 							throwDownSawPitcher = false;
 							pendingThrowDownSeconds = -1;
+							pendingThrowDownArmedAt = -1;
+							pendingThrowDownFrozen = false;
 							lastLooksEmptyArmStartSeconds = -1;
 							lastLooksEmptyEndSeconds = -1;
 							bestLooksEmptyClearSeconds = 0;
@@ -1096,6 +1136,8 @@ public static class HalfInningDetector
 								pendingThrowDownSeconds = throwDownLastSeen >= 0
 									? throwDownLastSeen
 									: throwDownSince;
+								pendingThrowDownArmedAt = pendingThrowDownSeconds;
+								pendingThrowDownFrozen = false;
 								lastEmptyEndSeconds = -1;
 								lastEmptyArmStartSeconds = -1;
 								lastLooksEmptyArmStartSeconds = -1;
@@ -1129,7 +1171,10 @@ public static class HalfInningDetector
 						var pauseNeed = Math.Max(
 							options.RoleThrowDownPauseSeconds,
 							ThrowDownGapLimitSeconds(options));
-						var throwDownPaused = throwDownLastSeen < 0
+						// Frozen pending already saw a solid LooksEmpty — ritual is over even if
+						// a new-half catcher briefly reappears in EmptyBoxDefense.
+						var throwDownPaused = pendingThrowDownFrozen
+							|| throwDownLastSeen < 0
 							|| elapsed - throwDownLastSeen >= pauseNeed;
 
 						// Confirm pending throw-down with the first batter walk-up after ritual.
@@ -1146,6 +1191,8 @@ public static class HalfInningDetector
 							halfStarts.Add(hitAt);
 							lastHalfSeconds = hitAt;
 							pendingThrowDownSeconds = -1;
+							pendingThrowDownArmedAt = -1;
+							pendingThrowDownFrozen = false;
 							throwDownSince = -1;
 							throwDownLastSeen = -1;
 							throwDownAccumSeconds = 0;
@@ -1166,6 +1213,8 @@ public static class HalfInningDetector
 								&& elapsed - pendingThrowDownSeconds > options.RoleThrowDownConfirmSeconds)
 							{
 								pendingThrowDownSeconds = -1;
+								pendingThrowDownArmedAt = -1;
+								pendingThrowDownFrozen = false;
 							}
 
 							var noHitterGapOk = lastHitterSeconds < 0

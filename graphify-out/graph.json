@@ -2326,7 +2326,7 @@
       },
       "norm_label": "framesignals",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1574"
+      "source_location": "L1623"
     },
     {
       "id": "mp4toolslib_inningdetector_yoloonnxdetector_mp4toolslib_detectedobject",
@@ -11462,19 +11462,19 @@
             "callee": "Add",
             "receiver_type": "List",
             "lang": "csharp",
-            "line": "L1556"
+            "line": "L1605"
           },
           {
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L1566"
+            "line": "L1615"
           }
         ]
       },
       "norm_label": ".buildevents()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1542"
+      "source_location": "L1591"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_detectfromsamplesasync",
@@ -11506,25 +11506,25 @@
             "callee": "ThrowIfCancellationRequested",
             "receiver_type": "CancellationToken",
             "lang": "csharp",
-            "line": "L699"
+            "line": "L705"
           },
           {
             "callee": "ImRead",
             "receiver_type": "Cv2",
             "lang": "csharp",
-            "line": "L707"
+            "line": "L713"
           },
           {
             "callee": "Add",
             "receiver_type": "List",
             "lang": "csharp",
-            "line": "L987"
+            "line": "L1025"
           },
           {
             "callee": "Abs",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L1455"
+            "line": "L1504"
           }
         ]
       },
@@ -11550,25 +11550,25 @@
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2039"
+            "line": "L2088"
           },
           {
             "callee": "ThrowIfCancellationRequested",
             "receiver_type": "CancellationToken",
             "lang": "csharp",
-            "line": "L2045"
+            "line": "L2094"
           },
           {
             "callee": "ImRead",
             "receiver_type": "Cv2",
             "lang": "csharp",
-            "line": "L2050"
+            "line": "L2099"
           }
         ]
       },
       "norm_label": ".findearliestbatterstartinsamples()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2024"
+      "source_location": "L2073"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_findfirstbatterafterwarmup",
@@ -11588,31 +11588,31 @@
             "callee": "Min",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L1670"
+            "line": "L1719"
           },
           {
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L1670"
+            "line": "L1719"
           },
           {
             "callee": "ThrowIfCancellationRequested",
             "receiver_type": "CancellationToken",
             "lang": "csharp",
-            "line": "L1673"
+            "line": "L1722"
           },
           {
             "callee": "ImRead",
             "receiver_type": "Cv2",
             "lang": "csharp",
-            "line": "L1675"
+            "line": "L1724"
           }
         ]
       },
       "norm_label": ".findfirstbatterafterwarmup()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1659"
+      "source_location": "L1708"
     },
     {
       "id": "mp4toolslib_inningdetector_inninghalflabels_mp4toolslib_inninghalflabels_buildsequence",
@@ -16348,25 +16348,25 @@
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2209"
+            "line": "L2258"
           },
           {
             "callee": "Clamp",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2210"
+            "line": "L2259"
           },
           {
             "callee": "FromSeconds",
             "receiver_type": "TimeSpan",
             "lang": "csharp",
-            "line": "L2211"
+            "line": "L2260"
           }
         ]
       },
       "norm_label": ".computesampleextracttimeout()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2206"
+      "source_location": "L2255"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_detectasync",
@@ -16486,25 +16486,25 @@
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2161"
+            "line": "L2210"
           },
           {
             "callee": "Clamp",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2163"
+            "line": "L2212"
           },
           {
             "callee": "EnumerateFiles",
             "receiver_type": "Directory",
             "lang": "csharp",
-            "line": "L2176"
+            "line": "L2225"
           }
         ]
       },
       "norm_label": ".extractrangesampleframesasync()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2150"
+      "source_location": "L2199"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_extractsampleframesasync",
@@ -16524,31 +16524,31 @@
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2224"
+            "line": "L2273"
           },
           {
             "callee": "Clamp",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2226"
+            "line": "L2275"
           },
           {
             "callee": "Ceiling",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2229"
+            "line": "L2278"
           },
           {
             "callee": "EnumerateFiles",
             "receiver_type": "Directory",
             "lang": "csharp",
-            "line": "L2255"
+            "line": "L2304"
           }
         ]
       },
       "norm_label": ".extractsampleframesasync()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2214"
+      "source_location": "L2263"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_extracttimedrangeasync",
@@ -16566,7 +16566,7 @@
       },
       "norm_label": ".extracttimedrangeasync()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2109"
+      "source_location": "L2158"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_formatelapsed",
@@ -16586,25 +16586,25 @@
             "callee": "FromSeconds",
             "receiver_type": "TimeSpan",
             "lang": "csharp",
-            "line": "L2456"
+            "line": "L2505"
           },
           {
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2456"
+            "line": "L2505"
           },
           {
             "callee": "Floor",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2456"
+            "line": "L2505"
           }
         ]
       },
       "norm_label": ".formatelapsed()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2454"
+      "source_location": "L2503"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_infersampleintervalseconds",
@@ -16760,7 +16760,7 @@
       },
       "norm_label": ".parsedurationseconds()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2438"
+      "source_location": "L2487"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_probedurationwithopencv",
@@ -16780,13 +16780,13 @@
             "callee": "Get",
             "receiver_type": "VideoCapture",
             "lang": "csharp",
-            "line": "L2426"
+            "line": "L2475"
           }
         ]
       },
       "norm_label": ".probedurationwithopencv()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2420"
+      "source_location": "L2469"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_quote",
@@ -16804,7 +16804,7 @@
       },
       "norm_label": ".quote()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2460"
+      "source_location": "L2509"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_runextractwithprogressasync",
@@ -16824,55 +16824,55 @@
             "callee": "FromSeconds",
             "receiver_type": "TimeSpan",
             "lang": "csharp",
-            "line": "L2310"
+            "line": "L2359"
           },
           {
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2315"
+            "line": "L2364"
           },
           {
             "callee": "Clamp",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2323"
+            "line": "L2372"
           },
           {
             "callee": "Round",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L2333"
+            "line": "L2382"
           },
           {
             "callee": "EnumerateFiles",
             "receiver_type": "Directory",
             "lang": "csharp",
-            "line": "L2359"
+            "line": "L2408"
           },
           {
             "callee": "CreateLinkedTokenSource",
             "receiver_type": "CancellationTokenSource",
             "lang": "csharp",
-            "line": "L2370"
+            "line": "L2419"
           },
           {
             "callee": "Run",
             "receiver_type": "Task",
             "lang": "csharp",
-            "line": "L2371"
+            "line": "L2420"
           },
           {
             "callee": "Delay",
             "receiver_type": "Task",
             "lang": "csharp",
-            "line": "L2377"
+            "line": "L2426"
           }
         ]
       },
       "norm_label": ".runextractwithprogressasync()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2298"
+      "source_location": "L2347"
     },
     {
       "id": "mp4tools_app_axaml_mp4tools_app_initialize",
@@ -17350,7 +17350,7 @@
       },
       "norm_label": ".bestbatterconfidence()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2072"
+      "source_location": "L2121"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_buildframesignals",
@@ -17368,7 +17368,7 @@
       },
       "norm_label": ".buildframesignals()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1586"
+      "source_location": "L1635"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_countclassinroi",
@@ -17386,7 +17386,7 @@
       },
       "norm_label": ".countclassinroi()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1735"
+      "source_location": "L1784"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_countclassinroiabove",
@@ -17404,7 +17404,7 @@
       },
       "norm_label": ".countclassinroiabove()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1743"
+      "source_location": "L1792"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_countclassoutsideroiabove",
@@ -17422,7 +17422,7 @@
       },
       "norm_label": ".countclassoutsideroiabove()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1767"
+      "source_location": "L1816"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_countinroi",
@@ -17440,7 +17440,7 @@
       },
       "norm_label": ".countinroi()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1791"
+      "source_location": "L1840"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_hasclass",
@@ -17460,13 +17460,13 @@
             "callee": "Any",
             "receiver_type": "IReadOnlyList",
             "lang": "csharp",
-            "line": "L1728"
+            "line": "L1777"
           }
         ]
       },
       "norm_label": ".hasclass()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1727"
+      "source_location": "L1776"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_hasclassabove",
@@ -17486,13 +17486,13 @@
             "callee": "Any",
             "receiver_type": "IReadOnlyList",
             "lang": "csharp",
-            "line": "L1731"
+            "line": "L1780"
           }
         ]
       },
       "norm_label": ".hasclassabove()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1730"
+      "source_location": "L1779"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_topixelroi",
@@ -17512,13 +17512,13 @@
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L1809"
+            "line": "L1858"
           }
         ]
       },
       "norm_label": ".topixelroi()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1805"
+      "source_location": "L1854"
     },
     {
       "id": "mp4tools_viewmodels_combineviewmodel_mp4tools_viewmodels_combineviewmodel_completecombineprogressstage",
@@ -17696,19 +17696,19 @@
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L1947"
+            "line": "L1996"
           },
           {
             "callee": "Add",
             "receiver_type": "List",
             "lang": "csharp",
-            "line": "L1966"
+            "line": "L2015"
           }
         ]
       },
       "norm_label": ".pickrefinebatterrunstart()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1938"
+      "source_location": "L1987"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_refinehalfinningstartasync",
@@ -17728,61 +17728,61 @@
             "callee": "Max",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L1831"
+            "line": "L1880"
           },
           {
             "callee": "Clamp",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L1835"
+            "line": "L1884"
           },
           {
             "callee": "Min",
             "receiver_type": "Math",
             "lang": "csharp",
-            "line": "L1841"
+            "line": "L1890"
           },
           {
             "callee": "NewGuid",
             "receiver_type": "Guid",
             "lang": "csharp",
-            "line": "L1864"
+            "line": "L1913"
           },
           {
             "callee": "CreateDirectory",
             "receiver_type": "Directory",
             "lang": "csharp",
-            "line": "L1866"
+            "line": "L1915"
           },
           {
             "callee": "GetFiles",
             "receiver_type": "Directory",
             "lang": "csharp",
-            "line": "L1881"
+            "line": "L1930"
           },
           {
             "callee": "ThrowIfCancellationRequested",
             "receiver_type": "CancellationToken",
             "lang": "csharp",
-            "line": "L1893"
+            "line": "L1942"
           },
           {
             "callee": "ImRead",
             "receiver_type": "Cv2",
             "lang": "csharp",
-            "line": "L1898"
+            "line": "L1947"
           },
           {
             "callee": "Add",
             "receiver_type": "List",
             "lang": "csharp",
-            "line": "L1915"
+            "line": "L1964"
           }
         ]
       },
       "norm_label": ".refinehalfinningstartasync()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1817"
+      "source_location": "L1866"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_halfinningdetector_tryresolverefineextract",
@@ -17802,13 +17802,13 @@
             "callee": "Exists",
             "receiver_type": "File",
             "lang": "csharp",
-            "line": "L2140"
+            "line": "L2189"
           }
         ]
       },
       "norm_label": ".tryresolverefineextract()",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2130"
+      "source_location": "L2179"
     },
     {
       "id": "mp4toolslib_inningdetector_halfinningdetector_mp4toolslib_irefinemediasource_tryresolve",
@@ -37180,7 +37180,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2096",
+      "source_location": "L2145",
       "weight": 1.0
     },
     {
@@ -37192,7 +37192,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1544",
+      "source_location": "L1593",
       "weight": 1.0
     },
     {
@@ -37204,7 +37204,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1556",
+      "source_location": "L1605",
       "weight": 1.0
     },
     {
@@ -37216,7 +37216,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1559",
+      "source_location": "L1608",
       "weight": 1.0
     },
     {
@@ -37228,7 +37228,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1595",
+      "source_location": "L1644",
       "weight": 1.0
     },
     {
@@ -37240,7 +37240,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1601",
+      "source_location": "L1650",
       "weight": 1.0
     },
     {
@@ -37252,7 +37252,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1607",
+      "source_location": "L1656",
       "weight": 1.0
     },
     {
@@ -37264,7 +37264,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1629",
+      "source_location": "L1678",
       "weight": 1.0
     },
     {
@@ -37276,7 +37276,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1635",
+      "source_location": "L1684",
       "weight": 1.0
     },
     {
@@ -37288,7 +37288,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1741",
+      "source_location": "L1790",
       "weight": 1.0
     },
     {
@@ -37300,7 +37300,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1751",
+      "source_location": "L1800",
       "weight": 1.0
     },
     {
@@ -37312,7 +37312,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1775",
+      "source_location": "L1824",
       "weight": 1.0
     },
     {
@@ -37324,7 +37324,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1793",
+      "source_location": "L1842",
       "weight": 1.0
     },
     {
@@ -37600,7 +37600,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1161",
+      "source_location": "L1208",
       "weight": 1.0
     },
     {
@@ -37612,7 +37612,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1191",
+      "source_location": "L1240",
       "weight": 1.0
     },
     {
@@ -37624,7 +37624,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1401",
+      "source_location": "L1450",
       "weight": 1.0
     },
     {
@@ -37636,7 +37636,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1438",
+      "source_location": "L1487",
       "weight": 1.0
     },
     {
@@ -37648,7 +37648,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1470",
+      "source_location": "L1519",
       "weight": 1.0
     },
     {
@@ -37660,7 +37660,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1478",
+      "source_location": "L1527",
       "weight": 1.0
     },
     {
@@ -37672,7 +37672,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1480",
+      "source_location": "L1529",
       "weight": 1.0
     },
     {
@@ -37684,7 +37684,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1481",
+      "source_location": "L1530",
       "weight": 1.0
     },
     {
@@ -37696,7 +37696,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1521",
+      "source_location": "L1570",
       "weight": 1.0
     },
     {
@@ -37708,7 +37708,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1537",
+      "source_location": "L1586",
       "weight": 1.0
     },
     {
@@ -37780,7 +37780,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L713",
+      "source_location": "L719",
       "weight": 1.0
     },
     {
@@ -37792,7 +37792,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L730",
+      "source_location": "L736",
       "weight": 1.0
     },
     {
@@ -37804,7 +37804,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L761",
+      "source_location": "L767",
       "weight": 1.0
     },
     {
@@ -37816,7 +37816,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L814",
+      "source_location": "L822",
       "weight": 1.0
     },
     {
@@ -37828,7 +37828,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2173",
+      "source_location": "L2222",
       "weight": 1.0
     },
     {
@@ -37840,7 +37840,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2193",
+      "source_location": "L2242",
       "weight": 1.0
     },
     {
@@ -37852,7 +37852,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2227",
+      "source_location": "L2276",
       "weight": 1.0
     },
     {
@@ -37864,7 +37864,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2239",
+      "source_location": "L2288",
       "weight": 1.0
     },
     {
@@ -37876,7 +37876,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2244",
+      "source_location": "L2293",
       "weight": 1.0
     },
     {
@@ -37888,7 +37888,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2276",
+      "source_location": "L2325",
       "weight": 1.0
     },
     {
@@ -37900,7 +37900,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2119",
+      "source_location": "L2168",
       "weight": 1.0
     },
     {
@@ -37912,7 +37912,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2054",
+      "source_location": "L2103",
       "weight": 1.0
     },
     {
@@ -37924,7 +37924,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2058",
+      "source_location": "L2107",
       "weight": 1.0
     },
     {
@@ -37936,7 +37936,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1681",
+      "source_location": "L1730",
       "weight": 1.0
     },
     {
@@ -37948,7 +37948,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1701",
+      "source_location": "L1750",
       "weight": 1.0
     },
     {
@@ -37996,7 +37996,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2450",
+      "source_location": "L2499",
       "weight": 1.0
     },
     {
@@ -38008,7 +38008,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1948",
+      "source_location": "L1997",
       "weight": 1.0
     },
     {
@@ -38020,7 +38020,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1847",
+      "source_location": "L1896",
       "weight": 1.0
     },
     {
@@ -38032,7 +38032,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1850",
+      "source_location": "L1899",
       "weight": 1.0
     },
     {
@@ -38044,7 +38044,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1864",
+      "source_location": "L1913",
       "weight": 1.0
     },
     {
@@ -38056,7 +38056,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1869",
+      "source_location": "L1918",
       "weight": 1.0
     },
     {
@@ -38068,7 +38068,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1888",
+      "source_location": "L1937",
       "weight": 1.0
     },
     {
@@ -38080,7 +38080,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1902",
+      "source_location": "L1951",
       "weight": 1.0
     },
     {
@@ -38092,7 +38092,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1906",
+      "source_location": "L1955",
       "weight": 1.0
     },
     {
@@ -38104,7 +38104,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1911",
+      "source_location": "L1960",
       "weight": 1.0
     },
     {
@@ -38116,7 +38116,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1913",
+      "source_location": "L1962",
       "weight": 1.0
     },
     {
@@ -38128,7 +38128,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1914",
+      "source_location": "L1963",
       "weight": 1.0
     },
     {
@@ -38140,7 +38140,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1925",
+      "source_location": "L1974",
       "weight": 1.0
     },
     {
@@ -38152,7 +38152,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1930",
+      "source_location": "L1979",
       "weight": 1.0
     },
     {
@@ -38164,7 +38164,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2338",
+      "source_location": "L2387",
       "weight": 1.0
     },
     {
@@ -38176,7 +38176,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2353",
+      "source_location": "L2402",
       "weight": 1.0
     },
     {
@@ -47864,7 +47864,7 @@
         "ref_token": "Confidence"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1938",
+      "source_location": "L1987",
       "weight": 1.0
     },
     {
@@ -47894,7 +47894,7 @@
         "ref_token": "DetectedObject"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2072",
+      "source_location": "L2121",
       "weight": 1.0
     },
     {
@@ -47909,7 +47909,7 @@
         "ref_token": "DetectedObject"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1586",
+      "source_location": "L1635",
       "weight": 1.0
     },
     {
@@ -47924,7 +47924,7 @@
         "ref_token": "DetectedObject"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1735",
+      "source_location": "L1784",
       "weight": 1.0
     },
     {
@@ -47939,7 +47939,7 @@
         "ref_token": "DetectedObject"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1743",
+      "source_location": "L1792",
       "weight": 1.0
     },
     {
@@ -47954,7 +47954,7 @@
         "ref_token": "DetectedObject"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1767",
+      "source_location": "L1816",
       "weight": 1.0
     },
     {
@@ -47969,7 +47969,7 @@
         "ref_token": "DetectedObject"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1791",
+      "source_location": "L1840",
       "weight": 1.0
     },
     {
@@ -47984,7 +47984,7 @@
         "ref_token": "DetectedObject"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1727",
+      "source_location": "L1776",
       "weight": 1.0
     },
     {
@@ -47999,7 +47999,7 @@
         "ref_token": "DetectedObject"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1730",
+      "source_location": "L1779",
       "weight": 1.0
     },
     {
@@ -48434,7 +48434,7 @@
         "ref_token": "InBox"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1938",
+      "source_location": "L1987",
       "weight": 1.0
     },
     {
@@ -48914,7 +48914,7 @@
         "ref_token": "Time"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1938",
+      "source_location": "L1987",
       "weight": 1.0
     },
     {
@@ -48974,7 +48974,7 @@
         "ref_token": "TimedSampleFrame"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2024",
+      "source_location": "L2073",
       "weight": 1.0
     },
     {
@@ -48989,7 +48989,7 @@
         "ref_token": "TimedSampleFrame"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1659",
+      "source_location": "L1708",
       "weight": 1.0
     },
     {
@@ -50375,7 +50375,7 @@
         "ref_token": "Action"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2150",
+      "source_location": "L2199",
       "weight": 1.0
     },
     {
@@ -50390,7 +50390,7 @@
         "ref_token": "Action"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2214",
+      "source_location": "L2263",
       "weight": 1.0
     },
     {
@@ -50405,7 +50405,7 @@
         "ref_token": "Action"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2109",
+      "source_location": "L2158",
       "weight": 1.0
     },
     {
@@ -50435,7 +50435,7 @@
         "ref_token": "Action"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1817",
+      "source_location": "L1866",
       "weight": 1.0
     },
     {
@@ -50450,7 +50450,7 @@
         "ref_token": "Action"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2298",
+      "source_location": "L2347",
       "weight": 1.0
     },
     {
@@ -51575,7 +51575,7 @@
         "ref_token": "CancellationToken"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2150",
+      "source_location": "L2199",
       "weight": 1.0
     },
     {
@@ -51590,7 +51590,7 @@
         "ref_token": "CancellationToken"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2214",
+      "source_location": "L2263",
       "weight": 1.0
     },
     {
@@ -51605,7 +51605,7 @@
         "ref_token": "CancellationToken"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2109",
+      "source_location": "L2158",
       "weight": 1.0
     },
     {
@@ -51620,7 +51620,7 @@
         "ref_token": "CancellationToken"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2024",
+      "source_location": "L2073",
       "weight": 1.0
     },
     {
@@ -51635,7 +51635,7 @@
         "ref_token": "CancellationToken"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1659",
+      "source_location": "L1708",
       "weight": 1.0
     },
     {
@@ -51650,7 +51650,7 @@
         "ref_token": "CancellationToken"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1817",
+      "source_location": "L1866",
       "weight": 1.0
     },
     {
@@ -51665,7 +51665,7 @@
         "ref_token": "CancellationToken"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2298",
+      "source_location": "L2347",
       "weight": 1.0
     },
     {
@@ -53345,7 +53345,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2072",
+      "source_location": "L2121",
       "weight": 1.0
     },
     {
@@ -53360,7 +53360,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1542",
+      "source_location": "L1591",
       "weight": 1.0
     },
     {
@@ -53375,7 +53375,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1586",
+      "source_location": "L1635",
       "weight": 1.0
     },
     {
@@ -53390,7 +53390,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1735",
+      "source_location": "L1784",
       "weight": 1.0
     },
     {
@@ -53405,7 +53405,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1743",
+      "source_location": "L1792",
       "weight": 1.0
     },
     {
@@ -53420,7 +53420,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1767",
+      "source_location": "L1816",
       "weight": 1.0
     },
     {
@@ -53435,7 +53435,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1791",
+      "source_location": "L1840",
       "weight": 1.0
     },
     {
@@ -53465,7 +53465,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2024",
+      "source_location": "L2073",
       "weight": 1.0
     },
     {
@@ -53480,7 +53480,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1659",
+      "source_location": "L1708",
       "weight": 1.0
     },
     {
@@ -53495,7 +53495,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1727",
+      "source_location": "L1776",
       "weight": 1.0
     },
     {
@@ -53510,7 +53510,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1730",
+      "source_location": "L1779",
       "weight": 1.0
     },
     {
@@ -53540,7 +53540,7 @@
         "ref_token": "IReadOnlyList"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1938",
+      "source_location": "L1987",
       "weight": 1.0
     },
     {
@@ -53765,7 +53765,7 @@
         "ref_token": "IRefineMediaSource"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1817",
+      "source_location": "L1866",
       "weight": 1.0
     },
     {
@@ -53780,7 +53780,7 @@
         "ref_token": "IRefineMediaSource"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2130",
+      "source_location": "L2179",
       "weight": 1.0
     },
     {
@@ -53825,7 +53825,7 @@
         "ref_token": "InningDetectionArtifactSession"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1817",
+      "source_location": "L1866",
       "weight": 1.0
     },
     {
@@ -54200,7 +54200,7 @@
         "ref_token": "Options"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2072",
+      "source_location": "L2121",
       "weight": 1.0
     },
     {
@@ -54215,7 +54215,7 @@
         "ref_token": "Options"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1586",
+      "source_location": "L1635",
       "weight": 1.0
     },
     {
@@ -54275,7 +54275,7 @@
         "ref_token": "Options"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2214",
+      "source_location": "L2263",
       "weight": 1.0
     },
     {
@@ -54290,7 +54290,7 @@
         "ref_token": "Options"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2024",
+      "source_location": "L2073",
       "weight": 1.0
     },
     {
@@ -54305,7 +54305,7 @@
         "ref_token": "Options"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1659",
+      "source_location": "L1708",
       "weight": 1.0
     },
     {
@@ -54320,7 +54320,7 @@
         "ref_token": "Options"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1817",
+      "source_location": "L1866",
       "weight": 1.0
     },
     {
@@ -54710,7 +54710,7 @@
         "ref_token": "Rect2d"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1735",
+      "source_location": "L1784",
       "weight": 1.0
     },
     {
@@ -54725,7 +54725,7 @@
         "ref_token": "Rect2d"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1743",
+      "source_location": "L1792",
       "weight": 1.0
     },
     {
@@ -54740,7 +54740,7 @@
         "ref_token": "Rect2d"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1767",
+      "source_location": "L1816",
       "weight": 1.0
     },
     {
@@ -54755,7 +54755,7 @@
         "ref_token": "Rect2d"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1791",
+      "source_location": "L1840",
       "weight": 1.0
     },
     {
@@ -54770,7 +54770,7 @@
         "ref_token": "Rect2d"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1805",
+      "source_location": "L1854",
       "weight": 1.0
     },
     {
@@ -55460,7 +55460,7 @@
         "ref_token": "TimeSpan"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2298",
+      "source_location": "L2347",
       "weight": 1.0
     },
     {
@@ -55520,7 +55520,7 @@
         "ref_token": "YoloOnnxDetector"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2024",
+      "source_location": "L2073",
       "weight": 1.0
     },
     {
@@ -55535,7 +55535,7 @@
         "ref_token": "YoloOnnxDetector"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1659",
+      "source_location": "L1708",
       "weight": 1.0
     },
     {
@@ -55550,7 +55550,7 @@
         "ref_token": "YoloOnnxDetector"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1817",
+      "source_location": "L1866",
       "weight": 1.0
     },
     {
@@ -55822,7 +55822,7 @@
         "ref_token": "FrameSignals"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1586",
+      "source_location": "L1635",
       "weight": 1.0
     },
     {
@@ -56032,7 +56032,7 @@
         "ref_token": "Rect"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1805",
+      "source_location": "L1854",
       "weight": 1.0
     },
     {
@@ -57082,7 +57082,7 @@
         "ref_token": "Task"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2150",
+      "source_location": "L2199",
       "weight": 1.0
     },
     {
@@ -57097,7 +57097,7 @@
         "ref_token": "Task"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2214",
+      "source_location": "L2263",
       "weight": 1.0
     },
     {
@@ -57112,7 +57112,7 @@
         "ref_token": "Task"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2109",
+      "source_location": "L2158",
       "weight": 1.0
     },
     {
@@ -57127,7 +57127,7 @@
         "ref_token": "Task"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1817",
+      "source_location": "L1866",
       "weight": 1.0
     },
     {
@@ -57142,7 +57142,7 @@
         "ref_token": "Task"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2298",
+      "source_location": "L2347",
       "weight": 1.0
     },
     {
@@ -57607,7 +57607,7 @@
         "ref_token": "TimeSpan"
       },
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2206",
+      "source_location": "L2255",
       "weight": 1.0
     },
     {
@@ -59999,7 +59999,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1574",
+      "source_location": "L1623",
       "weight": 1.0
     },
     {
@@ -65420,7 +65420,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1542",
+      "source_location": "L1591",
       "weight": 1.0
     },
     {
@@ -65431,7 +65431,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1586",
+      "source_location": "L1635",
       "weight": 1.0
     },
     {
@@ -65442,7 +65442,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1659",
+      "source_location": "L1708",
       "weight": 1.0
     },
     {
@@ -65453,7 +65453,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1727",
+      "source_location": "L1776",
       "weight": 1.0
     },
     {
@@ -65464,7 +65464,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1730",
+      "source_location": "L1779",
       "weight": 1.0
     },
     {
@@ -65475,7 +65475,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1735",
+      "source_location": "L1784",
       "weight": 1.0
     },
     {
@@ -65486,7 +65486,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1743",
+      "source_location": "L1792",
       "weight": 1.0
     },
     {
@@ -65497,7 +65497,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1767",
+      "source_location": "L1816",
       "weight": 1.0
     },
     {
@@ -65508,7 +65508,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1791",
+      "source_location": "L1840",
       "weight": 1.0
     },
     {
@@ -65519,7 +65519,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1805",
+      "source_location": "L1854",
       "weight": 1.0
     },
     {
@@ -65530,7 +65530,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1817",
+      "source_location": "L1866",
       "weight": 1.0
     },
     {
@@ -65541,7 +65541,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1938",
+      "source_location": "L1987",
       "weight": 1.0
     },
     {
@@ -65552,7 +65552,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2024",
+      "source_location": "L2073",
       "weight": 1.0
     },
     {
@@ -65563,7 +65563,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2072",
+      "source_location": "L2121",
       "weight": 1.0
     },
     {
@@ -65574,7 +65574,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2109",
+      "source_location": "L2158",
       "weight": 1.0
     },
     {
@@ -65585,7 +65585,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2130",
+      "source_location": "L2179",
       "weight": 1.0
     },
     {
@@ -65596,7 +65596,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2150",
+      "source_location": "L2199",
       "weight": 1.0
     },
     {
@@ -65607,7 +65607,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2206",
+      "source_location": "L2255",
       "weight": 1.0
     },
     {
@@ -65618,7 +65618,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2214",
+      "source_location": "L2263",
       "weight": 1.0
     },
     {
@@ -65629,7 +65629,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2298",
+      "source_location": "L2347",
       "weight": 1.0
     },
     {
@@ -65640,7 +65640,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2420",
+      "source_location": "L2469",
       "weight": 1.0
     },
     {
@@ -65651,7 +65651,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2438",
+      "source_location": "L2487",
       "weight": 1.0
     },
     {
@@ -65662,7 +65662,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2454",
+      "source_location": "L2503",
       "weight": 1.0
     },
     {
@@ -65673,7 +65673,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2460",
+      "source_location": "L2509",
       "weight": 1.0
     },
     {
@@ -67529,7 +67529,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1498",
+      "source_location": "L1547",
       "weight": 1.0
     },
     {
@@ -67541,7 +67541,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1516",
+      "source_location": "L1565",
       "weight": 1.0
     },
     {
@@ -67589,7 +67589,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L760",
+      "source_location": "L766",
       "weight": 1.0
     },
     {
@@ -67601,7 +67601,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2057",
+      "source_location": "L2106",
       "weight": 1.0
     },
     {
@@ -67613,7 +67613,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1701",
+      "source_location": "L1750",
       "weight": 1.0
     },
     {
@@ -67625,7 +67625,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1863",
+      "source_location": "L1912",
       "weight": 1.0
     },
     {
@@ -67637,7 +67637,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1905",
+      "source_location": "L1954",
       "weight": 1.0
     },
     {
@@ -67649,7 +67649,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2138",
+      "source_location": "L2187",
       "weight": 1.0
     },
     {
@@ -68465,7 +68465,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L2100",
+      "source_location": "L2149",
       "weight": 1.0
     },
     {
@@ -68477,7 +68477,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1759",
+      "source_location": "L1808",
       "weight": 1.0
     },
     {
@@ -68489,7 +68489,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1783",
+      "source_location": "L1832",
       "weight": 1.0
     },
     {
@@ -68501,7 +68501,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1797",
+      "source_location": "L1846",
       "weight": 1.0
     },
     {
@@ -68513,7 +68513,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "MP4ToolsLib/InningDetector/HalfInningDetector.cs",
-      "source_location": "L1502",
+      "source_location": "L1551",
       "weight": 1.0
     },
     {
@@ -68983,5 +68983,5 @@
       "source_file": "MP4Tools/Notes/1_vs_1_working_analysis.md"
     }
   ],
-  "built_at_commit": "45a1b173735cc17c3b70b27089a5e224758f4a2b"
+  "built_at_commit": "2a08623e9f36f189b1a188ea416eb8d7cbe32bb9"
 }
