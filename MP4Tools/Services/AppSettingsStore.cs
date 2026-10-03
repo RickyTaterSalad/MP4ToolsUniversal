@@ -38,6 +38,16 @@ public sealed class AppUserSettings
 	/// required for box-score image upload.
 	/// </summary>
 	public string BaseballLoggerApiKey { get; set; } = "";
+
+	/// <summary>
+	/// OpenRouter API key for vision features (e.g. reading an existing intro title card).
+	/// </summary>
+	public string OpenRouterApiKey { get; set; } = "";
+
+	/// <summary>
+	/// OpenRouter model id for intro vision OCR. Empty uses the built-in default.
+	/// </summary>
+	public string OpenRouterModel { get; set; } = "";
 }
 
 public static class AppSettingsStore

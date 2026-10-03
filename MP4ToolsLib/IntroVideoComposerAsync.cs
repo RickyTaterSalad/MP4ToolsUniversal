@@ -40,6 +40,60 @@ namespace MP4ToolsLib
             }
         }
 
+        /// <summary>
+        /// Strip an existing intro of <paramref name="existingIntroDurationSeconds"/> from
+        /// <paramref name="inputPath"/> (stream-copy seek) and prepend a new intro of the same
+        /// length with the given text. Does not re-encode the main footage.
+        /// </summary>
+        public static Task ReplaceIntroAsync(
+            string inputPath,
+            string titleText,
+            string subtitleText,
+            string outputPath,
+            int existingIntroDurationSeconds,
+            int titleFontSize = 128,
+            int subtitleFontSize = 64,
+            int detailsFontSize = 48,
+            string detailsText = "",
+            Action<string> log = null,
+            IProgress<double> progress = null,
+            CancellationToken ct = default,
+            Action<string> operationStep = null,
+            string hwAccelForIntro = null,
+            bool resolveSafeEncoding = false)
+        {
+            if (existingIntroDurationSeconds < 1)
+                throw new ArgumentOutOfRangeException(nameof(existingIntroDurationSeconds), "Existing intro duration must be at least 1 second.");
+
+            var seekTs = TimeSpan.FromSeconds(existingIntroDurationSeconds);
+            var seekOpt = FfmpegOption.Pair(
+                FfmpegArguments.SeekInputTimestamp,
+                $"{(int)seekTs.TotalHours:00}:{seekTs.Minutes:00}:{seekTs.Seconds:00}");
+
+            log ??= _ => { };
+            log($"Rewriting intro: seeking past {existingIntroDurationSeconds}s, then prepending new intro…");
+            operationStep?.Invoke("Stripping existing intro…");
+
+            return PrependIntroAsync(
+                inputPath,
+                titleText,
+                subtitleText,
+                outputPath,
+                durationSeconds: existingIntroDurationSeconds,
+                titleFontSize: titleFontSize,
+                subtitleFontSize: subtitleFontSize,
+                detailsFontSize: detailsFontSize,
+                detailsText: detailsText,
+                log: log,
+                progress: progress,
+                ct: ct,
+                operationStep: operationStep,
+                useTrimSegmentAudioCodec: false,
+                seekBeforeMainInput: seekOpt,
+                hwAccelForIntro: hwAccelForIntro,
+                resolveSafeEncoding: resolveSafeEncoding);
+        }
+
         public static async Task PrependIntroAsync(
             string inputPath,
             string titleText,

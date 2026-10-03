@@ -16,5 +16,6 @@ public static class EncodingSettingsRuntime
 		DefaultOutputPathRuntime.Apply(resolved);
 		UiBehaviorSettingsRuntime.Apply(resolved);
 		BaseballLoggerSettingsRuntime.Apply(resolved);
+		OpenRouterSettingsRuntime.Apply(resolved);
 	}
 }

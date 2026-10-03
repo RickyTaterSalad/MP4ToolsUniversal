@@ -51,7 +51,7 @@
 			<Border BorderThickness=".35" BorderBrush="gray" CornerRadius="2" Padding="3">
 				<StackPanel>
 					<TextBlock Text="Create New Trim Range" Grid.Row="1" VerticalAlignment="Center" Margin="5,5,10,10"/>
-					<StackPanel Orientation="Horizontal" Spacing="24" Margin="0,0,0,0" VerticalAlignment="Top">
+					<StackPanel Orientation="Horizontal" Spacing="24" Margin="5,0,0,0" VerticalAlignment="Top">
 						<StackPanel Spacing="4">
 							<TextBlock Text="Start" Opacity="0.85"/>
 							<StackPanel Orientation="Horizontal" Spacing="10">

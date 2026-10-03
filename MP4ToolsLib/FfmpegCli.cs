@@ -19,6 +19,8 @@ public static class FfmpegArguments
 
 	public const string SeekInputTimestamp = "-ss";
 	public const string LimitOutputDuration = "-t";
+	public const string OutputVideoFrameCount = "-frames:v";
+	public const string OutputImageQuality = "-q:v";
 
 	public const string InputFormat = "-f";
 	public const string InputFormatConcatDemuxer = "concat";

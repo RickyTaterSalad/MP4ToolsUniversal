@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -13,6 +14,9 @@ namespace MP4Tools.ViewModels;
 
 public partial class OptionsViewModel : ViewModelBase
 {
+	private bool _suppressAutoSave;
+	private CancellationTokenSource _persistCts;
+
 	public OptionsViewModel(AppUserSettings settings)
 	{
 		ApplyFrom(settings);
@@ -23,15 +27,25 @@ public partial class OptionsViewModel : ViewModelBase
 
 	private void ApplyFrom(AppUserSettings loaded)
 	{
-		loaded ??= new AppUserSettings();
-		TempDirectory = loaded.TempDirectory ?? "";
-		RetainTemporaryFiles = loaded.RetainTemporaryFiles;
-		DefaultOutputDirectory = loaded.DefaultOutputDirectory ?? "";
-		OpenOutputFolderOnComplete = loaded.OpenOutputFolderOnComplete;
-		DeleteTrimSegmentsAfterTrimAndCombine = loaded.DeleteTrimSegmentsAfterTrimAndCombine ?? true;
-		UseResolveSafeEncoding = loaded.UseResolveSafeEncoding;
-		BaseballLoggerServerUrl = loaded.BaseballLoggerServerUrl ?? "";
-		BaseballLoggerApiKey = loaded.BaseballLoggerApiKey ?? "";
+		_suppressAutoSave = true;
+		try
+		{
+			loaded ??= new AppUserSettings();
+			TempDirectory = loaded.TempDirectory ?? "";
+			RetainTemporaryFiles = loaded.RetainTemporaryFiles;
+			DefaultOutputDirectory = loaded.DefaultOutputDirectory ?? "";
+			OpenOutputFolderOnComplete = loaded.OpenOutputFolderOnComplete;
+			DeleteTrimSegmentsAfterTrimAndCombine = loaded.DeleteTrimSegmentsAfterTrimAndCombine ?? true;
+			UseResolveSafeEncoding = loaded.UseResolveSafeEncoding;
+			BaseballLoggerServerUrl = loaded.BaseballLoggerServerUrl ?? "";
+			BaseballLoggerApiKey = loaded.BaseballLoggerApiKey ?? "";
+			OpenRouterApiKey = loaded.OpenRouterApiKey ?? "";
+			OpenRouterModel = loaded.OpenRouterModel ?? "";
+		}
+		finally
+		{
+			_suppressAutoSave = false;
+		}
 	}
 
 	[ObservableProperty]
@@ -59,13 +73,112 @@ public partial class OptionsViewModel : ViewModelBase
 	private string _baseballLoggerApiKey = "";
 
 	[ObservableProperty]
+	private string _openRouterApiKey = "";
+
+	[ObservableProperty]
+	private string _openRouterModel = "";
+
+	[ObservableProperty]
 	[NotifyPropertyChangedFor(nameof(ApiKeyPasswordChar))]
 	private bool _isApiKeyVisible;
+
+	[ObservableProperty]
+	[NotifyPropertyChangedFor(nameof(OpenRouterApiKeyPasswordChar))]
+	private bool _isOpenRouterApiKeyVisible;
 
 	/// <summary>Mask character when hidden; null char clears password masking.</summary>
 	public char ApiKeyPasswordChar => IsApiKeyVisible ? '\0' : '*';
 
+	public char OpenRouterApiKeyPasswordChar => IsOpenRouterApiKeyVisible ? '\0' : '*';
+
 	public string SettingsFilePathDisplay => AppSettingsStore.SettingsFilePath;
+
+	partial void OnTempDirectoryChanged(string value) => SchedulePersist();
+	partial void OnDefaultOutputDirectoryChanged(string value) => SchedulePersist();
+	partial void OnRetainTemporaryFilesChanged(bool value) => PersistNow();
+	partial void OnOpenOutputFolderOnCompleteChanged(bool value) => PersistNow();
+	partial void OnDeleteTrimSegmentsAfterTrimAndCombineChanged(bool value) => PersistNow();
+	partial void OnUseResolveSafeEncodingChanged(bool value) => PersistNow();
+	partial void OnBaseballLoggerServerUrlChanged(string value) => SchedulePersist();
+	partial void OnBaseballLoggerApiKeyChanged(string value) => SchedulePersist();
+	partial void OnOpenRouterApiKeyChanged(string value) => SchedulePersist();
+	partial void OnOpenRouterModelChanged(string value) => SchedulePersist();
+
+	private void PersistNow()
+	{
+		_persistCts?.Cancel();
+		_persistCts?.Dispose();
+		_persistCts = null;
+		PersistSettings();
+	}
+
+	private async void SchedulePersist()
+	{
+		if (_suppressAutoSave)
+			return;
+
+		_persistCts?.Cancel();
+		_persistCts?.Dispose();
+		var cts = new CancellationTokenSource();
+		_persistCts = cts;
+		try
+		{
+			await Task.Delay(400, cts.Token).ConfigureAwait(true);
+			PersistSettings();
+		}
+		catch (OperationCanceledException)
+		{
+			// superseded by a newer change
+		}
+	}
+
+	private void PersistSettings()
+	{
+		if (_suppressAutoSave)
+			return;
+
+		try
+		{
+			var trimmed = TempDirectory?.Trim() ?? "";
+			if (!string.IsNullOrEmpty(trimmed))
+				Directory.CreateDirectory(trimmed);
+
+			var outTrimmed = DefaultOutputDirectory?.Trim() ?? "";
+			if (!string.IsNullOrEmpty(outTrimmed))
+				Directory.CreateDirectory(outTrimmed);
+
+			var s = new AppUserSettings
+			{
+				TempDirectory = trimmed,
+				RetainTemporaryFiles = RetainTemporaryFiles,
+				DefaultOutputDirectory = outTrimmed,
+				OpenOutputFolderOnComplete = OpenOutputFolderOnComplete,
+				DeleteTrimSegmentsAfterTrimAndCombine = DeleteTrimSegmentsAfterTrimAndCombine,
+				UseResolveSafeEncoding = UseResolveSafeEncoding,
+				BaseballLoggerServerUrl = BaseballLoggerServerUrl?.Trim() ?? "",
+				BaseballLoggerApiKey = BaseballLoggerApiKey?.Trim() ?? "",
+				OpenRouterApiKey = OpenRouterApiKey?.Trim() ?? "",
+				OpenRouterModel = OpenRouterModel?.Trim() ?? "",
+			};
+			AppSettingsStore.SaveAndApply(s);
+			MP4Tools.Logger.Log($"Settings saved. Temporary files folder: {TempPathHelper.GetTempPath()}");
+			MP4Tools.Logger.Log($"Default output folder: {DefaultOutputPathRuntime.Directory}");
+			MP4Tools.Logger.Log($"Open output folder on completion: {UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete}");
+			MP4Tools.Logger.Log($"Delete trim segments after Trim And Combine: {UiBehaviorSettingsRuntime.DeleteTrimSegmentsAfterTrimAndCombine}");
+			MP4Tools.Logger.Log($"Resolve-safe encoding: {EncodingSettingsRuntime.Current.UseResolveSafeEncoding}");
+			MP4Tools.Logger.Log(
+				$"Baseball Logger server: {(string.IsNullOrWhiteSpace(BaseballLoggerSettingsRuntime.ServerUrl) ? "(not set)" : BaseballLoggerSettingsRuntime.ServerUrl)}");
+			MP4Tools.Logger.Log(
+				$"Baseball Logger API key: {(string.IsNullOrWhiteSpace(BaseballLoggerSettingsRuntime.ApiKey) ? "(not set)" : "(saved)")}");
+			MP4Tools.Logger.Log(
+				$"OpenRouter API key: {(string.IsNullOrWhiteSpace(OpenRouterSettingsRuntime.ApiKey) ? "(not set)" : "(saved)")}");
+			MP4Tools.Logger.Log($"OpenRouter model: {OpenRouterSettingsRuntime.Model}");
+		}
+		catch (Exception ex)
+		{
+			MP4Tools.Logger.Log($"Could not save settings: {ex.Message}");
+		}
+	}
 
 	[RelayCommand]
 	private async Task BrowseDefaultOutputFolderAsync()
@@ -126,50 +239,15 @@ public partial class OptionsViewModel : ViewModelBase
 	}
 
 	[RelayCommand]
-	private void SaveSettings()
-	{
-		try
-		{
-			var trimmed = TempDirectory?.Trim() ?? "";
-			if (!string.IsNullOrEmpty(trimmed))
-				Directory.CreateDirectory(trimmed);
-
-			var outTrimmed = DefaultOutputDirectory?.Trim() ?? "";
-			if (!string.IsNullOrEmpty(outTrimmed))
-				Directory.CreateDirectory(outTrimmed);
-
-			var s = new AppUserSettings
-			{
-				TempDirectory = trimmed,
-				RetainTemporaryFiles = RetainTemporaryFiles,
-				DefaultOutputDirectory = outTrimmed,
-				OpenOutputFolderOnComplete = OpenOutputFolderOnComplete,
-				DeleteTrimSegmentsAfterTrimAndCombine = DeleteTrimSegmentsAfterTrimAndCombine,
-				UseResolveSafeEncoding = UseResolveSafeEncoding,
-				BaseballLoggerServerUrl = BaseballLoggerServerUrl?.Trim() ?? "",
-				BaseballLoggerApiKey = BaseballLoggerApiKey?.Trim() ?? "",
-			};
-			AppSettingsStore.SaveAndApply(s);
-			MP4Tools.Logger.Log($"Settings saved. Temporary files folder: {TempPathHelper.GetTempPath()}");
-			MP4Tools.Logger.Log($"Default output folder: {DefaultOutputPathRuntime.Directory}");
-			MP4Tools.Logger.Log($"Open output folder on completion: {UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete}");
-			MP4Tools.Logger.Log($"Delete trim segments after Trim And Combine: {UiBehaviorSettingsRuntime.DeleteTrimSegmentsAfterTrimAndCombine}");
-			MP4Tools.Logger.Log($"Resolve-safe encoding: {EncodingSettingsRuntime.Current.UseResolveSafeEncoding}");
-			MP4Tools.Logger.Log(
-				$"Baseball Logger server: {(string.IsNullOrWhiteSpace(BaseballLoggerSettingsRuntime.ServerUrl) ? "(not set)" : BaseballLoggerSettingsRuntime.ServerUrl)}");
-			MP4Tools.Logger.Log(
-				$"Baseball Logger API key: {(string.IsNullOrWhiteSpace(BaseballLoggerSettingsRuntime.ApiKey) ? "(not set)" : "(saved)")}");
-		}
-		catch (Exception ex)
-		{
-			MP4Tools.Logger.Log($"Could not save settings: {ex.Message}");
-		}
-	}
-
-	[RelayCommand]
 	private void ToggleApiKeyVisibility()
 	{
 		IsApiKeyVisible = !IsApiKeyVisible;
+	}
+
+	[RelayCommand]
+	private void ToggleOpenRouterApiKeyVisibility()
+	{
+		IsOpenRouterApiKeyVisible = !IsOpenRouterApiKeyVisible;
 	}
 
 	[RelayCommand]

@@ -103,11 +103,30 @@
 				</Button>
 			</Grid>
 
-			<Button Command="{Binding SaveSettingsCommand}"
-							HorizontalAlignment="Left"
-							Padding="16,8">
-				<TextBlock Text="Save settings"/>
-			</Button>
+			<TextBlock Text="OpenRouter" FontWeight="SemiBold" FontSize="16"/>
+			<TextBlock TextWrapping="Wrap"
+								 Text="Used by Rewrite Intro → Read Intro to OCR an existing title card via a vision model. Get a key at openrouter.ai."/>
+
+			<Grid ColumnDefinitions="*,Auto">
+				<TextBox Grid.Column="0"
+								 PlaceholderText="OpenRouter API key"
+								 PasswordChar="{Binding OpenRouterApiKeyPasswordChar}"
+								 Text="{Binding OpenRouterApiKey, UpdateSourceTrigger=PropertyChanged}"
+								 Margin="0,0,8,0"/>
+				<Button Grid.Column="1"
+								Command="{Binding ToggleOpenRouterApiKeyVisibilityCommand}"
+								Padding="8,6"
+								ToolTip.Tip="Show or hide OpenRouter API key">
+					<Panel>
+						<materialIcons:MaterialIcon Kind="Eye" IsVisible="{Binding !IsOpenRouterApiKeyVisible}"/>
+						<materialIcons:MaterialIcon Kind="EyeOff" IsVisible="{Binding IsOpenRouterApiKeyVisible}"/>
+					</Panel>
+				</Button>
+			</Grid>
+
+			<TextBox PlaceholderText="Model (optional, default google/gemini-2.5-flash)"
+							 Text="{Binding OpenRouterModel, UpdateSourceTrigger=PropertyChanged}"
+							 ToolTip.Tip="OpenRouter model id for intro vision OCR."/>
 
 			<TextBlock Text="Configuration file" Opacity="0.85" FontSize="12"/>
 			<TextBlock Text="{Binding SettingsFilePathDisplay}"
@@ -117,7 +136,7 @@
 			<TextBlock TextWrapping="Wrap"
 								 Opacity="0.65"
 								 FontSize="11"
-								 Text="Click Save to write settings to disk and apply them immediately (output paths, temp folder, and behavior flags update without restarting)."/>
+								 Text="Changes are saved and applied automatically (output paths, temp folder, and behavior flags update without restarting)."/>
 		</StackPanel>
 	</ScrollViewer>
 </UserControl>

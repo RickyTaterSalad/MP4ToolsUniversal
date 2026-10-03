@@ -1,0 +1,182 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:vm="using:MP4Tools.ViewModels"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 x:Class="MP4Tools.Views.RewriteIntroView"
+			 x:DataType="vm:RewriteIntroViewModel">
+	<Grid DragDrop.AllowDrop="True"
+		  Background="Transparent"
+		  DragDrop.DragOver="OnDragOver"
+		  DragDrop.Drop="OnDrop"
+		  RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto">
+
+		<!-- Input -->
+		<StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+			<TextBlock Text="Input"
+					   FontSize="12"
+					   FontWeight="SemiBold"
+					   Opacity="0.65"
+					   LetterSpacing="0.4"/>
+			<Grid ColumnDefinitions="*,Auto">
+				<TextBox Grid.Column="0"
+						 Margin="0,0,10,0"
+						 PlaceholderText="Combined video with intro to rewrite"
+						 Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"/>
+				<Button Grid.Column="1" Click="BrowseButton_OnClick" Padding="4">
+					<Button.Content>
+						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="Video"/>
+							<TextBlock Text="Browse" Margin="5,0,5,0"/>
+						</StackPanel>
+					</Button.Content>
+				</Button>
+			</Grid>
+		</StackPanel>
+
+		<Separator Grid.Row="1" Margin="0,0,0,12" Opacity="0.45"/>
+
+		<!-- Game info | intro -->
+		<Grid Grid.Row="2" ColumnDefinitions="*,Auto,*" Margin="0,0,0,12" ColumnSpacing="16">
+			<StackPanel Grid.Column="0" Spacing="10">
+				<TextBlock Text="Game"
+						   FontSize="12"
+						   FontWeight="SemiBold"
+						   Opacity="0.65"
+						   LetterSpacing="0.4"/>
+				<Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+					<CalendarDatePicker Grid.Row="0" Grid.Column="0"
+										SelectedDate="{Binding EventDate}"
+										MinWidth="150"
+										PlaceholderText="Date"/>
+					<TextBox Grid.Row="0" Grid.Column="1"
+							 PlaceholderText="Event Info"
+							 HorizontalAlignment="Stretch"
+							 Text="{Binding EventInfo, UpdateSourceTrigger=PropertyChanged}"/>
+					<Button Grid.Row="0" Grid.Column="2"
+							Padding="6,4"
+							VerticalAlignment="Stretch"
+							ToolTip.Tip="Choose a default Event Info value"
+							Click="EventInfoDefaultsButton_OnClick">
+						<materialIcons:MaterialIcon Kind="FormatListBulleted"/>
+					</Button>
+					<Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" ColumnDefinitions="*,48,*,48" ColumnSpacing="8">
+						<TextBox Grid.Column="0"
+								 PlaceholderText="Visitor"
+								 HorizontalAlignment="Stretch"
+								 Text="{Binding VisitorName, UpdateSourceTrigger=PropertyChanged}"/>
+						<TextBox Grid.Column="1"
+								 PlaceholderText="Runs"
+								 Text="{Binding VisitorScore, UpdateSourceTrigger=PropertyChanged}"/>
+						<TextBox Grid.Column="2"
+								 PlaceholderText="Home"
+								 HorizontalAlignment="Stretch"
+								 Text="{Binding HomeName, UpdateSourceTrigger=PropertyChanged}"/>
+						<TextBox Grid.Column="3"
+								 PlaceholderText="Runs"
+								 Text="{Binding HomeScore, UpdateSourceTrigger=PropertyChanged}"/>
+					</Grid>
+				</Grid>
+			</StackPanel>
+
+			<Separator Grid.Column="1" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" Opacity="0.45"/>
+
+			<StackPanel Grid.Column="2" Spacing="10">
+				<TextBlock Text="Intro"
+						   FontSize="12"
+						   FontWeight="SemiBold"
+						   Opacity="0.65"
+						   LetterSpacing="0.4"/>
+				<TextBox PlaceholderText="Title"
+						 HorizontalAlignment="Stretch"
+						 Text="{Binding IntroTitle, UpdateSourceTrigger=PropertyChanged}"/>
+				<TextBox PlaceholderText="Subtitle"
+						 HorizontalAlignment="Stretch"
+						 Text="{Binding IntroSubtitle, UpdateSourceTrigger=PropertyChanged}"/>
+				<Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+					<TextBox Grid.Column="0"
+							 PlaceholderText="Details"
+							 HorizontalAlignment="Stretch"
+							 Text="{Binding IntroDetails, UpdateSourceTrigger=PropertyChanged}"
+							 VerticalAlignment="Center"/>
+					<StackPanel Grid.Column="1"
+								Orientation="Horizontal"
+								VerticalAlignment="Center"
+								Spacing="8"
+								ToolTip.Tip="Seconds of existing intro to remove; new intro uses the same length.">
+						<TextBlock Text="Duration" VerticalAlignment="Center" Opacity="0.85"/>
+						<ComboBox ItemsSource="{Binding IntroDurationRange}"
+								  SelectedValue="{Binding IntroDurationSeconds}"
+								  Width="80"/>
+					</StackPanel>
+				</Grid>
+			</StackPanel>
+		</Grid>
+
+		<!-- Output -->
+		<StackPanel Grid.Row="3" Spacing="6" Margin="0,0,0,12">
+			<TextBlock Text="Output"
+					   FontSize="12"
+					   FontWeight="SemiBold"
+					   Opacity="0.65"
+					   LetterSpacing="0.4"/>
+			<TextBox PlaceholderText="Output path"
+					 Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}"/>
+		</StackPanel>
+
+		<Border Grid.Row="4"/>
+
+		<TextBlock Grid.Row="5"
+				   Text="{Binding OperationStatus}"
+				   TextWrapping="Wrap"
+				   Margin="0,0,0,8"
+				   Opacity="0.92"/>
+
+		<!-- Actions -->
+		<Grid Grid.Row="6" ColumnDefinitions="Auto,*,Auto">
+			<StackPanel Grid.Column="0" Orientation="Horizontal">
+				<Button Command="{Binding StopCommand}" Padding="4" IsEnabled="{Binding CanStop}" Margin="0,0,5,0">
+					<Button.Content>
+						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="Stop"/>
+							<TextBlock Text="Stop" Margin="5,0,5,0"/>
+						</StackPanel>
+					</Button.Content>
+				</Button>
+				<Button Command="{Binding ClearCommand}" Padding="4" IsEnabled="{Binding CanClear}">
+					<Button.Content>
+						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="Remove"/>
+							<TextBlock Text="Clear" Margin="5,0,5,0"/>
+						</StackPanel>
+					</Button.Content>
+				</Button>
+			</StackPanel>
+			<StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+				<Button Command="{Binding ReadIntroCommand}"
+						Padding="4"
+						IsEnabled="{Binding CanReadIntro}"
+						ToolTip.Tip="Extract a frame from the existing intro and fill fields via OpenRouter vision (set API key in Options).">
+					<Button.Content>
+						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="TextRecognition"/>
+							<TextBlock Text="Read Intro" Margin="5,0,5,0"/>
+						</StackPanel>
+					</Button.Content>
+				</Button>
+				<Button Command="{Binding RewriteCommand}"
+						Padding="4"
+						IsEnabled="{Binding CanRewrite}">
+					<Button.Content>
+						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="Replay"/>
+							<TextBlock Text="Rewrite Intro" Margin="5,0,5,0"/>
+						</StackPanel>
+					</Button.Content>
+				</Button>
+			</StackPanel>
+		</Grid>
+	</Grid>
+</UserControl>
