@@ -54,7 +54,7 @@
 
 		<ScrollViewer>
 			<StackPanel Spacing="12">
-				<TextBlock Text="Detects half-innings on DJI .LRF proxies, then remaps bookmarks onto the combined MP4 using the Combine edit map (intro + start/end trims). Combine writes a .combine-map.json next to the output video. Sample interval is set under Options → Inning detector (LRF) (default every 3 seconds)."
+				<TextBlock Text="Detects half-innings on DJI .LRF proxies, then remaps bookmarks onto the combined MP4 using the Combine edit map (intro + start/end trims). Combine writes a .combine-map.json next to the output video. Sample interval is set under Options → Inning detector (LRF) (default every 3 seconds). Alternatively, set an existing frames folder to skip LRF extract and recompute detection from those JPEGs only (session sidecars ignored)."
 						   TextWrapping="Wrap"
 						   Opacity="0.8"/>
 
@@ -83,6 +83,21 @@
 							<StackPanel Orientation="Horizontal">
 								<materialIcons:MaterialIcon Kind="Folder"/>
 								<TextBlock Text="Browse" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+				</Grid>
+
+				<Grid ColumnDefinitions="*,Auto">
+					<TextBox Grid.Column="0"
+							 PlaceholderText="Optional: existing frames folder (session dir or frames/) — skip LRF extract, recompute detection"
+							 Text="{Binding ExistingFramesFolderPath, UpdateSourceTrigger=PropertyChanged}"
+							 Margin="0,0,10,0"/>
+					<Button Grid.Column="1" Click="BrowseFramesFolderButton_OnClick" Padding="4">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="FolderImage"/>
+								<TextBlock Text="Frames" Margin="5,0,5,0"/>
 							</StackPanel>
 						</Button.Content>
 					</Button>

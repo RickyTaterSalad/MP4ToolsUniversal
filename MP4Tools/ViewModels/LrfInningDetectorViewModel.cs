@@ -18,6 +18,9 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 	private string _lrfFolderPath = string.Empty;
 
 	[ObservableProperty]
+	private string _existingFramesFolderPath = string.Empty;
+
+	[ObservableProperty]
 	private string _combinedVideoPath = string.Empty;
 
 	[ObservableProperty]
@@ -46,6 +49,10 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 
 	public AsyncRelayCommand DetectCommand { get; }
 
+	public bool ReuseExistingFrames =>
+		!string.IsNullOrWhiteSpace(ExistingFramesFolderPath)
+		&& HalfInningDetector.TryResolveExistingFramesDirectory(ExistingFramesFolderPath, out _);
+
 	public LrfInningDetectorViewModel()
 	{
 		DetectCommand = new AsyncRelayCommand(DetectAsync, () => CanDetect);
@@ -55,9 +62,12 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 
 	partial void OnCombinedVideoPathChanged(string value) => RefreshFromInputs();
 
+	partial void OnExistingFramesFolderPathChanged(string value) => RefreshFromInputs();
+
 	protected override Task Clear()
 	{
 		LrfFolderPath = string.Empty;
+		ExistingFramesFolderPath = string.Empty;
 		CombinedVideoPath = string.Empty;
 		CombineMapPath = string.Empty;
 		OutputJsonPath = string.Empty;
@@ -84,6 +94,41 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 
 		if (!string.IsNullOrWhiteSpace(CombinedVideoPath) && File.Exists(CombinedVideoPath))
 		{
+			try
+			{
+				var (json, youtube) = InningDetectionRecordingWriter.BuildOutputPaths(CombinedVideoPath);
+				OutputJsonPath = json;
+				OutputYoutubePath = youtube;
+			}
+			catch
+			{
+				OutputJsonPath = string.Empty;
+				OutputYoutubePath = string.Empty;
+			}
+		}
+
+		if (ReuseExistingFrames
+			&& HalfInningDetector.TryResolveExistingFramesDirectory(ExistingFramesFolderPath, out var framesDir))
+		{
+			var count = Directory.GetFiles(framesDir, "*.jpg").Length;
+			OperationStatus =
+				$"Will reuse {count} sample frame(s) from {framesDir} — skip LRF extract; " +
+				"recompute on the combined-video timeline.";
+			RefreshCanDetect();
+			return;
+		}
+
+		if (!string.IsNullOrWhiteSpace(ExistingFramesFolderPath))
+		{
+			OperationStatus = Directory.Exists(ExistingFramesFolderPath)
+				? "Frames folder has no .jpg samples (expected session/frames or a JPEG directory)."
+				: "Frames folder not found.";
+			RefreshCanDetect();
+			return;
+		}
+
+		if (!string.IsNullOrWhiteSpace(CombinedVideoPath) && File.Exists(CombinedVideoPath))
+		{
 			// Same-folder sidecar written by Combine: {videoStem}.combine-map.json
 			if (CombineEditMapIO.TryFindMapPath(CombinedVideoPath, out var mapPath))
 			{
@@ -96,18 +141,6 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 				OperationStatus =
 					$"No combine map in {Path.GetDirectoryName(CombinedVideoPath)}. " +
 					$"Expected sibling file: {Path.GetFileName(expected)}";
-			}
-
-			try
-			{
-				var (json, youtube) = InningDetectionRecordingWriter.BuildOutputPaths(CombinedVideoPath);
-				OutputJsonPath = json;
-				OutputYoutubePath = youtube;
-			}
-			catch
-			{
-				OutputJsonPath = string.Empty;
-				OutputYoutubePath = string.Empty;
 			}
 
 			if (!string.IsNullOrWhiteSpace(CombineMapPath))
@@ -125,7 +158,8 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 			|| string.IsNullOrWhiteSpace(folder)
 			|| !File.Exists(video)
 			|| !Directory.Exists(folder)
-			|| !CombineEditMapIO.TryFindMapPath(video, out _))
+			|| !CombineEditMapIO.TryFindMapPath(video, out _)
+			|| ReuseExistingFrames)
 		{
 			return;
 		}
@@ -153,14 +187,25 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 
 	private void RefreshCanDetect()
 	{
-		CanDetect = !string.IsNullOrWhiteSpace(CombinedVideoPath)
-			&& File.Exists(CombinedVideoPath)
-			&& !string.IsNullOrWhiteSpace(LrfFolderPath)
-			&& Directory.Exists(LrfFolderPath)
-			&& CombineEditMapIO.TryFindMapPath(CombinedVideoPath, out _);
+		var videoOk = !string.IsNullOrWhiteSpace(CombinedVideoPath) && File.Exists(CombinedVideoPath);
+		if (ReuseExistingFrames)
+		{
+			CanDetect = videoOk;
+		}
+		else
+		{
+			CanDetect = videoOk
+				&& !string.IsNullOrWhiteSpace(LrfFolderPath)
+				&& Directory.Exists(LrfFolderPath)
+				&& CombineEditMapIO.TryFindMapPath(CombinedVideoPath, out _)
+				&& (string.IsNullOrWhiteSpace(ExistingFramesFolderPath)
+					|| HalfInningDetector.TryResolveExistingFramesDirectory(ExistingFramesFolderPath, out _));
+		}
+
 		DetectCommand?.NotifyCanExecuteChanged();
 		CanClear = !string.IsNullOrWhiteSpace(CombinedVideoPath)
 			|| !string.IsNullOrWhiteSpace(LrfFolderPath)
+			|| !string.IsNullOrWhiteSpace(ExistingFramesFolderPath)
 			|| DetectedEventLines.Count > 0;
 	}
 
@@ -184,30 +229,60 @@ public partial class LrfInningDetectorViewModel : MP4ViewModelBase
 		ShowProgress = true;
 		if (string.IsNullOrWhiteSpace(OutputJsonPath))
 			RefreshFromInputs();
-		ReportStatus("Starting LRF inning detection…");
+
+		var reuseFrames = ReuseExistingFrames;
+		ReportStatus(reuseFrames
+			? "Starting inning detection (reusing sample frames)…"
+			: "Starting LRF inning detection…");
 
 		try
 		{
-			var sampleInterval = UiBehaviorSettingsRuntime.LrfInningSampleIntervalSeconds;
-			var result = await LrfInningDetector.DetectAsync(
-				CombinedVideoPath,
-				LrfFolderPath,
-				ct,
-				log: Logger.Log,
-				progress01: p =>
-				{
-					var value = Math.Clamp(p, 0, 1);
-					if (Dispatcher.UIThread.CheckAccess())
-						Progress = value;
-					else
-						Dispatcher.UIThread.Post(() => Progress = value);
-				},
-				options: new LrfInningDetector.Options
-				{
-					DetectorOptions = LrfInningDetector.Options.CreateDefaultDetectorOptions(sampleInterval),
-				},
-				outputJsonPath: OutputJsonPath,
-				status: ReportStatus).ConfigureAwait(false);
+			InningDetectionResult result;
+			if (reuseFrames)
+			{
+				// Reused frames are on the combined-video timeline (not LRF game-content),
+				// so use combined-MP4 defaults (incl. intro title-card skip). Interval is
+				// inferred from duration ÷ frame count inside DetectFromExistingFramesAsync.
+				result = await HalfInningDetector.DetectFromExistingFramesAsync(
+					CombinedVideoPath,
+					ExistingFramesFolderPath,
+					ct,
+					log: Logger.Log,
+					progress01: p =>
+					{
+						var value = Math.Clamp(p, 0, 1);
+						if (Dispatcher.UIThread.CheckAccess())
+							Progress = value;
+						else
+							Dispatcher.UIThread.Post(() => Progress = value);
+					},
+					options: new HalfInningDetector.Options(),
+					outputJsonPath: OutputJsonPath,
+					status: ReportStatus).ConfigureAwait(false);
+			}
+			else
+			{
+				var sampleInterval = UiBehaviorSettingsRuntime.LrfInningSampleIntervalSeconds;
+				result = await LrfInningDetector.DetectAsync(
+					CombinedVideoPath,
+					LrfFolderPath,
+					ct,
+					log: Logger.Log,
+					progress01: p =>
+					{
+						var value = Math.Clamp(p, 0, 1);
+						if (Dispatcher.UIThread.CheckAccess())
+							Progress = value;
+						else
+							Dispatcher.UIThread.Post(() => Progress = value);
+					},
+					options: new LrfInningDetector.Options
+					{
+						DetectorOptions = LrfInningDetector.Options.CreateDefaultDetectorOptions(sampleInterval),
+					},
+					outputJsonPath: OutputJsonPath,
+					status: ReportStatus).ConfigureAwait(false);
+			}
 
 			await Dispatcher.UIThread.InvokeAsync(() =>
 			{

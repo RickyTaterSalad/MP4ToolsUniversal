@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using MP4Tools.ViewModels;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace MP4Tools.Views;
@@ -39,6 +40,19 @@ public partial class InningDetectorView : UserControl
 			vm.SetFile(files[0].Path.LocalPath);
 	}
 
+	private async void BrowseFramesFolderButton_OnClick(object sender, RoutedEventArgs e)
+	{
+		var topLevel = TopLevel.GetTopLevel(this);
+		var folders = await topLevel!.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+		{
+			Title = "Select existing frames / inning-detect session folder",
+			AllowMultiple = false,
+		});
+
+		if (folders.Count > 0 && DataContext is InningDetectorViewModel vm)
+			vm.ExistingFramesFolderPath = folders[0].Path.LocalPath;
+	}
+
 	private void OnDragOver(object sender, DragEventArgs e)
 	{
 		if (FileDropHelper.HasFilePayload(e.DataTransfer))
@@ -58,11 +72,18 @@ public partial class InningDetectorView : UserControl
 			return;
 
 		var paths = await FileDropHelper.GetDroppedLocalPathsAsync(e.DataTransfer);
+		if (paths.Count == 0)
+			return;
+
 		var video = paths.FirstOrDefault(FileDropHelper.IsVideoFilePath);
+		var folder = paths.FirstOrDefault(Directory.Exists);
+
 		if (!string.IsNullOrWhiteSpace(video))
-		{
 			vm.SetFile(video);
-			e.Handled = true;
-		}
+
+		if (!string.IsNullOrWhiteSpace(folder))
+			vm.ExistingFramesFolderPath = folder;
+
+		e.Handled = true;
 	}
 }

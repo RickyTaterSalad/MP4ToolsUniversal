@@ -50,6 +50,19 @@ public partial class LrfInningDetectorView : UserControl
 			vm.LrfFolderPath = folders[0].Path.LocalPath;
 	}
 
+	private async void BrowseFramesFolderButton_OnClick(object sender, RoutedEventArgs e)
+	{
+		var topLevel = TopLevel.GetTopLevel(this);
+		var folders = await topLevel!.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+		{
+			Title = "Select existing frames / inning-detect session folder",
+			AllowMultiple = false,
+		});
+
+		if (folders.Count > 0 && DataContext is LrfInningDetectorViewModel vm)
+			vm.ExistingFramesFolderPath = folders[0].Path.LocalPath;
+	}
+
 	private void OnDragOver(object sender, DragEventArgs e)
 	{
 		if (FileDropHelper.HasFilePayload(e.DataTransfer))
@@ -77,9 +90,6 @@ public partial class LrfInningDetectorView : UserControl
 		var map = paths.FirstOrDefault(p =>
 			p.EndsWith(CombineEditMap.FileSuffix, System.StringComparison.OrdinalIgnoreCase));
 
-		if (!string.IsNullOrWhiteSpace(folder))
-			vm.LrfFolderPath = folder;
-
 		if (!string.IsNullOrWhiteSpace(video))
 			vm.CombinedVideoPath = video;
 		else if (!string.IsNullOrWhiteSpace(map))
@@ -94,6 +104,15 @@ public partial class LrfInningDetectorView : UserControl
 				if (File.Exists(candidate))
 					vm.CombinedVideoPath = candidate;
 			}
+		}
+
+		if (!string.IsNullOrWhiteSpace(folder))
+		{
+			// Prefer frames/session packs over LRF folders when the drop has JPEGs.
+			if (HalfInningDetector.TryResolveExistingFramesDirectory(folder, out _))
+				vm.ExistingFramesFolderPath = folder;
+			else
+				vm.LrfFolderPath = folder;
 		}
 
 		e.Handled = true;

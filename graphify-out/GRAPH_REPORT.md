@@ -1,16 +1,16 @@
 # Graph Report - MP4ToolsUniversal  (2026-10-03)
 
 ## Corpus Check
-- 97 files · ~52,693 words
+- 97 files · ~55,001 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1523 nodes · 3056 edges · 77 communities (65 shown, 11 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 107 edges (avg confidence: 0.83)
+- 1537 nodes · 3108 edges · 75 communities (66 shown, 7 thin omitted)
+- Extraction: 96% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 108 edges (avg confidence: 0.83)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ad16b59e`
+- Built from commit: `45a1b173`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -33,7 +33,7 @@
 - GenerateIntroViewModel
 - .RebuildEndSkipRangesAndClamp
 - TimeRange
-- .DetectFromSamplesAsync
+- CombineEditMap
 - .GetTempPath
 - IntroScreenReadResult
 - RewriteIntroViewModel
@@ -52,44 +52,41 @@
 - ModifiedRecordingUploader
 - InningDetectorView
 - InningDetectionArtifactSession
+- .DetectFromSamplesAsync
+- MP4Tools.ViewModels
+- .TrimAndCombineAsyncInternal
 - LrfInningDetectorViewModel
-- ViewLocator
-- CombineEditMap
-- .Build
 - Options
 - UiBehaviorSettingsRuntime
 - MP4Tools
 - UserControl
-- RelayCommand
+- .SetFile
 - ExportPendingIntro
 - .Apply
 - InningDetectorViewModel
 - BaseballLoggerSettingsRuntime
 - InningDetectionArtifactManifest
-- MP4Tools.ViewModels
+- .BuildAvaloniaApp
 - RewriteIntroView
 - TrimView
 - .EnsureDetectorModelAsync
 - ExportTrimState
-- .ImportReplaceFile
 - .ScheduleEdgeDurationRefresh
-- .SetFile
+- CombineEditMapIO
 - LrfInningDetectorView
 - ReplaceSegmentView
 - GenerateIntroView
-- DefaultOutputPathRuntime
+- RelayCommand
 - .DetectCoreAsync
 - HalfInningDetector
 - YesNoConfirmWindow
 - .ExtractAsync
 - InningDetectionResult
-- .BuildFrameSignals
-- .BeginFfmpegOperation
-- .FormatHalfInning
+- IReadOnlyList
+- .RefineHalfInningStartAsync
+- DefaultOutputPathRuntime
 - .ApplyFrom
-- .PickRefineBatterRunStart
 - Phase
-- FfmpegProgressParser
 - export_baseballcv_onnx.sh
 
 ## God Nodes (most connected - your core abstractions)
@@ -97,12 +94,12 @@
 2. `MP4ToolsLib` - 62 edges
 3. `ReplaceSegmentViewModel` - 56 edges
 4. `TrimViewModel` - 53 edges
-5. `GenerateIntroViewModel` - 45 edges
-6. `Options` - 43 edges
-7. `RewriteIntroViewModel` - 36 edges
-8. `InningDetectionArtifactManifest` - 35 edges
-9. `InningDetectionArtifactSession` - 33 edges
-10. `CombineView` - 32 edges
+5. `Options` - 46 edges
+6. `GenerateIntroViewModel` - 45 edges
+7. `HalfInningDetector` - 38 edges
+8. `RewriteIntroViewModel` - 36 edges
+9. `InningDetectionArtifactManifest` - 35 edges
+10. `InningDetectionArtifactSession` - 33 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `CombineViewModel` --references--> `CombineFile`  [EXTRACTED]
@@ -124,11 +121,11 @@
 - **Resolve-safe re-encode remediation path** — mp4tools_notes_1_vs_1_working_analysis_libx265_reencode, mp4tools_notes_1_vs_1_working_analysis_1_working_mp4, mp4tools_notes_1_vs_1_working_analysis_ffmpeg, mp4tools_notes_1_vs_1_working_analysis_hevc_main_8bit [EXTRACTED 1.00]
 - **1.mp4 vs 1_working.mp4 container contrast** — mp4tools_notes_1_vs_1_working_analysis_1_mp4, mp4tools_notes_1_vs_1_working_analysis_1_working_mp4, mp4tools_notes_1_vs_1_working_analysis_ctts_box, mp4tools_notes_1_vs_1_working_analysis_colr_box, mp4tools_notes_1_vs_1_working_analysis_hevc_main_10, mp4tools_notes_1_vs_1_working_analysis_hevc_main_8bit [EXTRACTED 1.00]
 
-## Communities (77 total, 11 thin omitted)
+## Communities (75 total, 7 thin omitted)
 
 ### Community 0 - ".PrependIntroAsync"
-Cohesion: 0.05
-Nodes (34): IProgress, CancellationToken, List, Task, ICollection, DaVinciOutputEncoding, IEnumerable, FfmpegArguments (+26 more)
+Cohesion: 0.06
+Nodes (31): IProgress, ICollection, DaVinciOutputEncoding, IEnumerable, FfmpegArguments, FfmpegCommandLine, FfmpegOption, IsSkipped (+23 more)
 
 ### Community 1 - "CombineFile"
 Cohesion: 0.11
@@ -139,8 +136,8 @@ Cohesion: 0.20
 Nodes (7): IDataTransfer, HashSet, IReadOnlyList, Task, FileDropHelper, DragEventArgs, DragEventArgs
 
 ### Community 3 - ".Log"
-Cohesion: 0.21
-Nodes (6): Exception, IReadOnlyDictionary, CancellationToken, JsonNode, List, Task
+Cohesion: 0.24
+Nodes (5): Exception, IReadOnlyDictionary, CancellationToken, JsonNode, Task
 
 ### Community 4 - "FFMpegUtils"
 Cohesion: 0.14
@@ -148,7 +145,7 @@ Nodes (17): audio, height, Lazy, Action, CancellationToken, HashSet, JsonElement
 
 ### Community 5 - "CombineViewModel"
 Cohesion: 0.05
-Nodes (32): ConcurrentDictionary, AsyncRelayCommand, DateTime, LogOperationSource, ObservableCollection, RelayCommand, CombineViewModel, CanCombine (+24 more)
+Nodes (33): ConcurrentDictionary, AsyncRelayCommand, DateTime, List, LogOperationSource, ObservableCollection, RelayCommand, CombineViewModel (+25 more)
 
 ### Community 6 - "RecordingJsonElapsedOffset"
 Cohesion: 0.14
@@ -159,8 +156,8 @@ Cohesion: 0.07
 Nodes (30): AsyncRelayCommand, IReadOnlyList, LogOperationSource, ObservableCollection, RelayCommand, TimeSpan, TrimViewModel, AddTimeRangeCommand (+22 more)
 
 ### Community 8 - "ReplaceSegmentViewModel"
-Cohesion: 0.08
-Nodes (24): AsyncRelayCommand, IReadOnlyList, LogOperationSource, ObservableCollection, RelayCommand, TimeSpan, ReplaceSegmentViewModel, AddSegmentCommand (+16 more)
+Cohesion: 0.07
+Nodes (26): AsyncRelayCommand, IReadOnlyList, List, LogOperationSource, ObservableCollection, RelayCommand, Task, TimeSpan (+18 more)
 
 ### Community 9 - "AppUserSettings"
 Cohesion: 0.11
@@ -194,13 +191,13 @@ Nodes (34): Bitmap, AsyncRelayCommand, CancellationToken, CancellationTokenSourc
 Cohesion: 0.18
 Nodes (7): INotifyPropertyChanged, IReadOnlyList, TimeRange, Hours, Minutes, Range, TotalSeconds
 
-### Community 18 - ".DetectFromSamplesAsync"
-Cohesion: 0.26
-Nodes (6): List, Options, Rect2d, TimedSampleFrame, Mat, Vec3b
+### Community 18 - "CombineEditMap"
+Cohesion: 0.09
+Nodes (23): Path, DateTimeOffset, IReadOnlyList, List, CombineEditMap, Clips, CombineMapPath, CreatedUtc (+15 more)
 
 ### Community 19 - ".GetTempPath"
 Cohesion: 0.09
-Nodes (15): CheckResult, EndSeconds, Estimate, Task, DiskSpaceWarning, List, IEnumerable, CheckResult (+7 more)
+Nodes (14): CheckResult, EndSeconds, Estimate, Task, DiskSpaceWarning, IEnumerable, CheckResult, DiskSpaceEstimator (+6 more)
 
 ### Community 20 - "IntroScreenReadResult"
 Cohesion: 0.06
@@ -208,7 +205,7 @@ Nodes (28): DateTime, IntroScreenReadResult, Details, EventDate, EventInfo, Home
 
 ### Community 21 - "RewriteIntroViewModel"
 Cohesion: 0.08
-Nodes (21): AsyncRelayCommand, DateTime, IReadOnlyList, LogOperationSource, RewriteIntroViewModel, CanReadIntro, CanRewrite, EventDate (+13 more)
+Nodes (22): AsyncRelayCommand, DateTime, IReadOnlyList, LogOperationSource, Task, RewriteIntroViewModel, CanReadIntro, CanRewrite (+14 more)
 
 ### Community 22 - "YoloOnnxDetector"
 Cohesion: 0.11
@@ -243,7 +240,7 @@ Cohesion: 0.19
 Nodes (10): JsonPath, YoutubeDescriptionPath, Action, CancellationToken, DateTime, IReadOnlyList, JsonObject, JsonSerializerOptions (+2 more)
 
 ### Community 30 - "MP4ToolsLib"
-Cohesion: 0.13
+Cohesion: 0.14
 Nodes (5): MP4Tools.Services, MP4ToolsLib, CombineEditMapEmbedder, IntroTitleCardClassifier, IntroFrameExtractor
 
 ### Community 31 - "LogViewModel"
@@ -252,7 +249,7 @@ Nodes (27): ConcurrentQueue, LogOperationSource, Combine, GenerateIntro, InningD
 
 ### Community 32 - "MP4ViewModelBase"
 Cohesion: 0.10
-Nodes (15): Action, CancellationToken, EventArgs, Process, Task, MP4ViewModelBase, CanClear, CanStop (+7 more)
+Nodes (16): Action, CancellationToken, CancellationTokenSource, EventArgs, Process, Task, MP4ViewModelBase, CanClear (+8 more)
 
 ### Community 33 - "StreamProbeInfo"
 Cohesion: 0.14
@@ -263,40 +260,36 @@ Cohesion: 0.20
 Nodes (7): Action, CancellationToken, JsonElement, Task, Uri, ModifiedRecordingUploader, UploadRevisionResult
 
 ### Community 35 - "InningDetectorView"
-Cohesion: 0.40
+Cohesion: 0.38
 Nodes (3): DragEventArgs, RoutedEventArgs, InningDetectorView
 
 ### Community 36 - "InningDetectionArtifactSession"
 Cohesion: 0.09
-Nodes (21): Action, CancellationToken, IReadOnlyList, JsonSerializerOptions, List, Task, InningDetectionArtifactSession, CombineMapCopyPath (+13 more)
+Nodes (21): Action, CancellationToken, IReadOnlyList, JsonSerializerOptions, Rect2d, Task, InningDetectionArtifactSession, CombineMapCopyPath (+13 more)
 
-### Community 37 - "LrfInningDetectorViewModel"
+### Community 37 - ".DetectFromSamplesAsync"
+Cohesion: 0.21
+Nodes (6): List, TimedSampleFrame, IReadOnlyList, InningHalfLabels, Mat, Vec3b
+
+### Community 39 - ".TrimAndCombineAsyncInternal"
 Cohesion: 0.19
-Nodes (9): AsyncRelayCommand, LogOperationSource, ObservableCollection, Task, LrfInningDetectorViewModel, DetectCommand, DetectedEventLines, MatchedLrfLines (+1 more)
+Nodes (3): CancellationToken, List, Task
 
-### Community 38 - "ViewLocator"
-Cohesion: 0.33
-Nodes (3): Control, IDataTemplate, ViewLocator
-
-### Community 39 - "CombineEditMap"
-Cohesion: 0.14
-Nodes (13): DateTimeOffset, CombineEditMap, Clips, CombineMapPath, CreatedUtc, EndKeepSeconds, IntroApplied, IntroDurationSeconds (+5 more)
-
-### Community 40 - ".Build"
-Cohesion: 0.13
-Nodes (15): Path, Action, CancellationToken, IReadOnlyList, JsonSerializerOptions, List, Task, CombineEditMapClip (+7 more)
+### Community 40 - "LrfInningDetectorViewModel"
+Cohesion: 0.17
+Nodes (10): AsyncRelayCommand, LogOperationSource, ObservableCollection, Task, LrfInningDetectorViewModel, DetectCommand, DetectedEventLines, MatchedLrfLines (+2 more)
 
 ### Community 41 - "Options"
 Cohesion: 0.05
-Nodes (40): Options, AnalysisWidth, AssumeTopFirstAtGameStart, BatterApproachRoi, BatterBoxRoi, ConfidenceThreshold, EmptyFieldHoldSeconds, FieldRoi (+32 more)
+Nodes (42): Options, AnalysisWidth, AssumeTopFirstAtGameStart, BatterApproachRoi, BatterBoxRoi, ConfidenceThreshold, EmptyFieldHoldSeconds, FieldRoi (+34 more)
 
 ### Community 42 - "UiBehaviorSettingsRuntime"
 Cohesion: 0.29
 Nodes (6): UiBehaviorSettingsRuntime, DeleteTrimSegmentsAfterTrimAndCombine, LrfInningSampleIntervalSeconds, OpenOutputFolderOnComplete, SaveInningDetectionArtifacts, WarnOnInsufficientDiskSpace
 
 ### Community 43 - "MP4Tools"
-Cohesion: 0.15
-Nodes (8): AppBuilder, Application, MP4Tools, App, Logger, Program, STAThread, WaylandPlatformOptions
+Cohesion: 0.20
+Nodes (5): Control, MP4Tools, IDataTemplate, Logger, ViewLocator
 
 ### Community 44 - "UserControl"
 Cohesion: 0.29
@@ -311,7 +304,7 @@ Cohesion: 0.14
 Nodes (11): EncodingSettingsRuntime, Current, OpenRouterSettingsRuntime, ApiKey, Model, EncodingSettingsDto, AudioCodec, HardwareAcceleration (+3 more)
 
 ### Community 48 - "InningDetectorViewModel"
-Cohesion: 0.15
+Cohesion: 0.14
 Nodes (10): FolderOpener, AsyncRelayCommand, LogOperationSource, ObservableCollection, Task, InningDetectorViewModel, DetectCommand, DetectedEventLines (+2 more)
 
 ### Community 49 - "BaseballLoggerSettingsRuntime"
@@ -320,7 +313,11 @@ Nodes (3): BaseballLoggerSettingsRuntime, ApiKey, ServerUrl
 
 ### Community 50 - "InningDetectionArtifactManifest"
 Cohesion: 0.06
-Nodes (35): DateTimeOffset, ArtifactSegmentInfo, ClipIndex, ContributionSeconds, GameStartSeconds, LocalStartSeconds, MediaPath, InningDetectionArtifactManifest (+27 more)
+Nodes (36): DateTimeOffset, List, ArtifactSegmentInfo, ClipIndex, ContributionSeconds, GameStartSeconds, LocalStartSeconds, MediaPath (+28 more)
+
+### Community 51 - ".BuildAvaloniaApp"
+Cohesion: 0.32
+Nodes (4): AppBuilder, Program, STAThread, WaylandPlatformOptions
 
 ### Community 52 - "RewriteIntroView"
 Cohesion: 0.53
@@ -335,11 +332,15 @@ Cohesion: 0.28
 Nodes (6): Action, CancellationToken, IEnumerable, Task, ResolvedYoloModel, YoloModelStore
 
 ### Community 55 - "ExportTrimState"
-Cohesion: 0.17
+Cohesion: 0.33
 Nodes (4): ExportTrimState, InputFile, OutputFolderName, StartStopRanges
 
+### Community 58 - "CombineEditMapIO"
+Cohesion: 0.31
+Nodes (5): Action, CancellationToken, JsonSerializerOptions, Task, CombineEditMapIO
+
 ### Community 59 - "LrfInningDetectorView"
-Cohesion: 0.38
+Cohesion: 0.36
 Nodes (3): DragEventArgs, RoutedEventArgs, LrfInningDetectorView
 
 ### Community 60 - "ReplaceSegmentView"
@@ -350,37 +351,37 @@ Nodes (3): List, RoutedEventArgs, ReplaceSegmentView
 Cohesion: 0.31
 Nodes (4): DragEventArgs, List, RoutedEventArgs, GenerateIntroView
 
-### Community 62 - "DefaultOutputPathRuntime"
-Cohesion: 0.40
-Nodes (3): DefaultOutputPathRuntime, BuiltinFallbackDirectory, Directory
-
 ### Community 63 - ".DetectCoreAsync"
-Cohesion: 0.27
-Nodes (8): Action, CancellationToken, IReadOnlyList, List, Task, LrfInningDetector, Options, DetectorOptions
+Cohesion: 0.25
+Nodes (9): Options, Action, CancellationToken, IReadOnlyList, List, Task, LrfInningDetector, Options (+1 more)
 
 ### Community 64 - "HalfInningDetector"
 Cohesion: 0.26
-Nodes (7): IRefineMediaSource, Action, CancellationToken, Task, TimeSpan, HalfInningDetector, IRefineMediaSource
+Nodes (6): Action, CancellationToken, Task, TimeSpan, HalfInningDetector, TimedSampleFrame
 
 ### Community 65 - "YesNoConfirmWindow"
-Cohesion: 0.25
-Nodes (4): MainWindow, RoutedEventArgs, YesNoConfirmWindow, Window
+Cohesion: 0.18
+Nodes (6): Application, App, MainWindow, RoutedEventArgs, YesNoConfirmWindow, Window
 
 ### Community 66 - ".ExtractAsync"
-Cohesion: 0.12
-Nodes (17): IReadOnlyList, List, GameContentRefineMediaSource, GameContentSegment, GameEndSeconds, GameContentTimeline, TimedSampleFrame, Action (+9 more)
+Cohesion: 0.10
+Nodes (18): Regex, FfmpegProgressParser, IReadOnlyList, List, GameContentRefineMediaSource, GameContentSegment, GameEndSeconds, GameContentTimeline (+10 more)
 
 ### Community 67 - "InningDetectionResult"
 Cohesion: 0.17
 Nodes (12): IReadOnlyList, InningDetectionEvent, ElapsedSeconds, Kind, Label, InningDetectionResult, ArtifactHandoffPath, ArtifactSessionDirectory (+4 more)
 
-### Community 68 - ".BuildFrameSignals"
+### Community 68 - "IReadOnlyList"
 Cohesion: 0.31
 Nodes (7): FrameSignals, IReadOnlyList, Rect, Rect2d, FrameSignals, DetectedObject, Point
 
-### Community 73 - ".PickRefineBatterRunStart"
-Cohesion: 0.50
-Nodes (3): Confidence, InBox, Time
+### Community 70 - ".RefineHalfInningStartAsync"
+Cohesion: 0.25
+Nodes (5): Confidence, InBox, IRefineMediaSource, IRefineMediaSource, Time
+
+### Community 71 - "DefaultOutputPathRuntime"
+Cohesion: 0.40
+Nodes (3): DefaultOutputPathRuntime, BuiltinFallbackDirectory, Directory
 
 ### Community 74 - "Phase"
 Cohesion: 0.50
@@ -391,24 +392,24 @@ Nodes (4): Phase, FieldClearing, Playing, Warmup
   MP4Tools/Notes/1_vs_1_working_analysis.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **416 isolated node(s):** `None`, `Combine`, `Trim`, `RewriteIntro`, `GenerateIntro` (+411 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 596 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **419 isolated node(s):** `None`, `Combine`, `Trim`, `RewriteIntro`, `GenerateIntro` (+414 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 598 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `DaVinci Resolve` and `Opus audio`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `MP4ToolsLib` connect `MP4ToolsLib` to `.PrependIntroAsync`, `CombineFile`, `FFMpegUtils`, `RecordingJsonElapsedOffset`, `BoxScoreUploader`, `DrawTextPosition`, `GenerateIntroViewModel`, `TimeRange`, `.GetTempPath`, `IntroScreenReadResult`, `YoloOnnxDetector`, `.WriteSessionAndYoutubeAsync`, `StreamProbeInfo`, `ModifiedRecordingUploader`, `.Build`, `MP4Tools`, `.Apply`, `InningDetectionArtifactManifest`, `MP4Tools.ViewModels`, `.EnsureDetectorModelAsync`, `.DetectCoreAsync`, `.ExtractAsync`, `InningDetectionResult`, `.FormatHalfInning`, `FfmpegProgressParser`?**
-  _High betweenness centrality (0.273) - this node is a cross-community bridge._
-- **Why does `CombineViewModel` connect `CombineViewModel` to `CombineFile`, `.Log`, `.SetCombineProgress`, `ReplaceSegmentViewModel`, `MainWindowViewModel`, `GenerateIntroViewModel`, `.RebuildEndSkipRangesAndClamp`, `TimeRange`, `InningDetectorViewModel`, `CombineView`, `.ScheduleEdgeDurationRefresh`, `.SetFile`, `MP4ToolsLib`?**
-  _High betweenness centrality (0.201) - this node is a cross-community bridge._
-- **Why does `ReplaceSegmentViewModel` connect `ReplaceSegmentViewModel` to `ExportReplaceSegmentState`, `CombineViewModel`, `GenerateIntroViewModel`, `InningDetectorViewModel`, `TimeRange`, `.GetTempPath`, `PendingIntroSpec`, `.ImportReplaceFile`, `.SetFile`, `ReplaceSegmentRange`, `MP4ToolsLib`?**
-  _High betweenness centrality (0.073) - this node is a cross-community bridge._
+- **Why does `MP4ToolsLib` connect `MP4ToolsLib` to `.PrependIntroAsync`, `CombineFile`, `FFMpegUtils`, `RecordingJsonElapsedOffset`, `BoxScoreUploader`, `DrawTextPosition`, `GenerateIntroViewModel`, `TimeRange`, `CombineEditMap`, `.GetTempPath`, `IntroScreenReadResult`, `YoloOnnxDetector`, `.WriteSessionAndYoutubeAsync`, `StreamProbeInfo`, `ModifiedRecordingUploader`, `.DetectFromSamplesAsync`, `MP4Tools.ViewModels`, `MP4Tools`, `.Apply`, `InningDetectionArtifactManifest`, `.EnsureDetectorModelAsync`, `.DetectCoreAsync`, `HalfInningDetector`, `.ExtractAsync`, `InningDetectionResult`?**
+  _High betweenness centrality (0.254) - this node is a cross-community bridge._
+- **Why does `CombineViewModel` connect `CombineViewModel` to `CombineFile`, `.Log`, `.SetCombineProgress`, `ReplaceSegmentViewModel`, `.SetFile`, `MainWindowViewModel`, `GenerateIntroViewModel`, `.RebuildEndSkipRangesAndClamp`, `TimeRange`, `InningDetectorViewModel`, `CombineView`, `.ScheduleEdgeDurationRefresh`, `MP4ToolsLib`?**
+  _High betweenness centrality (0.206) - this node is a cross-community bridge._
+- **Why does `ReplaceSegmentViewModel` connect `ReplaceSegmentViewModel` to `CombineViewModel`, `.SetFile`, `GenerateIntroViewModel`, `InningDetectorViewModel`, `TimeRange`, `.GetTempPath`, `PendingIntroSpec`, `.ImportReplaceFile`, `ExportReplaceSegmentState`, `ReplaceSegmentRange`, `MP4ToolsLib`?**
+  _High betweenness centrality (0.070) - this node is a cross-community bridge._
 - **What connects `None`, `Combine`, `Trim` to the rest of the system?**
-  _416 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _419 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `.PrependIntroAsync` be split into smaller, more focused modules?**
-  _Cohesion score 0.05476190476190476 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06091825307950728 - nodes in this community are weakly interconnected._
 - **Should `CombineFile` be split into smaller, more focused modules?**
   _Cohesion score 0.11494252873563218 - nodes in this community are weakly interconnected._

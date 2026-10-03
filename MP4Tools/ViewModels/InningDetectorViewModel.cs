@@ -15,6 +15,9 @@ public partial class InningDetectorViewModel : MP4ViewModelBase
 	protected override LogOperationSource OperationLogSource => LogOperationSource.InningDetector;
 
 	[ObservableProperty]
+	private string _existingFramesFolderPath = string.Empty;
+
+	[ObservableProperty]
 	private string _outputJsonPath = string.Empty;
 
 	[ObservableProperty]
@@ -44,6 +47,12 @@ public partial class InningDetectorViewModel : MP4ViewModelBase
 		DetectCommand = new AsyncRelayCommand(DetectAsync, () => CanDetect);
 	}
 
+	partial void OnExistingFramesFolderPathChanged(string value)
+	{
+		RefreshCanDetect();
+		UpdateFramesFolderStatus();
+	}
+
 	protected override void OnInputPathSet()
 	{
 		base.OnInputPathSet();
@@ -52,6 +61,7 @@ public partial class InningDetectorViewModel : MP4ViewModelBase
 		ShowProgress = false;
 		PopulateOutputPathsFromInput();
 		RefreshCanDetect();
+		UpdateFramesFolderStatus();
 		_ = ReadInputVideoBitDepthAsync();
 	}
 
@@ -80,6 +90,7 @@ public partial class InningDetectorViewModel : MP4ViewModelBase
 	protected override Task Clear()
 	{
 		OperationStatus = string.Empty;
+		ExistingFramesFolderPath = string.Empty;
 		OutputJsonPath = string.Empty;
 		OutputYoutubePath = string.Empty;
 		Progress = 0;
@@ -88,11 +99,35 @@ public partial class InningDetectorViewModel : MP4ViewModelBase
 		return base.Clear();
 	}
 
+	private void UpdateFramesFolderStatus()
+	{
+		if (string.IsNullOrWhiteSpace(ExistingFramesFolderPath))
+			return;
+
+		if (HalfInningDetector.TryResolveExistingFramesDirectory(ExistingFramesFolderPath, out var framesDir))
+		{
+			var count = Directory.GetFiles(framesDir, "*.jpg").Length;
+			OperationStatus = $"Will reuse {count} sample frame(s) from {framesDir} (skip video extract).";
+		}
+		else if (Directory.Exists(ExistingFramesFolderPath))
+		{
+			OperationStatus = "Frames folder has no .jpg samples (expected session/frames or a JPEG directory).";
+		}
+		else
+		{
+			OperationStatus = "Frames folder not found.";
+		}
+	}
+
 	private void RefreshCanDetect()
 	{
-		CanDetect = !string.IsNullOrWhiteSpace(InputPath) && File.Exists(InputPath);
+		var videoOk = !string.IsNullOrWhiteSpace(InputPath) && File.Exists(InputPath);
+		var framesOk = string.IsNullOrWhiteSpace(ExistingFramesFolderPath)
+			|| HalfInningDetector.TryResolveExistingFramesDirectory(ExistingFramesFolderPath, out _);
+		CanDetect = videoOk && framesOk;
 		DetectCommand?.NotifyCanExecuteChanged();
 		CanClear = !string.IsNullOrWhiteSpace(InputPath)
+			|| !string.IsNullOrWhiteSpace(ExistingFramesFolderPath)
 			|| !string.IsNullOrWhiteSpace(OutputJsonPath)
 			|| DetectedEventLines.Count > 0;
 	}
@@ -117,7 +152,11 @@ public partial class InningDetectorViewModel : MP4ViewModelBase
 		ShowProgress = true;
 		if (string.IsNullOrWhiteSpace(OutputJsonPath))
 			PopulateOutputPathsFromInput();
-		ReportStatus("Starting inning detection…");
+
+		var reuseFrames = !string.IsNullOrWhiteSpace(ExistingFramesFolderPath);
+		ReportStatus(reuseFrames
+			? "Starting inning detection (reusing sample frames)…"
+			: "Starting inning detection…");
 
 		try
 		{
@@ -138,7 +177,8 @@ public partial class InningDetectorViewModel : MP4ViewModelBase
 					SkipIntroTitleCards = SkipIntroTitleCards,
 				},
 				outputJsonPath: OutputJsonPath,
-				status: ReportStatus).ConfigureAwait(false);
+				status: ReportStatus,
+				existingFramesDirectory: reuseFrames ? ExistingFramesFolderPath : null).ConfigureAwait(false);
 
 			await Dispatcher.UIThread.InvokeAsync(() =>
 			{

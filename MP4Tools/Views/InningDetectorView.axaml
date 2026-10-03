@@ -69,7 +69,22 @@
 					</Button>
 				</Grid>
 
-				<TextBlock Text="Detects half-inning starts using local CV: field clears → defense/pitcher warmup with an empty batter's box (a coach near the plate is OK) → bookmark when the first batter enters the batter's box. Writes Baseball Logger recording JSON and a YouTube chapter bookmark .txt next to the video."
+				<Grid ColumnDefinitions="*,Auto">
+					<TextBox Grid.Column="0"
+							 PlaceholderText="Optional: existing frames folder (session dir or frames/) — skip extract, recompute detection"
+							 Text="{Binding ExistingFramesFolderPath, UpdateSourceTrigger=PropertyChanged}"
+							 Margin="0,0,10,0"/>
+					<Button Grid.Column="1" Click="BrowseFramesFolderButton_OnClick" Padding="4">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Folder"/>
+								<TextBlock Text="Frames" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+				</Grid>
+
+				<TextBlock Text="Detects half-inning starts using local CV: field clears → defense/pitcher warmup with an empty batter's box (a coach near the plate is OK) → bookmark when the first batter enters the batter's box. Writes Baseball Logger recording JSON and a YouTube chapter bookmark .txt next to the video. If a frames folder is set, only its JPEGs are reused (sidecars ignored) and detection is recomputed; refine still reads the video."
 						   TextWrapping="Wrap"
 						   Opacity="0.8"/>
 

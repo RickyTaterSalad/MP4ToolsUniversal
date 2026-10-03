@@ -148,6 +148,7 @@ public static class HalfInningDetector
 		/// <summary>
 		/// Max gap without an empty-box-defense sample before the throw-down accumulator resets.
 		/// Default covers one missed 5s sample when YOLO mis-labels the catcher as a hitter.
+		/// Effective limit is at least 2× <see cref="SampleIntervalSeconds"/> (see throw-down gap helper).
 		/// </summary>
 		public double RoleThrowDownGapSeconds { get; set; } = 10;
 
@@ -181,14 +182,17 @@ public static class HalfInningDetector
 
 		/// <summary>
 		/// Max delay from a short empty arm to the walk-up hitter (rejects mid-inning 10–15s
-		/// YOLO blanks where the batter returns half a minute later).
+		/// YOLO blanks where the batter returns half a minute later). Also used as the
+		/// "recent batter in box" window for throw-down arming: within this gap a normal
+		/// throw-down also needs a solid LooksEmpty clear (see <see cref="RoleSolidEmptySeconds"/>).
 		/// </summary>
 		public double RoleShortEmptyWalkupSeconds { get; set; } = 25;
 
 		/// <summary>
-		/// If batter+on-deck (in-progress) was seen within this many seconds before a short
-		/// empty arm, require a solid empty instead of short-clear+quick-walkup. Covers
-		/// mid-inning YOLO dropouts that resume with a batter a few minutes later.
+		/// After batter+on-deck (in-progress), suppress <em>strong</em> throw-downs (no field
+		/// clear) and empty→hitter bookmarks for this many seconds. Mid-inning between-batter
+		/// pauses often look like empty-box catcher warmups; real half changes usually have a
+		/// LooksEmpty stretch first and still arm via the normal empty-arm throw-down path.
 		/// </summary>
 		public double RoleMidInningRiskSeconds { get; set; } = 360;
 
@@ -255,12 +259,29 @@ public static class HalfInningDetector
 		string modelPath = null,
 		string outputJsonPath = null,
 		bool writeOutputFiles = true,
-		Action<string> status = null)
+		Action<string> status = null,
+		string existingFramesDirectory = null)
 	{
 		if (string.IsNullOrWhiteSpace(videoPath) || !File.Exists(videoPath))
 			throw new FileNotFoundException("Video not found.", videoPath);
 
 		options ??= new Options();
+		if (!string.IsNullOrWhiteSpace(existingFramesDirectory))
+		{
+			return await DetectFromExistingFramesAsync(
+					videoPath,
+					existingFramesDirectory,
+					ct,
+					log,
+					progress01,
+					options,
+					modelPath,
+					outputJsonPath,
+					writeOutputFiles,
+					status)
+				.ConfigureAwait(false);
+		}
+
 		InningDetectionArtifactSession artifactSession = null;
 		if (InningDetectionArtifactRuntime.Enabled)
 		{
@@ -343,6 +364,226 @@ public static class HalfInningDetector
 	}
 
 	/// <summary>
+	/// Re-runs detection using JPEGs already on disk (session folder or a <c>frames/</c> dir).
+	/// Only the JPEGs are read — sidecar JSON/CSV/logs in the folder are ignored. Refine windows
+	/// still extract from <paramref name="videoPath"/>.
+	/// </summary>
+	public static async Task<InningDetectionResult> DetectFromExistingFramesAsync(
+		string videoPath,
+		string framesSourcePath,
+		CancellationToken ct = default,
+		Action<string> log = null,
+		Action<double> progress01 = null,
+		Options options = null,
+		string modelPath = null,
+		string outputJsonPath = null,
+		bool writeOutputFiles = true,
+		Action<string> status = null)
+	{
+		if (string.IsNullOrWhiteSpace(videoPath) || !File.Exists(videoPath))
+			throw new FileNotFoundException("Video not found.", videoPath);
+		if (!TryResolveExistingFramesDirectory(framesSourcePath, out var framesDir))
+		{
+			throw new DirectoryNotFoundException(
+				"No sample JPEGs found. Pass an inning-detect session folder (with a frames/ subfolder) " +
+				$"or a directory of .jpg snapshots: {framesSourcePath}");
+		}
+
+		options ??= new Options();
+		InningDetectionArtifactSession artifactSession = null;
+		if (InningDetectionArtifactRuntime.Enabled)
+		{
+			artifactSession = InningDetectionArtifactSession.Create(videoPath, "reuse-frames");
+			status = artifactSession.WrapStatus(status);
+		}
+
+		void Status(string message)
+		{
+			if (string.IsNullOrWhiteSpace(message))
+				return;
+			status?.Invoke(message);
+			log?.Invoke(message);
+		}
+
+		Status("Reading video duration…");
+		var durationText = await FFMpegUtils.Instance.GetFileDurationAsync(videoPath, ct, log).ConfigureAwait(false);
+		var durationSeconds = ParseDurationSeconds(durationText);
+		if (durationSeconds <= 0)
+			durationSeconds = ProbeDurationWithOpenCv(videoPath);
+
+		var sourceFrames = Directory.GetFiles(framesDir, "*.jpg").OrderBy(f => f, StringComparer.Ordinal).ToArray();
+		if (sourceFrames.Length == 0)
+			throw new InvalidOperationException($"No .jpg sample frames in {framesDir}.");
+
+		// Infer spacing from duration + count so reused packs match the original extract
+		// (UI defaults differ: combined-MP4 5s vs LRF 3s).
+		var interval = InferSampleIntervalSeconds(
+			sourceFrames.Length,
+			durationSeconds,
+			options.SampleIntervalSeconds);
+		options.SampleIntervalSeconds = interval;
+
+		Status(
+			$"Reusing {sourceFrames.Length} sample frame(s) from {framesDir} " +
+			$"(interval {interval:0.###}s, video {FormatElapsed(durationSeconds)}) — skipping extract…");
+		progress01?.Invoke(0.05);
+
+		IReadOnlyList<TimedSampleFrame> samples;
+		if (artifactSession != null)
+		{
+			Status($"Saving inning-detect debug package under {artifactSession.SessionDirectory}");
+			LinkOrCopyFramesIntoDirectory(sourceFrames, artifactSession.FramesDirectory, Status);
+			samples = LoadSamplesFromFramesDirectory(artifactSession.FramesDirectory, interval);
+		}
+		else
+		{
+			samples = LoadSamplesFromFramesDirectory(framesDir, interval);
+		}
+
+		progress01?.Invoke(0.55);
+		return await DetectFromSamplesAsync(
+				videoPath,
+				samples,
+				durationSeconds,
+				ct,
+				log,
+				p => progress01?.Invoke(0.55 + 0.45 * Math.Clamp(p, 0, 1)),
+				options,
+				modelPath,
+				outputJsonPath,
+				writeOutputFiles,
+				status,
+				refineMedia: null,
+				ownSampleFiles: false,
+				artifactSession: artifactSession)
+			.ConfigureAwait(false);
+	}
+
+	/// <summary>
+	/// Resolves a session folder (<c>…/frames/*.jpg</c>) or a directory of JPEGs.
+	/// </summary>
+	public static bool TryResolveExistingFramesDirectory(string path, out string framesDirectory)
+	{
+		framesDirectory = null;
+		if (string.IsNullOrWhiteSpace(path))
+			return false;
+
+		var trimmed = path.Trim();
+		if (!Directory.Exists(trimmed))
+			return false;
+
+		var nested = Path.Combine(trimmed, "frames");
+		if (Directory.Exists(nested) && Directory.EnumerateFiles(nested, "*.jpg").Any())
+		{
+			framesDirectory = nested;
+			return true;
+		}
+
+		if (Directory.EnumerateFiles(trimmed, "*.jpg").Any())
+		{
+			framesDirectory = trimmed;
+			return true;
+		}
+
+		return false;
+	}
+
+	public static IReadOnlyList<TimedSampleFrame> LoadSamplesFromFramesDirectory(
+		string framesDirectory,
+		double sampleIntervalSeconds)
+	{
+		if (string.IsNullOrWhiteSpace(framesDirectory) || !Directory.Exists(framesDirectory))
+			throw new DirectoryNotFoundException($"Frames directory not found: {framesDirectory}");
+
+		var frames = Directory.GetFiles(framesDirectory, "*.jpg").OrderBy(f => f, StringComparer.Ordinal).ToArray();
+		if (frames.Length == 0)
+			throw new InvalidOperationException($"No .jpg sample frames in {framesDirectory}.");
+
+		var interval = Math.Max(0.25, sampleIntervalSeconds);
+		var samples = new List<TimedSampleFrame>(frames.Length);
+		for (var i = 0; i < frames.Length; i++)
+			samples.Add(new TimedSampleFrame(frames[i], i * interval));
+		return samples;
+	}
+
+	/// <summary>
+	/// Spacing used when frames were extracted as <c>fps=1/interval</c> over <paramref name="durationSeconds"/>.
+	/// Prefers the configured interval when the frame count matches the extract (±1), so a
+	/// short pack (e.g. 1375 vs expected 1376) does not become 5.001s and break throw-down
+	/// gap math that assumes exact 2×sample spacing for one missed frame.
+	/// </summary>
+	public static double InferSampleIntervalSeconds(
+		int frameCount,
+		double durationSeconds,
+		double fallbackIntervalSeconds)
+	{
+		var fallback = Math.Max(0.25, fallbackIntervalSeconds);
+		if (frameCount <= 0 || durationSeconds <= 0.5)
+			return fallback;
+
+		// Extract expects ~ceil(duration/interval) frames at t = 0, i, 2i, …
+		var expectedCount = (int)Math.Ceiling(durationSeconds / fallback);
+		if (Math.Abs(expectedCount - frameCount) <= 1)
+			return fallback;
+
+		var inferred = durationSeconds / Math.Max(1, frameCount - 1);
+		if (inferred < 0.25 || inferred > 60)
+			return fallback;
+		// Snap to configured interval when within 2% (avoids 5.001-style drift).
+		if (Math.Abs(inferred - fallback) <= fallback * 0.02)
+			return fallback;
+		return inferred;
+	}
+
+	/// <summary>
+	/// Max gap without an empty-box-defense sample before the throw-down streak resets.
+	/// Always allows at least one missed coarse sample (2× sample interval) plus a tiny
+	/// epsilon so floating-point spacing cannot break the "one miss OK" contract.
+	/// </summary>
+	private static double ThrowDownGapLimitSeconds(Options options)
+	{
+		var sample = Math.Max(0.25, options.SampleIntervalSeconds);
+		var configured = Math.Max(0, options.RoleThrowDownGapSeconds);
+		return Math.Max(configured, sample * 2) + 0.05;
+	}
+
+	private static void LinkOrCopyFramesIntoDirectory(
+		IReadOnlyList<string> sourceFrames,
+		string destDirectory,
+		Action<string> status)
+	{
+		var sourceDir = sourceFrames.Count > 0 ? Path.GetDirectoryName(sourceFrames[0]) : null;
+		if (!string.IsNullOrWhiteSpace(sourceDir) && Directory.Exists(sourceDir))
+		{
+			try
+			{
+				// Replace the empty frames/ directory with a symlink to the source pack.
+				if (Directory.Exists(destDirectory))
+					Directory.Delete(destDirectory, recursive: false);
+				Directory.CreateSymbolicLink(destDirectory, sourceDir);
+				status?.Invoke($"Linked sample frames directory → {sourceDir}");
+				return;
+			}
+			catch
+			{
+				// Fall through to copy.
+			}
+		}
+
+		Directory.CreateDirectory(destDirectory);
+		foreach (var leftover in Directory.EnumerateFiles(destDirectory, "*.jpg"))
+			FileUtils.TryDeleteFile(leftover);
+
+		foreach (var src in sourceFrames)
+		{
+			var dest = Path.Combine(destDirectory, Path.GetFileName(src));
+			File.Copy(src, dest, overwrite: true);
+		}
+
+		status?.Invoke($"Copied {sourceFrames.Count} sample frame(s) into debug package.");
+	}
+
+	/// <summary>
 	/// Runs detection on pre-extracted timed samples (e.g. parallel per-clip extract).
 	/// Progress is 0..1 for analyze/refine/write only (extract already finished).
 	/// </summary>
@@ -416,6 +657,12 @@ public static class HalfInningDetector
 			var lastHitterSeconds = -1_000.0;
 			var lastEmptyEndSeconds = -1_000.0;
 			var lastEmptyArmStartSeconds = -1_000.0;
+			// LooksEmpty-only clear (EmptyBoxDefense must not inflate this). Used to reject
+			// mid-at-bat catcher crouches that extend a short blank into a fake side-change.
+			var lastLooksEmptyArmStartSeconds = -1_000.0;
+			var lastLooksEmptyEndSeconds = -1_000.0;
+			var bestLooksEmptyClearSeconds = 0.0;
+			var bestLooksEmptyEndSeconds = -1_000.0;
 			var lastInProgressSeconds = -1_000.0;
 			var defenseOnlySince = -1.0;
 			var throwDownSince = -1.0;
@@ -522,17 +769,29 @@ public static class HalfInningDetector
 					// throw-down tracking (mid-inning, not a new half).
 					if (signals.InningInProgress)
 					{
-						if (lastEmptyEndSeconds >= 0 || emptySince >= 0 || throwDownSince >= 0)
+						// Only advance the mid-inning risk clock when in-progress aborts an
+						// active side-change cue. Updating on every batter+on-deck frame during
+						// live play keeps the 360s gate from ever expiring before a real half
+						// change (last batter of a half often still has an on-deck hitter).
+						var abortedSideChange = lastEmptyEndSeconds >= 0
+							|| emptySince >= 0
+							|| throwDownSince >= 0
+							|| pendingThrowDownSeconds >= 0;
+						if (abortedSideChange)
 						{
 							Status(
 								$"[{FormatElapsed(elapsed)}] Inning in progress (batter in box + on-deck) — not end of half");
+							lastInProgressSeconds = elapsed;
 						}
 
-						lastInProgressSeconds = elapsed;
 						emptySince = -1;
 						longEmptySince = -1;
 						lastEmptyEndSeconds = -1;
 						lastEmptyArmStartSeconds = -1;
+						lastLooksEmptyArmStartSeconds = -1;
+						lastLooksEmptyEndSeconds = -1;
+						bestLooksEmptyClearSeconds = 0;
+						bestLooksEmptyEndSeconds = -1;
 						defenseOnlySince = -1;
 						throwDownSince = -1;
 						throwDownLastSeen = -1;
@@ -546,18 +805,55 @@ public static class HalfInningDetector
 							emptySince = elapsed;
 						else if (elapsed - emptySince >= options.RoleEmptyHoldSeconds)
 						{
-							// New clear stretch if prior arm ended before this emptySince.
+							// New clear stretch if prior arm ended before this emptySince —
+							// unless this is a brief resume after EmptyBoxDefense / YOLO flicker
+							// (same side-change). Resetting the arm start here was dropping Top 3rd
+							// on long between-half empties interrupted by one catcher frame.
 							if (lastEmptyEndSeconds < emptySince)
-								lastEmptyArmStartSeconds = emptySince;
+							{
+								var resumeGap = ThrowDownGapLimitSeconds(options);
+								var continuesPriorArm = lastEmptyArmStartSeconds >= 0
+									&& lastEmptyEndSeconds >= 0
+									&& emptySince - lastEmptyEndSeconds <= resumeGap;
+								if (!continuesPriorArm)
+									lastEmptyArmStartSeconds = emptySince;
+							}
+
 							lastEmptyEndSeconds = elapsed;
+
+							// Parallel LooksEmpty-only arm (not extended by EmptyBoxDefense).
+							if (lastLooksEmptyEndSeconds < emptySince)
+							{
+								var resumeGap = ThrowDownGapLimitSeconds(options);
+								var continuesLooksEmpty = lastLooksEmptyArmStartSeconds >= 0
+									&& lastLooksEmptyEndSeconds >= 0
+									&& emptySince - lastLooksEmptyEndSeconds <= resumeGap;
+								if (!continuesLooksEmpty)
+									lastLooksEmptyArmStartSeconds = emptySince;
+							}
+
+							lastLooksEmptyEndSeconds = elapsed;
+							// Best clear since last half — only stretches that began after the
+							// last batter left the box (true between-half empties).
+							if (lastLooksEmptyArmStartSeconds >= 0
+								&& lastHitterSeconds < lastLooksEmptyArmStartSeconds)
+							{
+								var looksClear = lastLooksEmptyEndSeconds - lastLooksEmptyArmStartSeconds;
+								if (looksClear >= bestLooksEmptyClearSeconds)
+								{
+									bestLooksEmptyClearSeconds = looksClear;
+									bestLooksEmptyEndSeconds = lastLooksEmptyEndSeconds;
+								}
+							}
 						}
 
 						defenseOnlySince = -1;
 						// Empty field is compatible with an in-progress throw-down streak (camera
-						// briefly loses the catcher). Only reset after RoleThrowDownGapSeconds.
+						// briefly loses the catcher). Only reset after the throw-down gap limit.
+						var emptyThrowDownGap = ThrowDownGapLimitSeconds(options);
 						if (throwDownSince >= 0
 							&& throwDownLastSeen >= 0
-							&& elapsed - throwDownLastSeen > options.RoleThrowDownGapSeconds)
+							&& elapsed - throwDownLastSeen > emptyThrowDownGap)
 						{
 							throwDownSince = -1;
 							throwDownLastSeen = -1;
@@ -586,7 +882,13 @@ public static class HalfInningDetector
 						// Accumulate across brief YOLO flickers (catcher↔hitter mislabels).
 						if (signals.EmptyBoxDefense)
 						{
-							var gap = options.RoleThrowDownGapSeconds;
+							// Keep the side-change empty arm alive through the throw-down ritual
+							// so empty→hitter fallback still sees a solid clear if throw-down
+							// never reaches hold (quick walk-up after a long empty).
+							if (lastEmptyEndSeconds > lastHalfSeconds)
+								lastEmptyEndSeconds = elapsed;
+
+							var gap = ThrowDownGapLimitSeconds(options);
 							if (throwDownSince < 0
 								|| (throwDownLastSeen >= 0 && elapsed - throwDownLastSeen > gap))
 							{
@@ -611,9 +913,10 @@ public static class HalfInningDetector
 						}
 						else
 						{
+							var gap = ThrowDownGapLimitSeconds(options);
 							if (throwDownSince >= 0
 								&& throwDownLastSeen >= 0
-								&& elapsed - throwDownLastSeen > options.RoleThrowDownGapSeconds)
+								&& elapsed - throwDownLastSeen > gap)
 							{
 								throwDownSince = -1;
 								throwDownLastSeen = -1;
@@ -637,6 +940,10 @@ public static class HalfInningDetector
 										$"[{FormatElapsed(elapsed)}] Clearing stale empty arm (defense without batter ≥ {options.RoleDefenseOnlyClearSeconds:0}s)");
 									lastEmptyEndSeconds = -1;
 									lastEmptyArmStartSeconds = -1;
+									lastLooksEmptyArmStartSeconds = -1;
+									lastLooksEmptyEndSeconds = -1;
+									bestLooksEmptyClearSeconds = 0;
+									bestLooksEmptyEndSeconds = -1;
 									defenseOnlySince = -1;
 								}
 							}
@@ -657,6 +964,10 @@ public static class HalfInningDetector
 					{
 						lastEmptyEndSeconds = -1;
 						lastEmptyArmStartSeconds = -1;
+						lastLooksEmptyArmStartSeconds = -1;
+						lastLooksEmptyEndSeconds = -1;
+						bestLooksEmptyClearSeconds = 0;
+						bestLooksEmptyEndSeconds = -1;
 						defenseOnlySince = -1;
 					}
 
@@ -681,6 +992,10 @@ public static class HalfInningDetector
 							throwDownAccumSeconds = 0;
 							throwDownSawPitcher = false;
 							pendingThrowDownSeconds = -1;
+							lastLooksEmptyArmStartSeconds = -1;
+							lastLooksEmptyEndSeconds = -1;
+							bestLooksEmptyClearSeconds = 0;
+							bestLooksEmptyEndSeconds = -1;
 							Status(
 								sawLeadingIntro
 									? $"[{FormatElapsed(elapsed)}] Top 1st (first defense after intro)"
@@ -696,6 +1011,11 @@ public static class HalfInningDetector
 					//  (A) normal: empty arm + short throw-down hold
 					//  (B) strong: longer catcher/pitcher empty-box stretch without empty arm
 					//      (covers knee throw-downs / mound huddles after a false in-progress wipe)
+					// Recent batter+on-deck (RoleMidInningRiskSeconds) + strong path (no field
+					// clear) ≈ between-batter pause — discard. Normal path with a LooksEmpty arm
+					// is allowed even inside the window (real half changes can follow quickly).
+					// Recent batter-in-box (RoleShortEmptyWalkupSeconds) + empty arm inflated only
+					// by EmptyBoxDefense (no solid LooksEmpty) ≈ still mid at-bat — discard.
 					if (topFirstSeeded
 						&& pendingThrowDownSeconds < 0
 						&& throwDownSince >= 0
@@ -708,46 +1028,91 @@ public static class HalfInningDetector
 							&& lastEmptyEndSeconds >= lastEmptyArmStartSeconds
 							? lastEmptyEndSeconds - lastEmptyArmStartSeconds
 							: 0;
-						var hadEmptyArm = lastEmptyEndSeconds > lastHalfSeconds
+						var classicEmptyArm = lastEmptyEndSeconds > lastHalfSeconds
 							&& lastEmptyArmStartSeconds >= 0
 							&& lastEmptyArmStartSeconds <= throwDownSince
 							&& totalClear >= options.RoleEmptyHoldSeconds;
+						var recentBatterGap = options.RoleShortEmptyWalkupSeconds
+							+ Math.Max(0, options.SampleIntervalSeconds);
+						var recentBatter = lastHitterSeconds >= 0
+							&& elapsed - lastHitterSeconds < recentBatterGap;
+						var looksEmptyNear = bestLooksEmptyEndSeconds >= 0
+							&& bestLooksEmptyEndSeconds <= throwDownSince + 0.05
+							&& throwDownSince - bestLooksEmptyEndSeconds
+							<= options.RoleEmptyBeforeHitterSeconds;
+						var looksEmptySolid = looksEmptyNear
+							&& bestLooksEmptyClearSeconds >= options.RoleSolidEmptySeconds;
+						// Mid-AB catcher crouches keep EmptyBoxDefense extending a short blank;
+						// require a real LooksEmpty clear when a batter was just in the box.
+						var hadEmptyArm = classicEmptyArm && (!recentBatter || looksEmptySolid);
 						var strongHold = Math.Max(
 							options.RoleThrowDownStrongSeconds,
 							options.RoleThrowDownHoldSeconds);
 						var strongEnough = throwDownAccumSeconds >= strongHold;
-						var normalEnough = hadEmptyArm
+						var classicNormal = classicEmptyArm
 							&& throwDownAccumSeconds >= options.RoleThrowDownHoldSeconds;
 						var wall = elapsed - throwDownSince;
-						var denseLimit = (hadEmptyArm
+						var throwDownGap = ThrowDownGapLimitSeconds(options);
+						var denseLimit = (hadEmptyArm || classicEmptyArm
 								? options.RoleThrowDownHoldSeconds
 								: strongHold)
-							+ options.RoleThrowDownGapSeconds;
+							+ throwDownGap;
 						var denseOk = wall <= denseLimit;
+						var midInningRisk = options.RoleMidInningRiskSeconds > 0
+							&& lastInProgressSeconds >= 0
+							&& elapsed - lastInProgressSeconds < options.RoleMidInningRiskSeconds;
 						// Pitcher on the mound during throw-down — real pre-half warmups /
 						// mound huddles; mid-inning catcher-only flickers often lack it.
 						if (minGapOk && denseOk && throwDownSawPitcher
-							&& (normalEnough || strongEnough))
+							&& (classicNormal || strongEnough))
 						{
-							// Bookmark near the latest throw-down sample, not the first empty-box
-							// catcher crouch (warmup often starts ~1 min before the throw).
-							pendingThrowDownSeconds = throwDownLastSeen >= 0
-								? throwDownLastSeen
-								: throwDownSince;
-							lastEmptyEndSeconds = -1;
-							lastEmptyArmStartSeconds = -1;
-							defenseOnlySince = -1;
-							Status(
-								strongEnough && !hadEmptyArm
-									? $"[{FormatElapsed(pendingThrowDownSeconds)}] Throw-down pending (strong empty-box defense) — waiting for batter"
-									: $"[{FormatElapsed(pendingThrowDownSeconds)}] Throw-down pending (empty box + catcher/pitcher) — waiting for batter");
-							// Keep throwDownLastSeen so we can refuse early batter confirms while
-							// the ritual is still ongoing, and slide pending on later TD frames.
-							throwDownSince = -1;
-							throwDownAccumSeconds = 0;
-							throwDownSawPitcher = false;
+							// Mid-at-bat empty-box catcher: batter was just in the box and there
+							// was no solid LooksEmpty field clear (Coyotes false Top 2nd @28:05).
+							if (recentBatter && !looksEmptySolid)
+							{
+								Status(
+									$"[{FormatElapsed(elapsed)}] Ignoring throw-down (batter in box within {recentBatterGap:0}s, no solid LooksEmpty clear) — not end of half");
+								throwDownSince = -1;
+								throwDownLastSeen = -1;
+								throwDownAccumSeconds = 0;
+								throwDownSawPitcher = false;
+							}
+							// Only suppress strong (no empty clear) throw-downs under mid-inning
+							// risk. Coyotes Top 3rd is a normal empty-arm throw-down ~2 min after
+							// the last in-progress signal — must not be ignored.
+							else if (midInningRisk && !classicEmptyArm)
+							{
+								Status(
+									$"[{FormatElapsed(elapsed)}] Ignoring strong throw-down (in progress within {options.RoleMidInningRiskSeconds:0}s, no field clear) — not end of half");
+								throwDownSince = -1;
+								throwDownLastSeen = -1;
+								throwDownAccumSeconds = 0;
+								throwDownSawPitcher = false;
+							}
+							else
+							{
+								// Bookmark near the latest throw-down sample, not the first empty-box
+								// catcher crouch (warmup often starts ~1 min before the throw).
+								pendingThrowDownSeconds = throwDownLastSeen >= 0
+									? throwDownLastSeen
+									: throwDownSince;
+								lastEmptyEndSeconds = -1;
+								lastEmptyArmStartSeconds = -1;
+								lastLooksEmptyArmStartSeconds = -1;
+								lastLooksEmptyEndSeconds = -1;
+								defenseOnlySince = -1;
+								Status(
+									strongEnough && !hadEmptyArm
+										? $"[{FormatElapsed(pendingThrowDownSeconds)}] Throw-down pending (strong empty-box defense) — waiting for batter"
+										: $"[{FormatElapsed(pendingThrowDownSeconds)}] Throw-down pending (empty box + catcher/pitcher) — waiting for batter");
+								// Keep throwDownLastSeen so we can refuse early batter confirms while
+								// the ritual is still ongoing, and slide pending on later TD frames.
+								throwDownSince = -1;
+								throwDownAccumSeconds = 0;
+								throwDownSawPitcher = false;
+							}
 						}
-						else if (!minGapOk || wall > strongHold + options.RoleThrowDownGapSeconds)
+						else if (!minGapOk || wall > strongHold + throwDownGap)
 						{
 							throwDownSince = -1;
 							throwDownLastSeen = -1;
@@ -763,11 +1128,13 @@ public static class HalfInningDetector
 						// defense has paused long enough that the throw-down ritual finished.
 						var pauseNeed = Math.Max(
 							options.RoleThrowDownPauseSeconds,
-							options.RoleThrowDownGapSeconds);
+							ThrowDownGapLimitSeconds(options));
 						var throwDownPaused = throwDownLastSeen < 0
 							|| elapsed - throwDownLastSeen >= pauseNeed;
 
 						// Confirm pending throw-down with the first batter walk-up after ritual.
+						// Mid-inning risk is applied only at arm time (strong path); normal
+						// empty-arm pendings may sit inside the window and must still confirm.
 						if (topFirstSeeded
 							&& pendingThrowDownSeconds >= 0
 							&& throwDownPaused
@@ -786,6 +1153,10 @@ public static class HalfInningDetector
 							defenseOnlySince = -1;
 							lastEmptyArmStartSeconds = -1;
 							lastEmptyEndSeconds = -1;
+							lastLooksEmptyArmStartSeconds = -1;
+							lastLooksEmptyEndSeconds = -1;
+							bestLooksEmptyClearSeconds = 0;
+							bestLooksEmptyEndSeconds = -1;
 							Status(
 								$"[{FormatElapsed(hitAt)}] Half-inning start (catcher throw-down, confirmed by batter at {FormatElapsed(elapsed)}) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
 						}
@@ -807,7 +1178,12 @@ public static class HalfInningDetector
 								: 0;
 							// Fallback only after a long clear — throw-down is the primary cue.
 							var emptyQualityOk = totalClear >= Math.Max(options.RoleSolidEmptySeconds * 2, 40);
-							var emptyBeforeOk = emptyAgeOk && emptyQualityOk;
+							// Same mid-inning gate as throw-down: between-batter blanks after
+							// batter+on-deck must not bookmark via empty→hitter either.
+							var midInningRisk = options.RoleMidInningRiskSeconds > 0
+								&& lastInProgressSeconds >= 0
+								&& elapsed - lastInProgressSeconds < options.RoleMidInningRiskSeconds;
+							var emptyBeforeOk = emptyAgeOk && emptyQualityOk && !midInningRisk;
 
 							if (topFirstSeeded && noHitterGapOk && emptyBeforeOk && minGapOk
 								&& pendingThrowDownSeconds < 0)
@@ -828,6 +1204,10 @@ public static class HalfInningDetector
 								throwDownAccumSeconds = 0;
 								throwDownSawPitcher = false;
 								lastEmptyArmStartSeconds = -1;
+								lastLooksEmptyArmStartSeconds = -1;
+								lastLooksEmptyEndSeconds = -1;
+								bestLooksEmptyClearSeconds = 0;
+								bestLooksEmptyEndSeconds = -1;
 								if (earliest < elapsed - 0.05)
 								{
 									Status(
@@ -846,6 +1226,8 @@ public static class HalfInningDetector
 							{
 								lastEmptyEndSeconds = -1;
 								lastEmptyArmStartSeconds = -1;
+								lastLooksEmptyArmStartSeconds = -1;
+								lastLooksEmptyEndSeconds = -1;
 								defenseOnlySince = -1;
 							}
 						}
