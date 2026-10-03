@@ -116,16 +116,45 @@ public static class HalfInningDetector
 		public double EmptyFieldHoldSeconds { get; set; } = 15;
 
 		/// <summary>
-		/// Roles mode: how long PHC must see no hitter/pitcher/catcher before counting as an
-		/// empty (side-change) stretch. Shorter arms the next half-start sooner.
+		/// Roles mode: how long PHC must see no hitter, no pitcher, and no plate-area catcher
+		/// before counting as an empty (side-change) stretch. Dugout false catchers are ignored
+		/// (see <see cref="BuildFrameSignals"/>).
 		/// </summary>
-		public double RoleEmptyHoldSeconds { get; set; } = 20;
+		public double RoleEmptyHoldSeconds { get; set; } = 10;
 
 		/// <summary>
 		/// Roles mode: a new half-inning hitter must occur within this many seconds after an
-		/// empty stretch ends.
+		/// empty stretch ends. Kept tight so mid-inning YOLO dropouts that arm empty cannot
+		/// bookmark a batter returning minutes later.
 		/// </summary>
-		public double RoleEmptyBeforeHitterSeconds { get; set; } = 150;
+		public double RoleEmptyBeforeHitterSeconds { get; set; } = 100;
+
+		/// <summary>
+		/// After an empty arm, if defense (plate catcher / pitcher) is visible without a batter
+		/// for this long, drop the arm. Mid-inning YOLO blanks often resume as catcher-only for
+		/// minutes before the next batter; real side-change warmups are shorter.
+		/// </summary>
+		public double RoleDefenseOnlyClearSeconds { get; set; } = 100;
+
+		/// <summary>
+		/// Empty stretches shorter than this only count as a side-change if the next batter
+		/// arrives within <see cref="RoleShortEmptyWalkupSeconds"/>. Longer clears may wait up
+		/// to <see cref="RoleEmptyBeforeHitterSeconds"/>.
+		/// </summary>
+		public double RoleSolidEmptySeconds { get; set; } = 20;
+
+		/// <summary>
+		/// Max delay from a short empty arm to the walk-up hitter (rejects mid-inning 10–15s
+		/// YOLO blanks where the batter returns half a minute later).
+		/// </summary>
+		public double RoleShortEmptyWalkupSeconds { get; set; } = 25;
+
+		/// <summary>
+		/// If batter+on-deck (in-progress) was seen within this many seconds before a short
+		/// empty arm, require a solid empty instead of short-clear+quick-walkup. Covers
+		/// mid-inning YOLO dropouts that resume with a batter a few minutes later.
+		/// </summary>
+		public double RoleMidInningRiskSeconds { get; set; } = 360;
 
 		/// <summary>
 		/// Roles mode: minimum time without a hitter detection before the next hitter can open
@@ -350,6 +379,9 @@ public static class HalfInningDetector
 			var lastHalfSeconds = -1_000.0;
 			var lastHitterSeconds = -1_000.0;
 			var lastEmptyEndSeconds = -1_000.0;
+			var lastEmptyArmStartSeconds = -1_000.0;
+			var lastInProgressSeconds = -1_000.0;
+			var defenseOnlySince = -1.0;
 			var longEmptySince = -1.0;
 			var introStreak = 0;
 			var skippingIntro = false;
@@ -454,16 +486,26 @@ public static class HalfInningDetector
 								$"[{FormatElapsed(elapsed)}] Inning in progress (batter in box + on-deck) — not end of half");
 						}
 
+						lastInProgressSeconds = elapsed;
 						emptySince = -1;
 						longEmptySince = -1;
 						lastEmptyEndSeconds = -1;
+						lastEmptyArmStartSeconds = -1;
+						defenseOnlySince = -1;
 					}
 					else if (signals.LooksEmpty)
 					{
 						if (emptySince < 0)
 							emptySince = elapsed;
 						else if (elapsed - emptySince >= options.RoleEmptyHoldSeconds)
+						{
+							// New clear stretch if prior arm ended before this emptySince.
+							if (lastEmptyEndSeconds < emptySince)
+								lastEmptyArmStartSeconds = emptySince;
 							lastEmptyEndSeconds = elapsed;
+						}
+
+						defenseOnlySince = -1;
 
 						if (longEmptySince < 0)
 							longEmptySince = elapsed;
@@ -480,6 +522,39 @@ public static class HalfInningDetector
 					{
 						emptySince = -1;
 						longEmptySince = -1;
+
+						// Defense visible again after an empty arm, still no batter — if this
+						// lasts too long the empty was a mid-inning dropout, not a side change.
+						if (lastEmptyEndSeconds > lastHalfSeconds
+							&& signals.DefenseReady
+							&& !signals.BatterPresent)
+						{
+							if (defenseOnlySince < 0)
+								defenseOnlySince = elapsed;
+							else if (options.RoleDefenseOnlyClearSeconds > 0
+								&& elapsed - defenseOnlySince >= options.RoleDefenseOnlyClearSeconds)
+							{
+								Status(
+									$"[{FormatElapsed(elapsed)}] Clearing stale empty arm (defense without batter ≥ {options.RoleDefenseOnlyClearSeconds:0}s)");
+								lastEmptyEndSeconds = -1;
+								lastEmptyArmStartSeconds = -1;
+								defenseOnlySince = -1;
+							}
+						}
+						else
+						{
+							defenseOnlySince = -1;
+						}
+					}
+
+					// Drop stale side-change arms: a mid-inning YOLO blank can arm empty, then a
+					// batter minutes later must not bookmark a new half.
+					if (lastEmptyEndSeconds >= 0
+						&& elapsed - lastEmptyEndSeconds > options.RoleEmptyBeforeHitterSeconds)
+					{
+						lastEmptyEndSeconds = -1;
+						lastEmptyArmStartSeconds = -1;
+						defenseOnlySince = -1;
 					}
 
 					if (options.AssumeTopFirstAtGameStart && !topFirstSeeded)
@@ -502,8 +577,25 @@ public static class HalfInningDetector
 					{
 						var noHitterGapOk = lastHitterSeconds < 0
 							|| elapsed - lastHitterSeconds >= options.RoleNoHitterGapSeconds;
-						var emptyBeforeOk = lastEmptyEndSeconds > lastHalfSeconds
+						var emptyAgeOk = lastEmptyEndSeconds > lastHalfSeconds
 							&& elapsed - lastEmptyEndSeconds <= options.RoleEmptyBeforeHitterSeconds;
+						// Arm start is original emptySince; lastEmptyEnd advances while still clear.
+						var totalClear = lastEmptyArmStartSeconds >= 0
+							&& lastEmptyEndSeconds >= lastEmptyArmStartSeconds
+							? lastEmptyEndSeconds - lastEmptyArmStartSeconds
+							: 0;
+						var quickWalkup = elapsed - lastEmptyEndSeconds
+							<= options.RoleShortEmptyWalkupSeconds;
+						// Short clear + quick walk-up is OK at a real side change, but mid-inning
+						// YOLO blanks often look the same shortly after batter+on-deck play.
+						// If in-progress was seen recently before this clear, require a solid empty.
+						var midInningRisk = lastInProgressSeconds > lastHalfSeconds
+							&& lastEmptyArmStartSeconds > lastInProgressSeconds
+							&& lastEmptyArmStartSeconds - lastInProgressSeconds
+							<= options.RoleMidInningRiskSeconds;
+						var emptyQualityOk = totalClear >= options.RoleSolidEmptySeconds
+							|| (quickWalkup && !midInningRisk);
+						var emptyBeforeOk = emptyAgeOk && emptyQualityOk;
 						var minGapOk = elapsed - lastHalfSeconds >= options.RoleMinSecondsBetweenHalfInnings;
 
 						if (topFirstSeeded && noHitterGapOk && emptyBeforeOk && minGapOk)
@@ -520,6 +612,8 @@ public static class HalfInningDetector
 								ct);
 							halfStarts.Add(earliest);
 							lastHalfSeconds = earliest;
+							defenseOnlySince = -1;
+							lastEmptyArmStartSeconds = -1;
 							if (earliest < elapsed - 0.05)
 							{
 								Status(
@@ -530,6 +624,14 @@ public static class HalfInningDetector
 								Status(
 									$"[{FormatElapsed(earliest)}] Half-inning start (hitter after empty) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
 							}
+						}
+						else if (lastEmptyEndSeconds > lastHalfSeconds && !emptyBeforeOk)
+						{
+							// Batter resumed outside the empty→hitter window — consume the arm so
+							// it cannot latch onto a later mid-inning hitter.
+							lastEmptyEndSeconds = -1;
+							lastEmptyArmStartSeconds = -1;
+							defenseOnlySince = -1;
 						}
 
 						lastHitterSeconds = elapsed;
@@ -908,10 +1010,20 @@ public static class HalfInningDetector
 				|| (hitterInBox && hittersOutsideBox > 0);
 			// Lone on-deck hitter is not "batter present" for half-start bookmarks.
 			var batterPresent = hitterInBox || (hasHitter && !onDeckPresent);
+			// Plate-area catcher only — dugout/sideline "catcher" FPs are common on this angle
+			// and were blocking real side-change empties while also not being real defense.
+			var catcherAtPlate = CountClassInRoiAbove(
+					detections, "catcher", options.RoleCatcherConfidence, frameW, frameH, options.BatterApproachRoi)
+				+ CountClassInRoiAbove(
+					detections, "catcher", options.RoleCatcherConfidence, frameW, frameH, options.BatterBoxRoi)
+				> 0;
 			// BaseballCV PHC often misses the distant mound pitcher on kids/backstop wide shots;
 			// catcher gear is larger and more reliable as a "defense is out" proxy.
-			var defenseReady = hasPitcher || hasCatcher;
-			var looksEmpty = !hasPitcher && !hasHitter && !hasCatcher;
+			var defenseReady = hasPitcher || catcherAtPlate;
+			// Side-change empty: no hitter and no plate catcher. Pitcher-only (mound warmup) still
+			// counts as empty so brief side changes aren't blocked; dugout catcher FPs ignored.
+			// Mid-inning false arms are filtered by solid-empty / mid-inning-risk gates above.
+			var looksEmpty = !hasHitter && !catcherAtPlate;
 			var inningInProgress = options.UseOnDeckInProgressSignal && hitterInBox && onDeckPresent;
 			return new FrameSignals(
 				hasHitter, hasPitcher, hasCatcher, batterPresent, defenseReady, looksEmpty,
@@ -1166,9 +1278,10 @@ public static class HalfInningDetector
 			if (frames.Length == 0)
 				return coarseHitSeconds;
 
-			// Collect candidate (time, score) frames where a batter/hitter is present.
-			var candidates = new List<(double Time, float Confidence, bool InBox, bool AfterEmpty)>();
-			var sawEmptyLeadIn = false;
+			// Collect batter-present samples, then bookmark the start of the contiguous run that
+			// contains (or immediately precedes) the coarse hit. Taking the earliest after-empty
+			// flicker in the lookback window was snapping to false mid-warmup hitters ~45s early.
+			var batterSamples = new List<(double Time, float Confidence, bool InBox)>();
 			var localToGame = windowStart - extractLocalStart;
 
 			for (var i = 0; i < frames.Length; i++)
@@ -1189,65 +1302,115 @@ public static class HalfInningDetector
 				var signals = BuildFrameSignals(detections, mat.Width, mat.Height, options, useRoles);
 
 				if (!signals.BatterPresent)
-				{
-					sawEmptyLeadIn = true;
 					continue;
-				}
 
 				var confidence = BestBatterConfidence(detections, useRoles, mat.Width, mat.Height, options);
 				var inBox = useRoles
 					? CountClassInRoi(detections, "hitter", mat.Width, mat.Height, options.BatterBoxRoi) > 0
 					: CountInRoi(detections, mat.Width, mat.Height, options.BatterBoxRoi) > 0;
-				candidates.Add((t, confidence, inBox, sawEmptyLeadIn));
+				batterSamples.Add((t, confidence, inBox));
 			}
 
-			if (candidates.Count == 0)
+			if (batterSamples.Count == 0)
 				return coarseHitSeconds;
 
-			// Prefer earliest empty→batter transition; then in-box + confidence.
-			// Use role hitter gate (not the stricter person ConfidenceThreshold) so refine can
-			// snap earlier on weak dusk/LRF hitter scores.
 			var minConfidence = useRoles
 				? options.RoleHitterConfidence
 				: options.ConfidenceThreshold;
 
-			static double PickBest(
-				IReadOnlyList<(double Time, float Confidence, bool InBox, bool AfterEmpty)> list,
-				float minConf)
-			{
-				var ordered = list
-					.OrderBy(c => c.Time)
-					.ThenByDescending(c => c.InBox)
-					.ThenByDescending(c => c.Confidence)
-					.ToList();
-				foreach (var c in ordered)
-				{
-					if (c.Confidence >= minConf && c.InBox)
-						return c.Time;
-				}
-
-				foreach (var c in ordered)
-				{
-					if (c.Confidence >= minConf)
-						return c.Time;
-				}
-
-				// Prefer earliest candidate even if below gate — err early once a batter was seen.
-				return ordered[0].Time;
-			}
-
-			var afterEmpty = candidates.Where(c => c.AfterEmpty).ToList();
-			if (afterEmpty.Count > 0)
-				return PickBest(afterEmpty, minConfidence);
-
-			// Window opened already on a batter — earliest confident / in-box sample.
-			return PickBest(candidates, minConfidence);
+			return PickRefineBatterRunStart(batterSamples, coarseHitSeconds, refineInterval, minConfidence);
 		}
 		finally
 		{
 			if (!keepRefine)
 				TempPathHelper.DeleteTemporaryDirectoryUnlessRetained(refineDir, recursive: true);
 		}
+	}
+
+	/// <summary>
+	/// Picks the start of the batter-present run that contains the coarse hit, or the last run
+	/// that ends at/before the coarse hit. Ignores earlier isolated flickers in the lookback.
+	/// </summary>
+	private static double PickRefineBatterRunStart(
+		IReadOnlyList<(double Time, float Confidence, bool InBox)> batterSamples,
+		double coarseHitSeconds,
+		double refineInterval,
+		float minConfidence)
+	{
+		if (batterSamples == null || batterSamples.Count == 0)
+			return coarseHitSeconds;
+
+		var gapTol = Math.Max(refineInterval * 1.5, 0.75);
+		var runs = new List<(double Start, double End, float BestConf, bool AnyInBox)>();
+		double runStart = batterSamples[0].Time;
+		double runEnd = batterSamples[0].Time;
+		float bestConf = batterSamples[0].Confidence;
+		var anyInBox = batterSamples[0].InBox;
+
+		for (var i = 1; i < batterSamples.Count; i++)
+		{
+			var s = batterSamples[i];
+			if (s.Time - runEnd <= gapTol)
+			{
+				runEnd = s.Time;
+				if (s.Confidence > bestConf)
+					bestConf = s.Confidence;
+				anyInBox |= s.InBox;
+			}
+			else
+			{
+				runs.Add((runStart, runEnd, bestConf, anyInBox));
+				runStart = s.Time;
+				runEnd = s.Time;
+				bestConf = s.Confidence;
+				anyInBox = s.InBox;
+			}
+		}
+
+		runs.Add((runStart, runEnd, bestConf, anyInBox));
+
+		// Prefer a confident in-box run that covers the coarse hit.
+		foreach (var run in runs)
+		{
+			if (run.Start <= coarseHitSeconds + 0.001
+				&& run.End >= coarseHitSeconds - gapTol
+				&& run.BestConf >= minConfidence
+				&& run.AnyInBox)
+			{
+				return run.Start;
+			}
+		}
+
+		foreach (var run in runs)
+		{
+			if (run.Start <= coarseHitSeconds + 0.001
+				&& run.End >= coarseHitSeconds - gapTol
+				&& run.BestConf >= minConfidence)
+			{
+				return run.Start;
+			}
+		}
+
+		// Otherwise the last qualifying run at or before the coarse hit (skip early flickers).
+		for (var i = runs.Count - 1; i >= 0; i--)
+		{
+			var run = runs[i];
+			if (run.Start <= coarseHitSeconds + 0.001
+				&& run.BestConf >= minConfidence
+				&& run.AnyInBox)
+			{
+				return run.Start;
+			}
+		}
+
+		for (var i = runs.Count - 1; i >= 0; i--)
+		{
+			var run = runs[i];
+			if (run.Start <= coarseHitSeconds + 0.001 && run.BestConf >= minConfidence)
+				return run.Start;
+		}
+
+		return coarseHitSeconds;
 	}
 
 	/// <summary>
