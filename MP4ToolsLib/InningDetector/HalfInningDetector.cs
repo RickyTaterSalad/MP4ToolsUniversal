@@ -130,11 +130,47 @@ public static class HalfInningDetector
 		public double RoleEmptyBeforeHitterSeconds { get; set; } = 100;
 
 		/// <summary>
-		/// After an empty arm, if defense (plate catcher / pitcher) is visible without a batter
-		/// for this long, drop the arm. Mid-inning YOLO blanks often resume as catcher-only for
-		/// minutes before the next batter; real side-change warmups are shorter.
+		/// After an empty arm, if defense is visible without a batter but this is <em>not</em>
+		/// an empty-box plate-catcher throw-down (see <see cref="RoleThrowDownHoldSeconds"/>),
+		/// drop the arm after this many seconds. Mid-inning YOLO blanks often resume as
+		/// catcher-only for minutes before the next batter.
 		/// </summary>
 		public double RoleDefenseOnlyClearSeconds { get; set; } = 100;
+
+		/// <summary>
+		/// Roles mode: accumulated plate-catcher + empty-box time needed to count as the
+		/// pre-half throw-down (catcher throws to second, umpire not set). PHC often flickers
+		/// catcher/hitter labels, so time accumulates across brief gaps (see
+		/// <see cref="RoleThrowDownGapSeconds"/>). Bookmark at the start of that stretch.
+		/// </summary>
+		public double RoleThrowDownHoldSeconds { get; set; } = 15;
+
+		/// <summary>
+		/// Max gap without an empty-box-defense sample before the throw-down accumulator resets.
+		/// Default covers one missed 5s sample when YOLO mis-labels the catcher as a hitter.
+		/// </summary>
+		public double RoleThrowDownGapSeconds { get; set; } = 10;
+
+		/// <summary>
+		/// How long after a pending throw-down a batter may appear to confirm the half start.
+		/// Longer than <see cref="RoleEmptyBeforeHitterSeconds"/> so slow kids walk-ups still
+		/// confirm; mid-inning false pendings rarely get a clean batter-in-box that late.
+		/// </summary>
+		public double RoleThrowDownConfirmSeconds { get; set; } = 120;
+
+		/// <summary>
+		/// After the last empty-box-defense sample, wait this long before a batter can confirm.
+		/// Prevents false hitters during warmup from locking the bookmark before the real
+		/// throw-down (often ~1 min after the catcher first sets with an empty box).
+		/// </summary>
+		public double RoleThrowDownPauseSeconds { get; set; } = 20;
+
+		/// <summary>
+		/// Longer empty-box + catcher/pitcher stretch that can arm a throw-down even when the
+		/// prior empty arm was wiped (e.g. false in-progress). Covers knee throw-downs and
+		/// mound huddles that only happen immediately before a half starts.
+		/// </summary>
+		public double RoleThrowDownStrongSeconds { get; set; } = 25;
 
 		/// <summary>
 		/// Empty stretches shorter than this only count as a side-change if the next batter
@@ -382,6 +418,11 @@ public static class HalfInningDetector
 			var lastEmptyArmStartSeconds = -1_000.0;
 			var lastInProgressSeconds = -1_000.0;
 			var defenseOnlySince = -1.0;
+			var throwDownSince = -1.0;
+			var throwDownLastSeen = -1.0;
+			var throwDownAccumSeconds = 0.0;
+			var throwDownSawPitcher = false;
+			var pendingThrowDownSeconds = -1.0;
 			var longEmptySince = -1.0;
 			var introStreak = 0;
 			var skippingIntro = false;
@@ -403,7 +444,7 @@ public static class HalfInningDetector
 
 			Status(
 				useRoles
-					? "Scanning for half-innings (empty end-of-half → hitter start; on-deck+box = in progress; catcher = defense)…"
+					? "Scanning for half-innings (empty→hitter; catcher throw-down + empty box; on-deck+box = in progress)…"
 					: "Scanning for later half-innings (field clear → warmup → first batter in box)…");
 
 			for (var i = 0; i < samples.Count; i++)
@@ -474,13 +515,14 @@ public static class HalfInningDetector
 
 				if (useRoles)
 				{
-					// Tuned kids/backstop PHC path: bookmark uses BOTH sides of the transition —
-					// (1) end-of-half = sustained empty (no H/P/C), then (2) start-of-half =
-					// hitter return. Batter-in-box + on-deck hitter means play is ongoing, so
-					// wipe empty/side-change tracking (mid-inning, not a new half).
+					// Tuned kids/backstop PHC path: bookmark uses either
+					// (A) empty end-of-half → hitter return, or
+					// (B) catcher throw-down with empty batter's box (last ritual before a half).
+					// Batter-in-box + on-deck hitter means play is ongoing, so wipe empty /
+					// throw-down tracking (mid-inning, not a new half).
 					if (signals.InningInProgress)
 					{
-						if (lastEmptyEndSeconds >= 0 || emptySince >= 0)
+						if (lastEmptyEndSeconds >= 0 || emptySince >= 0 || throwDownSince >= 0)
 						{
 							Status(
 								$"[{FormatElapsed(elapsed)}] Inning in progress (batter in box + on-deck) — not end of half");
@@ -492,6 +534,11 @@ public static class HalfInningDetector
 						lastEmptyEndSeconds = -1;
 						lastEmptyArmStartSeconds = -1;
 						defenseOnlySince = -1;
+						throwDownSince = -1;
+						throwDownLastSeen = -1;
+						throwDownAccumSeconds = 0;
+						throwDownSawPitcher = false;
+						pendingThrowDownSeconds = -1;
 					}
 					else if (signals.LooksEmpty)
 					{
@@ -506,6 +553,17 @@ public static class HalfInningDetector
 						}
 
 						defenseOnlySince = -1;
+						// Empty field is compatible with an in-progress throw-down streak (camera
+						// briefly loses the catcher). Only reset after RoleThrowDownGapSeconds.
+						if (throwDownSince >= 0
+							&& throwDownLastSeen >= 0
+							&& elapsed - throwDownLastSeen > options.RoleThrowDownGapSeconds)
+						{
+							throwDownSince = -1;
+							throwDownLastSeen = -1;
+							throwDownAccumSeconds = 0;
+							throwDownSawPitcher = false;
+						}
 
 						if (longEmptySince < 0)
 							longEmptySince = elapsed;
@@ -523,38 +581,92 @@ public static class HalfInningDetector
 						emptySince = -1;
 						longEmptySince = -1;
 
-						// Defense visible again after an empty arm, still no batter — if this
-						// lasts too long the empty was a mid-inning dropout, not a side change.
-						if (lastEmptyEndSeconds > lastHalfSeconds
-							&& signals.DefenseReady
-							&& !signals.BatterPresent)
+						// Catcher at plate + empty box = throw-down / pre-half defense warmup.
+						// Do not clear the empty arm for this — it is the real side-change cue.
+						// Accumulate across brief YOLO flickers (catcher↔hitter mislabels).
+						if (signals.EmptyBoxDefense)
 						{
-							if (defenseOnlySince < 0)
-								defenseOnlySince = elapsed;
-							else if (options.RoleDefenseOnlyClearSeconds > 0
-								&& elapsed - defenseOnlySince >= options.RoleDefenseOnlyClearSeconds)
+							var gap = options.RoleThrowDownGapSeconds;
+							if (throwDownSince < 0
+								|| (throwDownLastSeen >= 0 && elapsed - throwDownLastSeen > gap))
 							{
-								Status(
-									$"[{FormatElapsed(elapsed)}] Clearing stale empty arm (defense without batter ≥ {options.RoleDefenseOnlyClearSeconds:0}s)");
-								lastEmptyEndSeconds = -1;
-								lastEmptyArmStartSeconds = -1;
-								defenseOnlySince = -1;
+								throwDownSince = elapsed;
+								throwDownAccumSeconds = 0;
+								throwDownSawPitcher = false;
 							}
+
+							var step = options.SampleIntervalSeconds > 0
+								? options.SampleIntervalSeconds
+								: 5;
+							if (throwDownLastSeen < 0 || elapsed > throwDownLastSeen + 0.05)
+								throwDownAccumSeconds += step;
+							throwDownLastSeen = elapsed;
+							if (signals.HasPitcher)
+								throwDownSawPitcher = true;
+							// Slide pending bookmark to the latest throw-down frame — early
+							// empty-box catcher crouch is before the actual throw to second.
+							if (pendingThrowDownSeconds >= 0)
+								pendingThrowDownSeconds = elapsed;
+							defenseOnlySince = -1;
 						}
 						else
 						{
-							defenseOnlySince = -1;
+							if (throwDownSince >= 0
+								&& throwDownLastSeen >= 0
+								&& elapsed - throwDownLastSeen > options.RoleThrowDownGapSeconds)
+							{
+								throwDownSince = -1;
+								throwDownLastSeen = -1;
+								throwDownAccumSeconds = 0;
+								throwDownSawPitcher = false;
+							}
+
+							// Defense visible again after an empty arm, still no batter, but not
+							// a plate-catcher throw-down — if this lasts too long the empty was a
+							// mid-inning dropout, not a side change.
+							if (lastEmptyEndSeconds > lastHalfSeconds
+								&& signals.DefenseReady
+								&& !signals.BatterPresent)
+							{
+								if (defenseOnlySince < 0)
+									defenseOnlySince = elapsed;
+								else if (options.RoleDefenseOnlyClearSeconds > 0
+									&& elapsed - defenseOnlySince >= options.RoleDefenseOnlyClearSeconds)
+								{
+									Status(
+										$"[{FormatElapsed(elapsed)}] Clearing stale empty arm (defense without batter ≥ {options.RoleDefenseOnlyClearSeconds:0}s)");
+									lastEmptyEndSeconds = -1;
+									lastEmptyArmStartSeconds = -1;
+									defenseOnlySince = -1;
+								}
+							}
+							else
+							{
+								defenseOnlySince = -1;
+							}
 						}
 					}
 
 					// Drop stale side-change arms: a mid-inning YOLO blank can arm empty, then a
-					// batter minutes later must not bookmark a new half.
+					// batter minutes later must not bookmark a new half. Keep the arm while a
+					// throw-down is in progress (empty-box catcher).
 					if (lastEmptyEndSeconds >= 0
+						&& throwDownSince < 0
+						&& pendingThrowDownSeconds < 0
 						&& elapsed - lastEmptyEndSeconds > options.RoleEmptyBeforeHitterSeconds)
 					{
 						lastEmptyEndSeconds = -1;
 						lastEmptyArmStartSeconds = -1;
 						defenseOnlySince = -1;
+					}
+
+					// Pending throw-down expires if no batter walk-up follows (mid-inning false arm).
+					if (pendingThrowDownSeconds >= 0
+						&& elapsed - pendingThrowDownSeconds > options.RoleThrowDownConfirmSeconds)
+					{
+						Status(
+							$"[{FormatElapsed(elapsed)}] Clearing stale throw-down pending ({FormatElapsed(pendingThrowDownSeconds)}) — no batter walk-up");
+						pendingThrowDownSeconds = -1;
 					}
 
 					if (options.AssumeTopFirstAtGameStart && !topFirstSeeded)
@@ -564,6 +676,11 @@ public static class HalfInningDetector
 							halfStarts.Add(elapsed);
 							lastHalfSeconds = elapsed;
 							topFirstSeeded = true;
+							throwDownSince = -1;
+							throwDownLastSeen = -1;
+							throwDownAccumSeconds = 0;
+							throwDownSawPitcher = false;
+							pendingThrowDownSeconds = -1;
 							Status(
 								sawLeadingIntro
 									? $"[{FormatElapsed(elapsed)}] Top 1st (first defense after intro)"
@@ -573,65 +690,164 @@ public static class HalfInningDetector
 						continue;
 					}
 
-					if (signals.BatterPresent)
+					// Arm a pending throw-down (do not bookmark yet). Mid-inning empty→catcher
+					// flickers look the same; confirming with a later batter walk-up rejects those.
+					// Two paths:
+					//  (A) normal: empty arm + short throw-down hold
+					//  (B) strong: longer catcher/pitcher empty-box stretch without empty arm
+					//      (covers knee throw-downs / mound huddles after a false in-progress wipe)
+					if (topFirstSeeded
+						&& pendingThrowDownSeconds < 0
+						&& throwDownSince >= 0
+						&& options.RoleThrowDownHoldSeconds > 0
+						&& throwDownAccumSeconds >= options.RoleThrowDownHoldSeconds)
 					{
-						var noHitterGapOk = lastHitterSeconds < 0
-							|| elapsed - lastHitterSeconds >= options.RoleNoHitterGapSeconds;
-						var emptyAgeOk = lastEmptyEndSeconds > lastHalfSeconds
-							&& elapsed - lastEmptyEndSeconds <= options.RoleEmptyBeforeHitterSeconds;
-						// Arm start is original emptySince; lastEmptyEnd advances while still clear.
+						var minGapOk = throwDownSince - lastHalfSeconds
+							>= options.RoleMinSecondsBetweenHalfInnings;
 						var totalClear = lastEmptyArmStartSeconds >= 0
 							&& lastEmptyEndSeconds >= lastEmptyArmStartSeconds
 							? lastEmptyEndSeconds - lastEmptyArmStartSeconds
 							: 0;
-						var quickWalkup = elapsed - lastEmptyEndSeconds
-							<= options.RoleShortEmptyWalkupSeconds;
-						// Short clear + quick walk-up is OK at a real side change, but mid-inning
-						// YOLO blanks often look the same shortly after batter+on-deck play.
-						// If in-progress was seen recently before this clear, require a solid empty.
-						var midInningRisk = lastInProgressSeconds > lastHalfSeconds
-							&& lastEmptyArmStartSeconds > lastInProgressSeconds
-							&& lastEmptyArmStartSeconds - lastInProgressSeconds
-							<= options.RoleMidInningRiskSeconds;
-						var emptyQualityOk = totalClear >= options.RoleSolidEmptySeconds
-							|| (quickWalkup && !midInningRisk);
-						var emptyBeforeOk = emptyAgeOk && emptyQualityOk;
-						var minGapOk = elapsed - lastHalfSeconds >= options.RoleMinSecondsBetweenHalfInnings;
-
-						if (topFirstSeeded && noHitterGapOk && emptyBeforeOk && minGapOk)
+						var hadEmptyArm = lastEmptyEndSeconds > lastHalfSeconds
+							&& lastEmptyArmStartSeconds >= 0
+							&& lastEmptyArmStartSeconds <= throwDownSince
+							&& totalClear >= options.RoleEmptyHoldSeconds;
+						var strongHold = Math.Max(
+							options.RoleThrowDownStrongSeconds,
+							options.RoleThrowDownHoldSeconds);
+						var strongEnough = throwDownAccumSeconds >= strongHold;
+						var normalEnough = hadEmptyArm
+							&& throwDownAccumSeconds >= options.RoleThrowDownHoldSeconds;
+						var wall = elapsed - throwDownSince;
+						var denseLimit = (hadEmptyArm
+								? options.RoleThrowDownHoldSeconds
+								: strongHold)
+							+ options.RoleThrowDownGapSeconds;
+						var denseOk = wall <= denseLimit;
+						// Pitcher on the mound during throw-down — real pre-half warmups /
+						// mound huddles; mid-inning catcher-only flickers often lack it.
+						if (minGapOk && denseOk && throwDownSawPitcher
+							&& (normalEnough || strongEnough))
 						{
-							// Floor at prior half only — do not clamp to lastEmptyEnd, or missed
-							// hitter frames during a false-empty stretch cannot pull the bookmark early.
-							var earliest = FindEarliestBatterStartInSamples(
-								samples,
-								i,
-								detector,
-								options,
-								useRoles,
-								notBeforeSeconds: lastHalfSeconds,
-								ct);
-							halfStarts.Add(earliest);
-							lastHalfSeconds = earliest;
-							defenseOnlySince = -1;
-							lastEmptyArmStartSeconds = -1;
-							if (earliest < elapsed - 0.05)
-							{
-								Status(
-									$"[{FormatElapsed(earliest)}] Half-inning start (hitter after empty, walked back from {FormatElapsed(elapsed)}) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
-							}
-							else
-							{
-								Status(
-									$"[{FormatElapsed(earliest)}] Half-inning start (hitter after empty) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
-							}
-						}
-						else if (lastEmptyEndSeconds > lastHalfSeconds && !emptyBeforeOk)
-						{
-							// Batter resumed outside the empty→hitter window — consume the arm so
-							// it cannot latch onto a later mid-inning hitter.
+							// Bookmark near the latest throw-down sample, not the first empty-box
+							// catcher crouch (warmup often starts ~1 min before the throw).
+							pendingThrowDownSeconds = throwDownLastSeen >= 0
+								? throwDownLastSeen
+								: throwDownSince;
 							lastEmptyEndSeconds = -1;
 							lastEmptyArmStartSeconds = -1;
 							defenseOnlySince = -1;
+							Status(
+								strongEnough && !hadEmptyArm
+									? $"[{FormatElapsed(pendingThrowDownSeconds)}] Throw-down pending (strong empty-box defense) — waiting for batter"
+									: $"[{FormatElapsed(pendingThrowDownSeconds)}] Throw-down pending (empty box + catcher/pitcher) — waiting for batter");
+							// Keep throwDownLastSeen so we can refuse early batter confirms while
+							// the ritual is still ongoing, and slide pending on later TD frames.
+							throwDownSince = -1;
+							throwDownAccumSeconds = 0;
+							throwDownSawPitcher = false;
+						}
+						else if (!minGapOk || wall > strongHold + options.RoleThrowDownGapSeconds)
+						{
+							throwDownSince = -1;
+							throwDownLastSeen = -1;
+							throwDownAccumSeconds = 0;
+							throwDownSawPitcher = false;
+						}
+					}
+
+					if (signals.BatterPresent)
+					{
+						var minGapOk = elapsed - lastHalfSeconds >= options.RoleMinSecondsBetweenHalfInnings;
+						// Do not confirm on a false hitter mid-warmup — wait until empty-box
+						// defense has paused long enough that the throw-down ritual finished.
+						var pauseNeed = Math.Max(
+							options.RoleThrowDownPauseSeconds,
+							options.RoleThrowDownGapSeconds);
+						var throwDownPaused = throwDownLastSeen < 0
+							|| elapsed - throwDownLastSeen >= pauseNeed;
+
+						// Confirm pending throw-down with the first batter walk-up after ritual.
+						if (topFirstSeeded
+							&& pendingThrowDownSeconds >= 0
+							&& throwDownPaused
+							&& pendingThrowDownSeconds - lastHalfSeconds
+							>= options.RoleMinSecondsBetweenHalfInnings
+							&& elapsed - pendingThrowDownSeconds <= options.RoleThrowDownConfirmSeconds)
+						{
+							var hitAt = pendingThrowDownSeconds;
+							halfStarts.Add(hitAt);
+							lastHalfSeconds = hitAt;
+							pendingThrowDownSeconds = -1;
+							throwDownSince = -1;
+							throwDownLastSeen = -1;
+							throwDownAccumSeconds = 0;
+							throwDownSawPitcher = false;
+							defenseOnlySince = -1;
+							lastEmptyArmStartSeconds = -1;
+							lastEmptyEndSeconds = -1;
+							Status(
+								$"[{FormatElapsed(hitAt)}] Half-inning start (catcher throw-down, confirmed by batter at {FormatElapsed(elapsed)}) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
+						}
+						else
+						{
+							if (pendingThrowDownSeconds >= 0
+								&& elapsed - pendingThrowDownSeconds > options.RoleThrowDownConfirmSeconds)
+							{
+								pendingThrowDownSeconds = -1;
+							}
+
+							var noHitterGapOk = lastHitterSeconds < 0
+								|| elapsed - lastHitterSeconds >= options.RoleNoHitterGapSeconds;
+							var emptyAgeOk = lastEmptyEndSeconds > lastHalfSeconds
+								&& elapsed - lastEmptyEndSeconds <= options.RoleEmptyBeforeHitterSeconds;
+							var totalClear = lastEmptyArmStartSeconds >= 0
+								&& lastEmptyEndSeconds >= lastEmptyArmStartSeconds
+								? lastEmptyEndSeconds - lastEmptyArmStartSeconds
+								: 0;
+							// Fallback only after a long clear — throw-down is the primary cue.
+							var emptyQualityOk = totalClear >= Math.Max(options.RoleSolidEmptySeconds * 2, 40);
+							var emptyBeforeOk = emptyAgeOk && emptyQualityOk;
+
+							if (topFirstSeeded && noHitterGapOk && emptyBeforeOk && minGapOk
+								&& pendingThrowDownSeconds < 0)
+							{
+								var earliest = FindEarliestBatterStartInSamples(
+									samples,
+									i,
+									detector,
+									options,
+									useRoles,
+									notBeforeSeconds: lastHalfSeconds,
+									ct);
+								halfStarts.Add(earliest);
+								lastHalfSeconds = earliest;
+								defenseOnlySince = -1;
+								throwDownSince = -1;
+								throwDownLastSeen = -1;
+								throwDownAccumSeconds = 0;
+								throwDownSawPitcher = false;
+								lastEmptyArmStartSeconds = -1;
+								if (earliest < elapsed - 0.05)
+								{
+									Status(
+										$"[{FormatElapsed(earliest)}] Half-inning start (hitter after empty, walked back from {FormatElapsed(elapsed)}) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
+								}
+								else
+								{
+									Status(
+										$"[{FormatElapsed(earliest)}] Half-inning start (hitter after empty) → {InningHalfLabels.FormatHalfInning(halfStarts.Count - 1)}");
+								}
+							}
+							else if (lastEmptyEndSeconds > lastHalfSeconds
+								&& throwDownSince < 0
+								&& pendingThrowDownSeconds < 0
+								&& signals.DefenseReady)
+							{
+								lastEmptyEndSeconds = -1;
+								lastEmptyArmStartSeconds = -1;
+								defenseOnlySince = -1;
+							}
 						}
 
 						lastHitterSeconds = elapsed;
@@ -982,7 +1198,8 @@ public static class HalfInningDetector
 		bool LooksEmpty,
 		bool CoachNearPlate,
 		bool OnDeckPresent,
-		bool InningInProgress);
+		bool InningInProgress,
+		bool EmptyBoxDefense);
 
 	private static FrameSignals BuildFrameSignals(
 		IReadOnlyList<DetectedObject> detections,
@@ -996,8 +1213,9 @@ public static class HalfInningDetector
 			var hasHitter = HasClassAbove(detections, "hitter", options.RoleHitterConfidence);
 			var hasPitcher = HasClassAbove(detections, "pitcher", options.RolePitcherConfidence);
 			var hasCatcher = HasClassAbove(detections, "catcher", options.RoleCatcherConfidence);
-			// Prefer a hitter whose center is in the batter's box; accept any hitter as fallback
-			// unless that hitter is only in an on-deck ROI (next batter, not at plate).
+			// Only a hitter whose center is in the batter's box counts as "batter present".
+			// Sideline/on-deck "hitter" labels are common during throw-downs and must not block
+			// empty / empty-box-defense tracking.
 			var hitterInBox = CountClassInRoiAbove(
 				detections, "hitter", options.RoleHitterConfidence, frameW, frameH, options.BatterBoxRoi) > 0;
 			var onDeckInRoi = CountClassInRoiAbove(
@@ -1008,8 +1226,7 @@ public static class HalfInningDetector
 				detections, "hitter", options.RoleHitterConfidence, frameW, frameH, options.BatterBoxRoi);
 			var onDeckPresent = onDeckInRoi > 0
 				|| (hitterInBox && hittersOutsideBox > 0);
-			// Lone on-deck hitter is not "batter present" for half-start bookmarks.
-			var batterPresent = hitterInBox || (hasHitter && !onDeckPresent);
+			var batterPresent = hitterInBox;
 			// Plate-area catcher only — dugout/sideline "catcher" FPs are common on this angle
 			// and were blocking real side-change empties while also not being real defense.
 			var catcherAtPlate = CountClassInRoiAbove(
@@ -1020,14 +1237,17 @@ public static class HalfInningDetector
 			// BaseballCV PHC often misses the distant mound pitcher on kids/backstop wide shots;
 			// catcher gear is larger and more reliable as a "defense is out" proxy.
 			var defenseReady = hasPitcher || catcherAtPlate;
-			// Side-change empty: no hitter and no plate catcher. Pitcher-only (mound warmup) still
-			// counts as empty so brief side changes aren't blocked; dugout catcher FPs ignored.
-			// Mid-inning false arms are filtered by solid-empty / mid-inning-risk gates above.
+			// Pre-half ritual: catcher at plate, empty box (throw to second; umpire usually unset).
+			var emptyBoxDefense = catcherAtPlate && !hitterInBox;
+			// Side-change empty: no hitter label at all and no plate catcher. Sideline "hitter"
+			// FPs still block empty (reduces mid-inning false arms); throw-down uses empty-box
+			// defense and does not require LooksEmpty on the same frames.
 			var looksEmpty = !hasHitter && !catcherAtPlate;
 			var inningInProgress = options.UseOnDeckInProgressSignal && hitterInBox && onDeckPresent;
 			return new FrameSignals(
 				hasHitter, hasPitcher, hasCatcher, batterPresent, defenseReady, looksEmpty,
-				CoachNearPlate: false, OnDeckPresent: onDeckPresent, InningInProgress: inningInProgress);
+				CoachNearPlate: false, OnDeckPresent: onDeckPresent, InningInProgress: inningInProgress,
+				EmptyBoxDefense: emptyBoxDefense);
 		}
 
 		var fieldCount = CountInRoi(detections, frameW, frameH, options.FieldRoi);
@@ -1037,16 +1257,18 @@ public static class HalfInningDetector
 		var coachNearPlate = !batterInBox
 			&& CountInRoi(detections, frameW, frameH, options.BatterApproachRoi) > 0;
 		var personInProgress = options.UseOnDeckInProgressSignal && batterInBox && personOnDeck;
+		var fieldDefenseReady = fieldCount >= options.MinFieldersPlaying;
 		return new FrameSignals(
 			HasHitter: batterInBox,
-			HasPitcher: fieldCount >= options.MinFieldersPlaying,
+			HasPitcher: fieldDefenseReady,
 			HasCatcher: false,
 			BatterPresent: batterInBox,
-			DefenseReady: fieldCount >= options.MinFieldersPlaying,
+			DefenseReady: fieldDefenseReady,
 			LooksEmpty: fieldCount <= options.MaxFieldersEmpty,
 			CoachNearPlate: coachNearPlate,
 			OnDeckPresent: personOnDeck,
-			InningInProgress: personInProgress);
+			InningInProgress: personInProgress,
+			EmptyBoxDefense: fieldDefenseReady && !batterInBox);
 	}
 
 	/// <summary>
