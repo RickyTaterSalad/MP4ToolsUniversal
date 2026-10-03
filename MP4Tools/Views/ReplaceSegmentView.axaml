@@ -158,6 +158,20 @@
 							</StackPanel>
 						</Button.Content>
 					</Button>
+					<Button Click="ImportButton_OnClick" Padding="4" ToolTip.Tip="Import Replace Segment state from JSON">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Import"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+					<Button Click="ExportButton_OnClick" Padding="4" ToolTip.Tip="Export Replace Segment state to JSON">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Export"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
 				</StackPanel>
 			</Grid>
 

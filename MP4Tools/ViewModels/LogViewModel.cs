@@ -24,8 +24,12 @@ namespace MP4Tools.ViewModels
         private const int _ffmpegProgressSkipEvery = 20;
 
         private bool _autoScrollToBottom = true;
+        private bool _canGoToSource;
+        private string _goToSourceLabel = "Back to source";
+        private readonly Action _navigateToSource;
 
         public RelayCommand ClearLogCommand { get; }
+        public RelayCommand GoToSourceCommand { get; }
 
         /// <summary>Fires on the UI thread after <see cref="LogText"/> was replaced (append batch or clear).</summary>
         public event Action LogContentUpdated;
@@ -36,17 +40,53 @@ namespace MP4Tools.ViewModels
             set => SetProperty(ref _autoScrollToBottom, value);
         }
 
+        public bool CanGoToSource
+        {
+            get => _canGoToSource;
+            private set
+            {
+                if (SetProperty(ref _canGoToSource, value))
+                    GoToSourceCommand.NotifyCanExecuteChanged();
+            }
+        }
+
+        public string GoToSourceLabel
+        {
+            get => _goToSourceLabel;
+            private set => SetProperty(ref _goToSourceLabel, value);
+        }
+
         public string LogText
         {
             get => _logText;
             private set => SetProperty(ref _logText, value);
         }
 
-        public LogViewModel()
+        public LogViewModel(Action navigateToSource)
         {
+            _navigateToSource = navigateToSource ?? throw new ArgumentNullException(nameof(navigateToSource));
             _maxLogLines = GetConfiguredLogMaxLines();
             ClearLogCommand = new RelayCommand(ClearLog);
+            GoToSourceCommand = new RelayCommand(() => _navigateToSource(), () => CanGoToSource);
             Logger.LogMessageReceived += OnLogMessageReceived;
+            LogOperationTracker.Changed += OnLogOperationSourceChanged;
+            RefreshGoToSource();
+        }
+
+        private void OnLogOperationSourceChanged(object sender, EventArgs e)
+        {
+            if (Dispatcher.UIThread.CheckAccess())
+                RefreshGoToSource();
+            else
+                Dispatcher.UIThread.Post(RefreshGoToSource);
+        }
+
+        private void RefreshGoToSource()
+        {
+            var source = LogOperationTracker.Current;
+            CanGoToSource = source != LogOperationSource.None;
+            var name = LogOperationTracker.GetDisplayName(source);
+            GoToSourceLabel = CanGoToSource ? $"Back to {name}" : "Back to source";
         }
 
         private bool ShouldSkipFfmpegProgress(string message)

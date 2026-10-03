@@ -68,6 +68,11 @@
 								OffContent="" OnContent=""
 								IsChecked="{Binding OpenOutputFolderOnComplete}"/>
 
+			<ToggleSwitch Content="Warn when estimated disk space may be insufficient (Combine / Replace Segment)"
+								OffContent="" OnContent=""
+								IsChecked="{Binding WarnOnInsufficientDiskSpace}"
+								ToolTip.Tip="Estimates final output plus temporary intermediates before starting. When free space looks too low, asks whether to continue."/>
+
 			<ToggleSwitch Content="Delete segment clips after successful Trim And Combine"
 								OffContent="" OnContent=""
 								IsChecked="{Binding DeleteTrimSegmentsAfterTrimAndCombine}"

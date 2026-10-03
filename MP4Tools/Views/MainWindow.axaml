@@ -12,7 +12,7 @@
         Icon="/Assets/projectIcon.ico"
         Title="MP4Tools">
 
-    <TabControl Margin="10">
+    <TabControl Margin="10" SelectedIndex="{Binding SelectedTabIndex}">
 
         <TabItem Header="Combine">
             <views:CombineView DataContext="{Binding CombineViewModel}" Margin="10"/>
@@ -25,6 +25,9 @@
         </TabItem> -->
         <TabItem Header="Edit">
             <views:EditView DataContext="{Binding EditViewModel}" Margin="10"/>
+        </TabItem>
+        <TabItem Header="AI">
+            <views:AiView DataContext="{Binding AiViewModel}" Margin="10"/>
         </TabItem>
         <TabItem Header="Log">
             <views:LogView DataContext="{Binding LogViewModel}" Margin="10"/>

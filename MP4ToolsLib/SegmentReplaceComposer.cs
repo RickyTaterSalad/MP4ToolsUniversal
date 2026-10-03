@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 namespace MP4ToolsLib;
 
 /// <summary>
-/// Removes and/or replaces timeline ranges in a single video via stream-copy extract + concat
-/// (cut points may snap to nearby keyframes).
+/// Removes and/or replaces timeline ranges in a single video via stream-copy extract,
+/// MPEG-TS remux, and concat (cut points may snap to nearby keyframes).
 /// </summary>
 public static class SegmentReplaceComposer
 {
@@ -57,8 +57,9 @@ public static class SegmentReplaceComposer
 
 		var workDir = Path.Combine(TempPathHelper.GetTempPath(), $"replace_seg_{Guid.NewGuid():N}");
 		Directory.CreateDirectory(workDir);
-		var piecePaths = new List<string>();
+		var pieceMp4Paths = new List<string>();
 		var tempKeeps = new List<string>();
+		var tempTsFiles = new List<string>();
 
 		try
 		{
@@ -66,6 +67,8 @@ public static class SegmentReplaceComposer
 			var pieceIndex = 0;
 			var keepTotal = CountKeepSegments(ordered, totalSeconds);
 			var keepDone = 0;
+			var replacementCount = ordered.Count(r => !string.IsNullOrWhiteSpace(r.ReplacementPath));
+			var replacementDone = 0;
 
 			foreach (var removal in ordered)
 			{
@@ -77,15 +80,17 @@ public static class SegmentReplaceComposer
 					var keepPath = Path.Combine(workDir, $"keep_{pieceIndex:D3}.mp4");
 					await ExtractKeepAsync(inputPath, cursor, removal.StartSeconds - cursor, keepPath, log, ct)
 						.ConfigureAwait(false);
-					piecePaths.Add(keepPath);
+					pieceMp4Paths.Add(keepPath);
 					tempKeeps.Add(keepPath);
 					pieceIndex++;
 				}
 
 				if (!string.IsNullOrWhiteSpace(removal.ReplacementPath))
 				{
-					Step($"Queuing replacement intro for removed {FormatTs(removal.StartSeconds)}–{FormatTs(removal.EndSeconds)}…");
-					piecePaths.Add(removal.ReplacementPath);
+					replacementDone++;
+					Step($"Including replacement intro {replacementDone} of {replacementCount} for removed {FormatTs(removal.StartSeconds)}–{FormatTs(removal.EndSeconds)}…");
+					log($"Replacement intro: {removal.ReplacementPath}");
+					pieceMp4Paths.Add(removal.ReplacementPath);
 				}
 				else
 				{
@@ -103,42 +108,60 @@ public static class SegmentReplaceComposer
 				var keepPath = Path.Combine(workDir, $"keep_{pieceIndex:D3}.mp4");
 				await ExtractKeepAsync(inputPath, cursor, totalSeconds - cursor, keepPath, log, ct)
 					.ConfigureAwait(false);
-				piecePaths.Add(keepPath);
+				pieceMp4Paths.Add(keepPath);
 				tempKeeps.Add(keepPath);
 			}
 
-			if (piecePaths.Count == 0)
+			if (pieceMp4Paths.Count == 0)
 				throw new InvalidOperationException("Nothing left to write after removals.");
 
-			if (piecePaths.Count == 1)
+			log($"Assembling {pieceMp4Paths.Count} piece(s) via MPEG-TS concat ({replacementCount} replacement intro(s)).");
+
+			// Probe audio before remux so we can free obsolete MP4 pieces afterward.
+			var (_, firstA) = await FFMpegUtils.Instance
+				.GetFirstAvCodecNamesAsync(pieceMp4Paths[0], ct, log)
+				.ConfigureAwait(false);
+			var needAacAdtsBsf = MpegTsConcatAudio.IntermediateTsAudioIsAac(firstA)
+				|| (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(firstA));
+
+			// Remux every piece to MPEG-TS (same path as Combine) so intro + keep segments
+			// stream-copy-concat reliably. Plain MP4 concat demuxer often drops the intro.
+			for (var i = 0; i < pieceMp4Paths.Count; i++)
 			{
-				Step("Writing output…");
-				if (File.Exists(outputPath))
-					File.Delete(outputPath);
-				File.Copy(piecePaths[0], outputPath, overwrite: true);
-				log($"Done: {outputPath}");
-				return;
+				ct.ThrowIfCancellationRequested();
+				var piece = pieceMp4Paths[i];
+				Step($"Remuxing piece {i + 1} of {pieceMp4Paths.Count} to MPEG-TS…");
+				var tsPath = Path.Combine(workDir, $"part_{i:D3}.ts");
+				await RemuxMp4ToTsAsync(piece, tsPath, log, ct).ConfigureAwait(false);
+				tempTsFiles.Add(tsPath);
+
+				// Keep/replacement MP4 is obsolete once its .ts exists; free it when on the output volume.
+				if (TempPathHelper.TryDeleteObsoleteTemporaryOnOutputVolume(piece, outputPath, log))
+					tempKeeps.Remove(piece);
 			}
 
-			Step($"Combining {piecePaths.Count} pieces (stream copy)…");
-			var listPath = Path.Combine(workDir, "concat.txt");
-			static string Escape(string p) => (p ?? string.Empty).Replace("'", "'\\''");
-			File.WriteAllLines(listPath, piecePaths.Select(p => $"file '{Escape(Path.GetFullPath(p))}'"));
+			Step(tempTsFiles.Count == 1
+				? "Writing output…"
+				: $"Combining {tempTsFiles.Count} pieces…");
 
-			var concatOpts = new List<FfmpegOption?>
+			var tsInput = tempTsFiles.Count == 1
+				? tempTsFiles[0]
+				: $"concat:{string.Join("|", tempTsFiles)}";
+
+			var finalizeParts = new List<FfmpegOption?>
 			{
 				FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
 				FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
-				FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatConcatDemuxer),
-				FfmpegOption.Pair(FfmpegArguments.ConcatDemuxerSafeFlag, FfmpegArguments.ConcatDemuxerAllowAnyPath),
 				FfmpegCommandLine.DefaultInputThreadQueue(),
-				FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(listPath)),
+				FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(tsInput)),
 			};
-			LegacyFastEncoding.AppendStreamCopyTail(concatOpts);
-			concatOpts.Add(FfmpegOption.Pair("-avoid_negative_ts", "make_zero"));
-			concatOpts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(outputPath)));
+			LegacyFastEncoding.AppendStreamCopyTail(finalizeParts);
+			if (needAacAdtsBsf)
+				finalizeParts.Add(FfmpegOption.Pair(FfmpegArguments.AudioBitstreamFilter, FfmpegArguments.BitstreamFilterAacAdtsToAsc));
+			finalizeParts.Add(FfmpegOption.Pair("-avoid_negative_ts", "make_zero"));
+			finalizeParts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(outputPath)));
 
-			await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(concatOpts), ct, log)
+			await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(finalizeParts), ct, log)
 				.ConfigureAwait(false);
 
 			if (!File.Exists(outputPath) || new FileInfo(outputPath).Length == 0)
@@ -151,8 +174,43 @@ public static class SegmentReplaceComposer
 		{
 			foreach (var keep in tempKeeps)
 				TempPathHelper.DeleteTemporaryFileUnlessRetained(keep);
+			foreach (var ts in tempTsFiles)
+				TempPathHelper.DeleteTemporaryFileUnlessRetained(ts);
 			TempPathHelper.DeleteTemporaryDirectoryUnlessRetained(workDir, recursive: true);
 		}
+	}
+
+	private static async Task RemuxMp4ToTsAsync(
+		string inputMp4,
+		string outputTs,
+		Action<string> log,
+		CancellationToken ct)
+	{
+		var (vProbe, aProbe) = await FFMpegUtils.Instance
+			.GetFirstAvCodecNamesAsync(inputMp4, ct, log)
+			.ConfigureAwait(false);
+
+		if (MpegTsConcatAudio.ShouldTranscodeAudioMp4ToTs(aProbe))
+			log($"Piece audio is Opus ({Path.GetFileName(inputMp4)}): using AAC in MPEG-TS intermediate.");
+
+		var opts = new List<FfmpegOption?>
+		{
+			FfmpegOption.Unary(FfmpegArguments.DisableInteractiveStdin),
+			FfmpegOption.Unary(FfmpegArguments.OverwriteOutputFile),
+			FfmpegCommandLine.DefaultInputThreadQueue(),
+			FfmpegOption.Pair(FfmpegArguments.Input, FfmpegCommandLine.Quoted(inputMp4)),
+			FfmpegOption.Pair(FfmpegArguments.SelectVideoCodec, FfmpegArguments.StreamCopy),
+			MpegTsVideoBitstream.GetMp4ToAnnexBOption(vProbe),
+		};
+		MpegTsConcatAudio.AppendMp4ToTsAudioOptions(opts, aProbe);
+		opts.Add(FfmpegOption.Pair(FfmpegArguments.InputFormat, FfmpegArguments.InputFormatMpegTs));
+		opts.Add(FfmpegOption.Positional(FfmpegCommandLine.Quoted(outputTs)));
+
+		await FFMpegUtils.Instance.RunCaptureFFMpegAsync(FfmpegCommandLine.Build(opts), ct, log)
+			.ConfigureAwait(false);
+
+		if (!File.Exists(outputTs) || new FileInfo(outputTs).Length == 0)
+			throw new InvalidOperationException($"MPEG-TS remux failed for {Path.GetFileName(inputMp4)}.");
 	}
 
 	private static int CountKeepSegments(IReadOnlyList<RemovalRange> ordered, double totalSeconds)

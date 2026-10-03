@@ -18,6 +18,12 @@ public sealed class AppUserSettings
 	public bool OpenOutputFolderOnComplete { get; set; }
 
 	/// <summary>
+	/// When true (default), Combine and Replace Segment estimate peak disk usage (final + temps)
+	/// and warn if free space looks insufficient.
+	/// </summary>
+	public bool WarnOnInsufficientDiskSpace { get; set; } = true;
+
+	/// <summary>
 	/// When true (default), successful Trim And Combine removes the intermediate segment clips folder under the export directory.
 	/// </summary>
 	public bool? DeleteTrimSegmentsAfterTrimAndCombine { get; set; }

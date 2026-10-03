@@ -6,10 +6,13 @@ public static class UiBehaviorSettingsRuntime
 
 	public static bool DeleteTrimSegmentsAfterTrimAndCombine { get; private set; } = true;
 
+	public static bool WarnOnInsufficientDiskSpace { get; private set; } = true;
+
 	public static void Apply(AppUserSettings settings)
 	{
 		OpenOutputFolderOnComplete = settings?.OpenOutputFolderOnComplete ?? false;
 		DeleteTrimSegmentsAfterTrimAndCombine = settings?.DeleteTrimSegmentsAfterTrimAndCombine ?? true;
+		WarnOnInsufficientDiskSpace = settings?.WarnOnInsufficientDiskSpace ?? true;
 	}
 }
 

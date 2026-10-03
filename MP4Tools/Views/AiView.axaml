@@ -5,17 +5,11 @@
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-			 x:Class="MP4Tools.Views.EditView"
-			 x:DataType="vm:EditViewModel">
+			 x:Class="MP4Tools.Views.AiView"
+			 x:DataType="vm:AiViewModel">
 	<TabControl Margin="0" SelectedIndex="{Binding SelectedTabIndex}">
-		<TabItem Header="Rewrite Intro">
-			<views:RewriteIntroView DataContext="{Binding RewriteIntroViewModel}" Margin="8"/>
-		</TabItem>
-		<TabItem Header="Generate Intro">
-			<views:GenerateIntroView DataContext="{Binding GenerateIntroViewModel}" Margin="8"/>
-		</TabItem>
-		<TabItem Header="Replace Segment">
-			<views:ReplaceSegmentView DataContext="{Binding ReplaceSegmentViewModel}" Margin="8"/>
+		<TabItem Header="Inning Detector">
+			<views:InningDetectorView DataContext="{Binding InningDetectorViewModel}" Margin="8"/>
 		</TabItem>
 	</TabControl>
 </UserControl>

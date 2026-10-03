@@ -35,6 +35,7 @@ public partial class OptionsViewModel : ViewModelBase
 			RetainTemporaryFiles = loaded.RetainTemporaryFiles;
 			DefaultOutputDirectory = loaded.DefaultOutputDirectory ?? "";
 			OpenOutputFolderOnComplete = loaded.OpenOutputFolderOnComplete;
+			WarnOnInsufficientDiskSpace = loaded.WarnOnInsufficientDiskSpace;
 			DeleteTrimSegmentsAfterTrimAndCombine = loaded.DeleteTrimSegmentsAfterTrimAndCombine ?? true;
 			UseResolveSafeEncoding = loaded.UseResolveSafeEncoding;
 			BaseballLoggerServerUrl = loaded.BaseballLoggerServerUrl ?? "";
@@ -59,6 +60,9 @@ public partial class OptionsViewModel : ViewModelBase
 
 	[ObservableProperty]
 	private bool _openOutputFolderOnComplete;
+
+	[ObservableProperty]
+	private bool _warnOnInsufficientDiskSpace = true;
 
 	[ObservableProperty]
 	private bool _deleteTrimSegmentsAfterTrimAndCombine = true;
@@ -97,6 +101,7 @@ public partial class OptionsViewModel : ViewModelBase
 	partial void OnDefaultOutputDirectoryChanged(string value) => SchedulePersist();
 	partial void OnRetainTemporaryFilesChanged(bool value) => PersistNow();
 	partial void OnOpenOutputFolderOnCompleteChanged(bool value) => PersistNow();
+	partial void OnWarnOnInsufficientDiskSpaceChanged(bool value) => PersistNow();
 	partial void OnDeleteTrimSegmentsAfterTrimAndCombineChanged(bool value) => PersistNow();
 	partial void OnUseResolveSafeEncodingChanged(bool value) => PersistNow();
 	partial void OnBaseballLoggerServerUrlChanged(string value) => SchedulePersist();
@@ -153,6 +158,7 @@ public partial class OptionsViewModel : ViewModelBase
 				RetainTemporaryFiles = RetainTemporaryFiles,
 				DefaultOutputDirectory = outTrimmed,
 				OpenOutputFolderOnComplete = OpenOutputFolderOnComplete,
+				WarnOnInsufficientDiskSpace = WarnOnInsufficientDiskSpace,
 				DeleteTrimSegmentsAfterTrimAndCombine = DeleteTrimSegmentsAfterTrimAndCombine,
 				UseResolveSafeEncoding = UseResolveSafeEncoding,
 				BaseballLoggerServerUrl = BaseballLoggerServerUrl?.Trim() ?? "",
@@ -164,6 +170,7 @@ public partial class OptionsViewModel : ViewModelBase
 			MP4Tools.Logger.Log($"Settings saved. Temporary files folder: {TempPathHelper.GetTempPath()}");
 			MP4Tools.Logger.Log($"Default output folder: {DefaultOutputPathRuntime.Directory}");
 			MP4Tools.Logger.Log($"Open output folder on completion: {UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete}");
+			MP4Tools.Logger.Log($"Warn on insufficient disk space: {UiBehaviorSettingsRuntime.WarnOnInsufficientDiskSpace}");
 			MP4Tools.Logger.Log($"Delete trim segments after Trim And Combine: {UiBehaviorSettingsRuntime.DeleteTrimSegmentsAfterTrimAndCombine}");
 			MP4Tools.Logger.Log($"Resolve-safe encoding: {EncodingSettingsRuntime.Current.UseResolveSafeEncoding}");
 			MP4Tools.Logger.Log(

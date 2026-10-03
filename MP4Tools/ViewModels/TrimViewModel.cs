@@ -24,6 +24,8 @@ internal class ExportTrimState
 
 public partial class TrimViewModel : MP4ViewModelBase
 {
+	protected override LogOperationSource OperationLogSource => LogOperationSource.Trim;
+
 	public static IReadOnlyList<int> Range { get; } = TimeRange.Range;
 
 	private string _operationStatus = string.Empty;

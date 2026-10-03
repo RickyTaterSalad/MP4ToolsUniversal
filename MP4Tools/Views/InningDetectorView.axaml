@@ -1,0 +1,96 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:vm="using:MP4Tools.ViewModels"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+			 mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="560"
+			 x:Class="MP4Tools.Views.InningDetectorView"
+			 x:DataType="vm:InningDetectorViewModel">
+	<DockPanel DragDrop.AllowDrop="True"
+			   Background="Transparent"
+			   DragDrop.DragOver="OnDragOver"
+			   DragDrop.Drop="OnDrop"
+			   LastChildFill="True">
+
+		<StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,8,0,0">
+			<ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress}" Height="8"
+						 IsVisible="{Binding ShowProgress}"/>
+			<TextBlock Text="{Binding OperationStatus}"
+					   TextWrapping="Wrap"
+					   Opacity="0.92"/>
+			<Grid ColumnDefinitions="Auto,*,Auto">
+				<StackPanel Grid.Column="0" Orientation="Horizontal">
+					<Button Command="{Binding StopCommand}" Padding="4" IsEnabled="{Binding CanStop}" Margin="0,0,5,0">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Stop"/>
+								<TextBlock Text="Stop" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+					<Button Command="{Binding ClearCommand}" Padding="4" IsEnabled="{Binding CanClear}">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Remove"/>
+								<TextBlock Text="Clear" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+				</StackPanel>
+				<Button Grid.Column="2"
+						Command="{Binding DetectCommand}"
+						Padding="4"
+						IsEnabled="{Binding CanDetect}">
+					<Button.Content>
+						<StackPanel Orientation="Horizontal">
+							<materialIcons:MaterialIcon Kind="Baseball"/>
+							<TextBlock Text="Detect Innings" Margin="5,0,5,0"/>
+						</StackPanel>
+					</Button.Content>
+				</Button>
+			</Grid>
+		</StackPanel>
+
+		<ScrollViewer>
+			<StackPanel Spacing="12">
+				<Grid ColumnDefinitions="*,Auto">
+					<TextBox Grid.Column="0"
+							 PlaceholderText="Input Video"
+							 Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"
+							 Margin="0,0,10,0"/>
+					<Button Grid.Column="1" Click="BrowseButton_OnClick" Padding="4">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal">
+								<materialIcons:MaterialIcon Kind="Video"/>
+								<TextBlock Text="Browse" Margin="5,0,5,0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+				</Grid>
+
+				<TextBlock Text="Detects half-inning starts using local CV: field clears → defense/pitcher warmup with an empty batter's box → bookmark when the first batter walks up to the box. Writes Baseball Logger recording JSON and a YouTube chapter bookmark .txt next to the video."
+						   TextWrapping="Wrap"
+						   Opacity="0.8"/>
+
+				<CheckBox IsChecked="{Binding SkipIntroTitleCards}"
+						  Content="Skip intro / replaced-segment title cards"
+						  ToolTip.Tip="Ignore solid-background text cards (usually 3–10s at the start; rare mid-video Replace Segment intros). Prevents empty intro frames from looking like a half-inning break."/>
+
+				<StackPanel Spacing="4">
+					<TextBlock Text="Output JSON" Opacity="0.85"/>
+					<TextBox Text="{Binding OutputJsonPath}" IsReadOnly="True"/>
+					<TextBlock Text="YouTube bookmarks" Opacity="0.85" Margin="0,6,0,0"/>
+					<TextBox Text="{Binding OutputYoutubePath}" IsReadOnly="True"/>
+				</StackPanel>
+
+				<StackPanel Spacing="4">
+					<TextBlock Text="Detected events" Opacity="0.85"/>
+					<ListBox ItemsSource="{Binding DetectedEventLines}"
+							 MinHeight="160"
+							 MaxHeight="320"/>
+				</StackPanel>
+			</StackPanel>
+		</ScrollViewer>
+	</DockPanel>
+</UserControl>

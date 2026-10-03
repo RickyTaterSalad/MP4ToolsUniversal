@@ -305,9 +305,26 @@ namespace MP4ToolsLib
 
 				log($"{psi.FileName}: {psi.Arguments}");
 
-				var stdoutTask = process.StandardOutput.ReadToEndAsync(linkedCts.Token);
-				await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
-				await stdoutTask.ConfigureAwait(false);
+				var stdoutTask = process.StandardOutput.ReadToEndAsync();
+				try
+				{
+					using (cancellationToken.Register(() => TryKillProcess(process)))
+					{
+						await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
+					}
+				}
+				catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+				{
+					TryKillProcess(process);
+					await WaitForExitQuietAsync(process).ConfigureAwait(false);
+					await DrainStdoutQuietAsync(stdoutTask).ConfigureAwait(false);
+					throw;
+				}
+
+				await DrainStdoutQuietAsync(stdoutTask).ConfigureAwait(false);
+
+				if (cancellationToken.IsCancellationRequested)
+					cancellationToken.ThrowIfCancellationRequested();
 
 				var output = stderr.ToString();
 				var match = FfmpegVideoResolutionRegex.Match(output);
@@ -326,6 +343,9 @@ namespace MP4ToolsLib
 			}
 			catch (Exception ex)
 			{
+				if (cancellationToken.IsCancellationRequested)
+					throw new OperationCanceledException("Cancelled.", ex, cancellationToken);
+
 				log($"** Error reading video resolution: {ex.Message} **");
 				return null;
 			}
@@ -341,7 +361,14 @@ namespace MP4ToolsLib
 					// ignored
 				}
 
-				process.Dispose();
+				try
+				{
+					process.Dispose();
+				}
+				catch
+				{
+					// ignored
+				}
 			}
 		}
 
@@ -375,6 +402,7 @@ namespace MP4ToolsLib
 					Log?.Invoke($"{e.Data}");
 			};
 
+			Task<string> stdoutTask = null;
 			try
 			{
 				if (!process.Start())
@@ -391,73 +419,72 @@ namespace MP4ToolsLib
 
 				Log($"{psi.FileName}: {psi.Arguments}");
 
-				using (ct.Register(() =>
+				// Don't cancel ReadToEndAsync with the op token — disposing the process while a
+				// cancelled read is in flight can fault an unobserved task / crash Avalonia hosts.
+				stdoutTask = process.StandardOutput.ReadToEndAsync();
+
+				using (ct.Register(() => TryKillProcess(process)))
 				{
 					try
 					{
-						if (!process.HasExited)
-							process.Kill(entireProcessTree: true);
+						await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
 					}
-					catch
+					catch (OperationCanceledException) when (ct.IsCancellationRequested)
 					{
-						// ignored
+						TryKillProcess(process);
+						await WaitForExitQuietAsync(process).ConfigureAwait(false);
+						await DrainStdoutQuietAsync(stdoutTask).ConfigureAwait(false);
+						throw;
 					}
-				}))
-				{
-					var stdoutTask = process.StandardOutput.ReadToEndAsync(linkedCts.Token);
-					await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
-					var stdout = await stdoutTask.ConfigureAwait(false);
-
-					if (!string.IsNullOrWhiteSpace(stdout))
+					catch (OperationCanceledException)
 					{
-						foreach (var line in stdout.Split(["\r\n", "\n", "\r"], StringSplitOptions.None))
-						{
-							if (!string.IsNullOrWhiteSpace(line))
-								Log($"[stdout] {line}");
-						}
+						TryKillProcess(process);
+						await WaitForExitQuietAsync(process).ConfigureAwait(false);
+						await DrainStdoutQuietAsync(stdoutTask).ConfigureAwait(false);
+						Log($"** Timeout after {ProcessTimeout.TotalMinutes:0} minutes **");
+						throw new TimeoutException($"{exe} timed out after {ProcessTimeout.TotalMinutes:0} minutes");
 					}
-
-					if (process.ExitCode != 0)
-						throw new InvalidOperationException($"{exe} failed with exit code {process.ExitCode}");
-					return stdout;
 				}
+
+				var stdout = await DrainStdoutQuietAsync(stdoutTask).ConfigureAwait(false) ?? string.Empty;
+				stdoutTask = null;
+
+				if (ct.IsCancellationRequested)
+					ct.ThrowIfCancellationRequested();
+
+				if (!string.IsNullOrWhiteSpace(stdout))
+				{
+					foreach (var line in stdout.Split(["\r\n", "\n", "\r"], StringSplitOptions.None))
+					{
+						if (!string.IsNullOrWhiteSpace(line))
+							Log($"[stdout] {line}");
+					}
+				}
+
+				if (process.ExitCode != 0)
+					throw new InvalidOperationException($"{exe} failed with exit code {process.ExitCode}");
+				return stdout;
 			}
-			catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+			catch (OperationCanceledException) when (ct.IsCancellationRequested)
 			{
-				Log($"** Timeout after {ProcessTimeout.TotalMinutes:0} minutes **");
-				try
-				{
-					if (!process.HasExited)
-						process.Kill(entireProcessTree: true);
-				}
-				catch
-				{
-					// ignored
-				}
-
-				throw new TimeoutException($"{exe} timed out after {ProcessTimeout.TotalMinutes:0} minutes");
+				throw;
 			}
-			catch (OperationCanceledException)
+			catch (TimeoutException)
 			{
 				throw;
 			}
 			catch (Exception ex)
 			{
-				Log($"** Error: {ex.Message} **");
-				try
-				{
-					if (!process.HasExited)
-						process.Kill(entireProcessTree: true);
-				}
-				catch
-				{
-					// ignored
-				}
+				if (ct.IsCancellationRequested)
+					throw new OperationCanceledException("Cancelled.", ex, ct);
 
+				Log($"** Error: {ex.Message} **");
+				TryKillProcess(process);
 				throw;
 			}
 			finally
 			{
+				await DrainStdoutQuietAsync(stdoutTask).ConfigureAwait(false);
 				UnregisterTrackedMediaProcess(process);
 				try
 				{
@@ -468,7 +495,56 @@ namespace MP4ToolsLib
 					// ignored
 				}
 
-				process.Dispose();
+				try
+				{
+					process.Dispose();
+				}
+				catch
+				{
+					// ignored
+				}
+			}
+		}
+
+		private static void TryKillProcess(Process process)
+		{
+			try
+			{
+				if (process != null && !process.HasExited)
+					process.Kill(entireProcessTree: true);
+			}
+			catch
+			{
+				// ignored
+			}
+		}
+
+		private static async Task WaitForExitQuietAsync(Process process)
+		{
+			try
+			{
+				if (process == null || process.HasExited)
+					return;
+				using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+				await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+			}
+			catch
+			{
+				// ignored
+			}
+		}
+
+		private static async Task<string> DrainStdoutQuietAsync(Task<string> stdoutTask)
+		{
+			if (stdoutTask == null)
+				return string.Empty;
+			try
+			{
+				return await stdoutTask.ConfigureAwait(false);
+			}
+			catch
+			{
+				return string.Empty;
 			}
 		}
 

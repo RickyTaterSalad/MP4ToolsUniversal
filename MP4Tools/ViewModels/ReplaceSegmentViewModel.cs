@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +17,8 @@ namespace MP4Tools.ViewModels;
 
 public partial class ReplaceSegmentViewModel : MP4ViewModelBase
 {
+	protected override LogOperationSource OperationLogSource => LogOperationSource.ReplaceSegment;
+
 	public static IReadOnlyList<int> Range { get; } = TimeRange.Range;
 
 	private readonly CombineViewModel _combineViewModel;
@@ -378,10 +381,210 @@ public partial class ReplaceSegmentViewModel : MP4ViewModelBase
 		return base.Clear();
 	}
 
+	public void ExportState(string outputFile)
+	{
+		try
+		{
+			var path = FFMpegUtils.Instance.CleanupPath(Path.ChangeExtension(outputFile, ".json"));
+			var state = new ExportReplaceSegmentState
+			{
+				InputFile = InputPath ?? string.Empty,
+				OutputPath = OutputPath ?? string.Empty,
+				DraftReplaceWithText = DraftReplaceWithText,
+				DraftStart = ToExportTime(DraftStart),
+				DraftEnd = ToExportTime(DraftEnd),
+			};
+
+			foreach (var segment in Segments)
+			{
+				state.Segments.Add(new ExportReplaceSegmentRange
+				{
+					Start = ToExportTime(segment.StartRange),
+					End = ToExportTime(segment.EndRange),
+					ReplaceWithText = segment.ReplaceWithText,
+					Label = segment.Label ?? string.Empty,
+					PendingIntro = ToExportIntro(segment.PendingIntro),
+				});
+			}
+
+			var json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
+			File.WriteAllText(path, json);
+			ReportStep($"Exported Replace Segment state: {path}");
+			Logger.Log($"Replace segment export: {path}");
+		}
+		catch (Exception ex)
+		{
+			ReportStep($"Export failed: {ex.Message}");
+			Logger.Log($"Replace segment export error: {ex.Message}");
+			Debug.WriteLine(ex);
+		}
+	}
+
+	public void ImportReplaceFile(string file)
+	{
+		if (string.IsNullOrWhiteSpace(file) || !File.Exists(file))
+		{
+			ReportStep("Import failed: file not found.");
+			return;
+		}
+
+		try
+		{
+			if (IsShowingGenerateIntro)
+				ExitGenerateIntroUi();
+
+			var state = JsonSerializer.Deserialize<ExportReplaceSegmentState>(
+				File.ReadAllText(file, System.Text.Encoding.UTF8));
+			if (state == null)
+			{
+				ReportStep("Import failed: empty or invalid JSON.");
+				return;
+			}
+
+			SelectedSegment = null;
+			Segments.Clear();
+			AddRangeError = string.Empty;
+
+			DraftReplaceWithText = state.DraftReplaceWithText;
+			ApplyExportTime(DraftStart, state.DraftStart);
+			ApplyExportTime(DraftEnd, state.DraftEnd);
+
+			if (!string.IsNullOrWhiteSpace(state.OutputPath))
+				OutputPath = state.OutputPath;
+
+			if (!string.IsNullOrWhiteSpace(state.InputFile) && File.Exists(state.InputFile))
+				SetFile(state.InputFile);
+			else if (!string.IsNullOrWhiteSpace(state.InputFile))
+			{
+				InputPath = state.InputFile;
+				ReportStep($"Imported path not found on disk: {state.InputFile}");
+			}
+
+			if (state.Segments != null)
+			{
+				foreach (var exported in state.Segments)
+				{
+					var segment = new ReplaceSegmentRange
+					{
+						StartRange = FromExportTime(exported.Start),
+						EndRange = FromExportTime(exported.End),
+						Label = exported.Label ?? string.Empty,
+					};
+					segment.ReplaceWithText = exported.ReplaceWithText;
+					if (exported.ReplaceWithText)
+						segment.PendingIntro = FromExportIntro(exported.PendingIntro);
+					segment.PropertyChanged += (_, _) => RefreshCanApply();
+					Segments.Add(segment);
+				}
+			}
+
+			RefreshCanApply();
+			ReportStep($"Imported Replace Segment state ({Segments.Count} range(s)): {file}");
+			Logger.Log($"Replace segment import: {file}");
+		}
+		catch (Exception ex)
+		{
+			ReportStep($"Import failed: {ex.Message}");
+			Logger.Log($"Replace segment import error: {ex.Message}");
+			Debug.WriteLine(ex);
+		}
+	}
+
+	private static ExportTimeParts ToExportTime(TimeRange range) => new()
+	{
+		Hours = range?.Hours ?? 0,
+		Minutes = range?.Minutes ?? 0,
+		Seconds = range?.Seconds ?? 0,
+	};
+
+	private static TimeRange FromExportTime(ExportTimeParts parts) => new()
+	{
+		Hours = parts?.Hours ?? 0,
+		Minutes = parts?.Minutes ?? 0,
+		Seconds = parts?.Seconds ?? 0,
+	};
+
+	private static void ApplyExportTime(TimeRange target, ExportTimeParts parts)
+	{
+		if (target == null)
+			return;
+		target.Hours = parts?.Hours ?? 0;
+		target.Minutes = parts?.Minutes ?? 0;
+		target.Seconds = parts?.Seconds ?? 0;
+	}
+
+	private static ExportPendingIntro ToExportIntro(PendingIntroSpec spec)
+	{
+		if (spec == null)
+			return null;
+		return new ExportPendingIntro
+		{
+			Title = spec.Title ?? string.Empty,
+			Subtitle = spec.Subtitle ?? string.Empty,
+			Details = spec.Details ?? string.Empty,
+			DurationSeconds = spec.DurationSeconds,
+			TitleFontSize = spec.TitleFontSize,
+			SubtitleFontSize = spec.SubtitleFontSize,
+			DetailsFontSize = spec.DetailsFontSize,
+			LineGap = spec.LineGap,
+			BackgroundColor = spec.BackgroundColor ?? "0x1E1E1E",
+			TextColor = spec.TextColor ?? "white",
+		};
+	}
+
+	private static PendingIntroSpec FromExportIntro(ExportPendingIntro dto)
+	{
+		if (dto == null)
+			return null;
+		return new PendingIntroSpec
+		{
+			Title = dto.Title ?? string.Empty,
+			Subtitle = dto.Subtitle ?? string.Empty,
+			Details = dto.Details ?? string.Empty,
+			DurationSeconds = dto.DurationSeconds > 0 ? dto.DurationSeconds : 10,
+			TitleFontSize = dto.TitleFontSize > 0 ? dto.TitleFontSize : 128,
+			SubtitleFontSize = dto.SubtitleFontSize > 0 ? dto.SubtitleFontSize : 64,
+			DetailsFontSize = dto.DetailsFontSize > 0 ? dto.DetailsFontSize : 48,
+			LineGap = dto.LineGap > 0 ? dto.LineGap : 36,
+			BackgroundColor = string.IsNullOrWhiteSpace(dto.BackgroundColor) ? "0x1E1E1E" : dto.BackgroundColor,
+			TextColor = string.IsNullOrWhiteSpace(dto.TextColor) ? "white" : dto.TextColor,
+		};
+	}
+
 	private async Task ApplyAsync()
 	{
 		if (!CanApply)
 			return;
+
+		if (UiBehaviorSettingsRuntime.WarnOnInsufficientDiskSpace)
+		{
+			var segmentEstimates = Segments.Select(s => (
+				s.StartSeconds,
+				s.EndSeconds,
+				s.ReplaceWithText && s.PendingIntro != null
+					? Math.Max(1, s.PendingIntro.DurationSeconds)
+					: 0));
+			var estimate = DiskSpaceEstimator.EstimateReplaceSegment(
+				InputPath,
+				OutputPath,
+				_inputDuration.TotalSeconds,
+				segmentEstimates);
+			var check = DiskSpaceEstimator.Evaluate(estimate);
+			if (!check.IsSufficient)
+			{
+				Logger.Log(
+					$"Disk space check (replace): need ~{DiskSpaceEstimator.FormatBytes(check.RequiredTempBytes)} peak " +
+					$"(final {DiskSpaceEstimator.FormatBytes(estimate.FinalBytes)}, temp {DiskSpaceEstimator.FormatBytes(estimate.TempBytes)}); " +
+					$"free temp {DiskSpaceEstimator.FormatBytes(check.FreeTempBytes)}, free output {DiskSpaceEstimator.FormatBytes(check.FreeOutputBytes)}.");
+				var proceed = await DiskSpaceWarning.ConfirmContinueIfNeededAsync(check).ConfigureAwait(true);
+				if (!proceed)
+				{
+					ReportStep("Cancelled: insufficient disk space.");
+					Logger.Log("Replace segment cancelled: user declined to continue with insufficient disk space.");
+					return;
+				}
+			}
+		}
 
 		var ct = BeginFfmpegOperation();
 		var workDir = Path.Combine(TempPathHelper.GetTempPath(), $"replace_apply_{Guid.NewGuid():N}");
@@ -392,6 +595,11 @@ public partial class ReplaceSegmentViewModel : MP4ViewModelBase
 			Directory.CreateDirectory(workDir);
 
 			var ordered = Segments.OrderBy(s => s.StartSeconds).ToList();
+			var missingIntro = ordered.Where(s => s.ReplaceWithText && (s.PendingIntro == null || !s.PendingIntro.HasContent)).ToList();
+			if (missingIntro.Count > 0)
+				throw new InvalidOperationException(
+					$"{missingIntro.Count} text-replacement range(s) are missing intro settings. Edit intro and Save first.");
+
 			var introCount = ordered.Count(s => s.ReplaceWithText && s.PendingIntro != null);
 			var introIndex = 0;
 			var removals = new List<SegmentReplaceComposer.RemovalRange>();
@@ -417,8 +625,11 @@ public partial class ReplaceSegmentViewModel : MP4ViewModelBase
 						ct,
 						sub => ReportStep($"Intro {introIndex}/{introCount} ({label}): {sub}"))
 						.ConfigureAwait(false);
+					if (!File.Exists(introPath) || new FileInfo(introPath).Length == 0)
+						throw new InvalidOperationException($"Intro encode failed for {label}.");
 					generatedIntros.Add(introPath);
 					replacementPath = introPath;
+					Logger.Log($"Replace segment: queued intro for {label} → {introPath}");
 					ReportStep($"Intro {introIndex} of {introCount} ready ({label}).");
 				}
 
@@ -428,8 +639,12 @@ public partial class ReplaceSegmentViewModel : MP4ViewModelBase
 					replacementPath));
 			}
 
+			var queuedIntros = removals.Count(r => !string.IsNullOrWhiteSpace(r.ReplacementPath));
+			if (queuedIntros != introCount)
+				throw new InvalidOperationException($"Expected {introCount} intro(s) but queued {queuedIntros}.");
+
 			ReportStep(introCount > 0
-				? "Intros ready. Slicing keep segments and combining…"
+				? $"Intros ready ({introCount}). Slicing keep segments and combining via MPEG-TS…"
 				: "Slicing keep segments and combining…");
 
 			await SegmentReplaceComposer.ApplyAsync(
@@ -440,6 +655,8 @@ public partial class ReplaceSegmentViewModel : MP4ViewModelBase
 				ct: ct,
 				operationStep: ReportStep).ConfigureAwait(false);
 
+			ct.ThrowIfCancellationRequested();
+
 			if (File.Exists(OutputPath))
 			{
 				ReportStep($"Done: {OutputPath}");
@@ -449,6 +666,10 @@ public partial class ReplaceSegmentViewModel : MP4ViewModelBase
 			{
 				ReportStep("Failed: output was not created.");
 			}
+		}
+		catch (Exception) when (ct.IsCancellationRequested)
+		{
+			ReportStep("Cancelled.");
 		}
 		catch (OperationCanceledException)
 		{
@@ -465,8 +686,12 @@ public partial class ReplaceSegmentViewModel : MP4ViewModelBase
 			foreach (var intro in generatedIntros)
 				TempPathHelper.DeleteTemporaryFileUnlessRetained(intro);
 			TempPathHelper.DeleteTemporaryDirectoryUnlessRetained(workDir, recursive: true);
-			EndFfmpegOperation();
-			RefreshCanApply();
+
+			await Dispatcher.UIThread.InvokeAsync(() =>
+			{
+				EndFfmpegOperation();
+				RefreshCanApply();
+			});
 		}
 	}
 
@@ -496,6 +721,9 @@ public partial class ReplaceSegmentViewModel : MP4ViewModelBase
 			operationStep: step).ConfigureAwait(false);
 
 		if (!File.Exists(outputPath) || new FileInfo(outputPath).Length == 0)
+		{
+			ct.ThrowIfCancellationRequested();
 			throw new InvalidOperationException("Intro encode produced no output.");
+		}
 	}
 }

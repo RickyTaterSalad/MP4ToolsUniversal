@@ -47,6 +47,10 @@ packages/
 # Ignore Linux files
 .Trash-*
 
+# Local CV models (downloaded on first inning-detect run)
+**/Models/*.onnx
+**/models/*.onnx
+
 # Ignore build output directories (redundant with bin/ and obj/ but good practice)
 **/**/bin/
 **/**/obj/

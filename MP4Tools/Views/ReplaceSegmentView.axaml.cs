@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using MP4Tools.ViewModels;
 using System.Collections.Generic;
+using System.IO;
 
 namespace MP4Tools.Views;
 
@@ -84,5 +85,53 @@ public partial class ReplaceSegmentView : UserControl
 
 		if (file.Count > 0)
 			((MP4ViewModelBase)DataContext!).SetFileCommand.Execute(file[0].Path.LocalPath);
+	}
+
+	private async void ImportButton_OnClick(object sender, RoutedEventArgs e)
+	{
+		var topLevel = TopLevel.GetTopLevel(this);
+		var file = await topLevel!.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+		{
+			Title = "Import Replace Segment state",
+			AllowMultiple = false,
+			FileTypeFilter =
+			[
+				new FilePickerFileType("JSON Files")
+				{
+					Patterns = ["*.json"],
+				},
+			],
+		});
+
+		if (file.Count > 0 && DataContext is ReplaceSegmentViewModel vm)
+			vm.ImportReplaceFile(file[0].Path.LocalPath);
+	}
+
+	private async void ExportButton_OnClick(object sender, RoutedEventArgs e)
+	{
+		if (DataContext is not ReplaceSegmentViewModel vm)
+			return;
+
+		var suggested = "ReplaceSegment";
+		if (!string.IsNullOrWhiteSpace(vm.InputPath))
+			suggested = Path.GetFileNameWithoutExtension(vm.InputPath) + "_replace_segment";
+
+		var topLevel = TopLevel.GetTopLevel(this);
+		var file = await topLevel!.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+		{
+			Title = "Export Replace Segment state",
+			DefaultExtension = "json",
+			SuggestedFileName = suggested,
+			FileTypeChoices =
+			[
+				new FilePickerFileType("JSON Files")
+				{
+					Patterns = ["*.json"],
+				},
+			],
+		});
+
+		if (file != null)
+			vm.ExportState(file.Path.LocalPath);
 	}
 }

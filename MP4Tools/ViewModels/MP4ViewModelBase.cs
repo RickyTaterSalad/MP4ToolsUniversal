@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using Avalonia.Threading;
+using CommunityToolkit.Mvvm.Input;
 using MP4Tools.Services;
 using MP4Tools.ViewModels;
 using MP4ToolsLib;
@@ -86,6 +87,9 @@ namespace MP4Tools
 		{
 		}
 
+		/// <summary>Main-window feature that owns logged work started via <see cref="BeginFfmpegOperation"/>.</summary>
+		protected virtual LogOperationSource OperationLogSource => LogOperationSource.None;
+
 		/// <summary>Starts a cancellable ffmpeg/ffprobe operation scope (Stop cancels the token).</summary>
 		protected CancellationToken BeginFfmpegOperation()
 		{
@@ -100,21 +104,25 @@ namespace MP4Tools
 
 			_ffmpegOperationCts?.Dispose();
 			_ffmpegOperationCts = new CancellationTokenSource();
-			CanStop = true;
+			if (OperationLogSource != LogOperationSource.None)
+				LogOperationTracker.Set(OperationLogSource);
+			SetCanStop(true);
 			return _ffmpegOperationCts.Token;
 		}
 
 		protected void EndFfmpegOperation()
 		{
-			CanStop = false;
+			var cts = Interlocked.Exchange(ref _ffmpegOperationCts, null);
 			try
 			{
-				_ffmpegOperationCts?.Dispose();
+				cts?.Dispose();
 			}
-			finally
+			catch
 			{
-				_ffmpegOperationCts = null;
+				// ignored
 			}
+
+			SetCanStop(false);
 		}
 
 		protected void CancelFfmpegOperation()
@@ -127,6 +135,18 @@ namespace MP4Tools
 			{
 				// ignored
 			}
+		}
+
+		/// <summary>Avalonia bindings must see CanStop changes on the UI thread (Stop often ends on a worker).</summary>
+		private void SetCanStop(bool value)
+		{
+			if (Dispatcher.UIThread.CheckAccess())
+			{
+				CanStop = value;
+				return;
+			}
+
+			Dispatcher.UIThread.Post(() => CanStop = value);
 		}
 
 		protected virtual Task Clear()

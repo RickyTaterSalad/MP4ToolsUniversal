@@ -18,6 +18,7 @@ namespace MP4Tools.ViewModels;
 
 public partial class CombineViewModel : MP4ViewModelBase
 {
+	protected override LogOperationSource OperationLogSource => LogOperationSource.Combine;
 
 	private const string DefaultIntroTitle = "{VISITOR} vs. {HOME}";
 	private const string DefaultIntroDetails = "Final Score {SCORE} {WINNER}";
@@ -38,6 +39,12 @@ public partial class CombineViewModel : MP4ViewModelBase
 	/// </summary>
 	[ObservableProperty]
 	private bool _includeIntro;
+
+	/// <summary>
+	/// When true, run local inning detection on the combined MP4 after a successful Combine.
+	/// </summary>
+	[ObservableProperty]
+	private bool _runInningDetectorAfterCombine;
 
 	[ObservableProperty]
 	private string _outputPath;
@@ -1026,6 +1033,31 @@ public partial class CombineViewModel : MP4ViewModelBase
 		if (!CanCombine || string.IsNullOrWhiteSpace(OutputPath))
 			return;
 
+		if (UiBehaviorSettingsRuntime.WarnOnInsufficientDiskSpace)
+		{
+			var shouldAddIntro = IncludeIntro && HasIntroContent;
+			var estimate = DiskSpaceEstimator.EstimateCombine(
+				InputFiles.Select(f => f.Path),
+				OutputPath,
+				shouldAddIntro,
+				IntroDurationSeconds);
+			var check = DiskSpaceEstimator.Evaluate(estimate);
+			if (!check.IsSufficient)
+			{
+				Logger.Log(
+					$"Disk space check: need ~{DiskSpaceEstimator.FormatBytes(check.RequiredTempBytes)} peak " +
+					$"(final {DiskSpaceEstimator.FormatBytes(estimate.FinalBytes)}, temp {DiskSpaceEstimator.FormatBytes(estimate.TempBytes)}); " +
+					$"free temp {DiskSpaceEstimator.FormatBytes(check.FreeTempBytes)}, free output {DiskSpaceEstimator.FormatBytes(check.FreeOutputBytes)}.");
+				var proceed = await DiskSpaceWarning.ConfirmContinueIfNeededAsync(check).ConfigureAwait(true);
+				if (!proceed)
+				{
+					ReportCombineStep("Cancelled: insufficient disk space.");
+					Logger.Log("Combine cancelled: user declined to continue with insufficient disk space.");
+					return;
+				}
+			}
+		}
+
 		var logOutputPath = !string.IsNullOrWhiteSpace(OutputPath) ? Path.ChangeExtension(OutputPath, ".log") : null;
 		var loggedFfmpegOutput = new ConcurrentQueue<string>();
 		EventHandler<string> handler = (s, msg) =>
@@ -1412,6 +1444,14 @@ public partial class CombineViewModel : MP4ViewModelBase
 						}
 
 						partTsFiles.Add(partTsFile);
+
+						// Intro-merged (and other managed) temps are obsolete after remux; free when on output volume.
+						// Never delete original source clips — only paths we created under the temp root.
+						if (tempFilesToDelete.Contains(input)
+							&& TempPathHelper.TryDeleteObsoleteTemporaryOnOutputVolume(input, combineOutputFile, Logger.Log))
+						{
+							tempFilesToDelete.Remove(input);
+						}
 					}
 
 					if (combineSucceeded && partTsFiles.Count > 0)
@@ -1486,6 +1526,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 				await WriteOffsetRecordingJsonIfNeededAsync(combineOutputFile, introChapterOffsetSeconds, ct)
 					.ConfigureAwait(false);
 				await CreateBoxScoreSessionIfNeededAsync(ct).ConfigureAwait(false);
+				await RunInningDetectorIfNeededAsync(combineOutputFile, ct).ConfigureAwait(false);
 				ReportCombineStep("Finished successfully.");
 				if (UiBehaviorSettingsRuntime.OpenOutputFolderOnComplete)
 					FolderOpener.OpenContainingFolderIfExists(combineOutputFile);
@@ -1680,6 +1721,48 @@ public partial class CombineViewModel : MP4ViewModelBase
 		catch (Exception ex)
 		{
 			Logger.Log($"Failed to upload box score: {ex.Message}");
+		}
+	}
+
+	private async Task RunInningDetectorIfNeededAsync(string combineOutputFile, CancellationToken ct)
+	{
+		if (!RunInningDetectorAfterCombine)
+			return;
+		if (string.IsNullOrWhiteSpace(combineOutputFile) || !File.Exists(combineOutputFile))
+			return;
+
+		try
+		{
+			ReportCombineStep("Running inning detector…");
+			var outputJsonPath = InningDetectionRecordingWriter.BuildUniqueOutputPath(combineOutputFile);
+			var result = await HalfInningDetector.DetectAsync(
+				combineOutputFile,
+				ct,
+				log: msg =>
+				{
+					Logger.Log(msg);
+					ReportCombineStep(msg);
+				},
+				options: new HalfInningDetector.Options
+				{
+					SkipIntroTitleCards = true,
+				},
+				outputJsonPath: outputJsonPath).ConfigureAwait(false);
+
+			Logger.Log($"Inning detector JSON: {result.OutputJsonPath}");
+			if (!string.IsNullOrWhiteSpace(result.OutputYoutubeDescriptionPath))
+				Logger.Log($"Inning detector YouTube bookmarks: {result.OutputYoutubeDescriptionPath}");
+			ReportCombineStep(
+				$"Inning detector finished ({result.Events?.Count ?? 0} events).");
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			Logger.Log($"Inning detector failed: {ex.Message}");
+			ReportCombineStep($"Inning detector failed: {ex.Message}");
 		}
 	}
 

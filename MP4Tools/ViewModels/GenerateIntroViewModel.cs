@@ -16,6 +16,8 @@ namespace MP4Tools.ViewModels;
 
 public partial class GenerateIntroViewModel : MP4ViewModelBase
 {
+	protected override LogOperationSource OperationLogSource => LogOperationSource.GenerateIntro;
+
 	public static IReadOnlyList<int> IntroDurationRange { get; } = Enumerable.Range(1, 59).ToList();
 	public static IReadOnlyList<int> FontSizeRange { get; } = Enumerable.Range(16, 241).Where(n => n % 4 == 0).ToList();
 	public static IReadOnlyList<int> LineGapRange { get; } = Enumerable.Range(8, 73).Where(n => n % 2 == 0).ToList();

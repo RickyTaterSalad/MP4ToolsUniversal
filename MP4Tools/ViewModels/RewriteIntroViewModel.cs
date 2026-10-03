@@ -14,6 +14,8 @@ namespace MP4Tools.ViewModels;
 
 public partial class RewriteIntroViewModel : MP4ViewModelBase
 {
+	protected override LogOperationSource OperationLogSource => LogOperationSource.RewriteIntro;
+
 	private const string DefaultIntroTitle = "{VISITOR} vs. {HOME}";
 	private const string DefaultIntroDetails = "Final Score {SCORE} {WINNER}";
 
@@ -496,7 +498,7 @@ public partial class RewriteIntroViewModel : MP4ViewModelBase
 				hwAccelForIntro: encPrefs.HardwareAcceleration,
 				resolveSafeEncoding: false).ConfigureAwait(false);
 
-			// ReplaceIntro deletes the source after MPEG-TS temps are ready to free space.
+			// ReplaceIntro may delete the source after MPEG-TS temps are ready (never on SD/removable).
 			if (!string.IsNullOrWhiteSpace(sourcePath) && !File.Exists(sourcePath)
 				&& string.Equals(InputPath, sourcePath, StringComparison.Ordinal))
 			{

@@ -5,9 +5,10 @@
         mc:Ignorable="d"
         x:Class="MP4Tools.Views.YesNoConfirmWindow"
         Title="Confirm"
-        Width="420"
+        Width="480"
         SizeToContent="Height"
         MinWidth="320"
+        MaxWidth="560"
         WindowStartupLocation="CenterOwner"
         CanResize="False">
 	<DockPanel Margin="16">

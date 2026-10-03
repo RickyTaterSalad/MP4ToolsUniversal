@@ -290,6 +290,13 @@
 			<TextBox PlaceholderText="Combined Output File"
 					 HorizontalAlignment="Stretch"
 					 Text="{Binding OutputPath}" />
+			<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+						ToolTip.Tip="After the combined MP4 is created, run local CV half-inning detection and write recording JSON + YouTube bookmark .txt next to the output video.">
+				<ToggleSwitch IsChecked="{Binding RunInningDetectorAfterCombine}" OffContent="" OnContent="" VerticalAlignment="Center" />
+				<TextBlock Text="Run inning detector after combine"
+						   VerticalAlignment="Center"
+						   Opacity="0.85"/>
+			</StackPanel>
 			<TextBlock Text="{Binding OperationStatus}"
 					   TextWrapping="Wrap"
 					   Opacity="0.92"/>

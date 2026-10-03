@@ -573,7 +573,8 @@ namespace MP4ToolsLib
 
         /// <summary>
         /// After intro + main MPEG-TS intermediates exist, free the source file so the final
-        /// concat has room on the same volume. Skips when source and output are the same path.
+        /// concat has room on the same volume. Never deletes sources on SD/removable media.
+        /// Skips when source and output are the same path.
         /// </summary>
         private static void TryDeleteSourceAfterTempsReady(
             string inputPath,
@@ -587,6 +588,13 @@ namespace MP4ToolsLib
                 || !File.Exists(inputTs) || new FileInfo(inputTs).Length == 0)
             {
                 log("Skipping source delete: MPEG-TS intermediates are missing or empty.");
+                return;
+            }
+
+            if (VolumePathHelper.IsLikelyRemovableOrSdMedia(inputPath))
+            {
+                log($"Keeping source on SD/removable media (never delete): {inputPath}");
+                step("Keeping source on SD/removable media…");
                 return;
             }
 
