@@ -1,7 +1,6 @@
 ﻿using Avalonia;
 using System;
 using System.IO;
-using System.Reflection;
 using System.Runtime.Loader;
 
 namespace MP4Tools;
@@ -33,21 +32,12 @@ sealed class Program
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
-    {
-        var builder = AppBuilder.Configure<App>()
-            .UsePlatformDetect();
-
-        // Avalonia 12.1.2 never sets xdg_toplevel app_id, so GNOME shows "Unknown" on native
-        // Wayland. When WaylandPlatformOptions.AppId ships, enable Wayland and set it to match
-        // mp4tools.desktop. Until then, stay on X11/XWayland with WmClass + StartupWMClass.
-        if (TryCreateWaylandOptionsWithAppId(LinuxDesktopAppId, out var waylandOptions))
-        {
-            builder = builder
-                .UseWaylandWithFallback()
-                .With(waylandOptions);
-        }
-
-        return builder
+        => AppBuilder.Configure<App>()
+            .UsePlatformDetect()
+            // Native Wayland with xdg_toplevel app_id so GNOME matches mp4tools.desktop;
+            // falls back to X11/XWayland when Wayland is unavailable.
+            .UseWaylandWithFallback()
+            .With(new WaylandPlatformOptions { AppId = LinuxDesktopAppId })
             .With(new X11PlatformOptions { OverlayPopups = true, WmClass = "MP4Tools" })
             .With(new Win32PlatformOptions { OverlayPopups = true }) // Optional for cross-platform
 #if DEBUG
@@ -55,23 +45,4 @@ sealed class Program
 #endif
             .WithInterFont()
             .LogToTrace();
-    }
-
-    /// <summary>
-    /// Builds Wayland options with AppId when the running Avalonia.Wayland package supports it.
-    /// Returns false on current 12.1.2 (property missing) so callers can fall back to X11.
-    /// </summary>
-    private static bool TryCreateWaylandOptionsWithAppId(string appId, out WaylandPlatformOptions options)
-    {
-        options = null!;
-        var appIdProperty = typeof(WaylandPlatformOptions).GetProperty(
-            "AppId",
-            BindingFlags.Instance | BindingFlags.Public);
-        if (appIdProperty is null || !appIdProperty.CanWrite)
-            return false;
-
-        options = new WaylandPlatformOptions();
-        appIdProperty.SetValue(options, appId);
-        return true;
-    }
 }

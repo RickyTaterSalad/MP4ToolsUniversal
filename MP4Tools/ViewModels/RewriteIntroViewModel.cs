@@ -24,7 +24,7 @@ public partial class RewriteIntroViewModel : MP4ViewModelBase
 	public static IReadOnlyList<string> EventInfoDefaults => CombineViewModel.EventInfoDefaults;
 
 	[ObservableProperty]
-	private int _introDurationSeconds = 10;
+	private int _introDurationSeconds = 5;
 
 	[ObservableProperty]
 	private string _introTitle = string.Empty;
@@ -353,7 +353,7 @@ public partial class RewriteIntroViewModel : MP4ViewModelBase
 		IntroTitle = string.Empty;
 		IntroSubtitle = string.Empty;
 		IntroDetails = string.Empty;
-		IntroDurationSeconds = 10;
+		IntroDurationSeconds = 5;
 		EventInfo = string.Empty;
 		EventDate = null;
 		VisitorName = string.Empty;

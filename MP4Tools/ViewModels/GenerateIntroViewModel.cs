@@ -178,7 +178,7 @@ public partial class GenerateIntroViewModel : MP4ViewModelBase
 			IntroTitle = string.Empty;
 			IntroSubtitle = string.Empty;
 			IntroDetails = string.Empty;
-			IntroDurationSeconds = 10;
+			IntroDurationSeconds = 5;
 			SelectedTheme = Themes[0];
 			ApplyTheme(SelectedTheme);
 		}
