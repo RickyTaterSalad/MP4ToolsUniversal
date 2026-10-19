@@ -6,7 +6,7 @@ public sealed class PendingIntroSpec
 	public string Title { get; init; } = string.Empty;
 	public string Subtitle { get; init; } = string.Empty;
 	public string Details { get; init; } = string.Empty;
-	public int DurationSeconds { get; init; } = 10;
+	public int DurationSeconds { get; init; } = 5;
 	public int TitleFontSize { get; init; } = 128;
 	public int SubtitleFontSize { get; init; } = 64;
 	public int DetailsFontSize { get; init; } = 48;

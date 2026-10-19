@@ -39,7 +39,7 @@ public partial class GenerateIntroViewModel : MP4ViewModelBase
 	private string _introDetails = string.Empty;
 
 	[ObservableProperty]
-	private int _introDurationSeconds = 10;
+	private int _introDurationSeconds = 5;
 
 	[ObservableProperty]
 	private int _titleFontSize = 128;
@@ -426,7 +426,7 @@ public partial class GenerateIntroViewModel : MP4ViewModelBase
 		IntroTitle = string.Empty;
 		IntroSubtitle = string.Empty;
 		IntroDetails = string.Empty;
-		IntroDurationSeconds = 10;
+		IntroDurationSeconds = 5;
 		ReferenceProbeSummary = string.Empty;
 		SelectedTheme = Themes[0];
 		ApplyTheme(SelectedTheme);

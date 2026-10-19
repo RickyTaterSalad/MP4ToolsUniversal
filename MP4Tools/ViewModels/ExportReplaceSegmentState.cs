@@ -34,7 +34,7 @@ internal sealed class ExportPendingIntro
 	public string Title { get; set; } = string.Empty;
 	public string Subtitle { get; set; } = string.Empty;
 	public string Details { get; set; } = string.Empty;
-	public int DurationSeconds { get; set; } = 10;
+	public int DurationSeconds { get; set; } = 5;
 	public int TitleFontSize { get; set; } = 128;
 	public int SubtitleFontSize { get; set; } = 64;
 	public int DetailsFontSize { get; set; } = 48;

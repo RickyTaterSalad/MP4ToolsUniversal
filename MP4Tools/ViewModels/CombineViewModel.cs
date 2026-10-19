@@ -24,7 +24,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 	private const string DefaultIntroDetails = "Final Score {SCORE} {WINNER}";
 
 	[ObservableProperty]
-	private int _introDurationSeconds = 10;
+	private int _introDurationSeconds = 5;
 
 	[ObservableProperty]
 	private string _introTitle;
@@ -1157,7 +1157,7 @@ public partial class CombineViewModel : MP4ViewModelBase
 		IntroSubtitle = string.Empty;
 		IntroDetails = string.Empty;
 		IncludeIntro = false;
-		IntroDurationSeconds = 10;
+		IntroDurationSeconds = 5;
 		EventDate = null;//DateTime.Today;
 		VisitorName = string.Empty;
 		VisitorScore = null;
